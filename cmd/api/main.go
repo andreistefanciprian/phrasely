@@ -27,7 +27,10 @@ func main() {
 		port = "8080"
 	}
 
-	store, err := db.NewPostgresStore(context.Background(), dsn)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	store, err := db.NewPostgresStore(ctx, dsn)
 	if err != nil {
 		slog.Error("could not connect to database", "error", err)
 		os.Exit(1)
