@@ -20,5 +20,7 @@ A platform for building and sharing English phrase collections, with AI-powered 
 ## PR log
 
 - **PR 1** — project skeleton: module, Docker Compose, Postgres connection, `db.Store` interface, `/health` endpoint
+- **PR 2** — rename project to phrasely across repo, Go module, Postgres credentials
+- **PR 3** — goose migrations wired into startup; `phrases` table; SQL files embedded into binary via `migrations/embed.go`
 
 ## Data Model
