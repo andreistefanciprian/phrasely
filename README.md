@@ -3,29 +3,24 @@
 ## Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- Go 1.26+ (only needed to run outside Docker)
+- [Task](https://taskfile.dev) — `brew install go-task`
 
 ## Run locally
 
 ```bash
-# 1. Start everything (Postgres + API)
-docker compose up --build
-
-# 2. Hit the health check to confirm it's up
-curl http://localhost:8080/health
+task up        # build images, start API + Postgres, stream logs
 ```
 
 The API is available at `http://localhost:8080`.
 
-## Rebuild after code changes
-
 ```bash
-docker compose up --build
+curl http://localhost:8080/health
 ```
 
-## Stop
+## Other commands
 
 ```bash
-docker compose down       # stop containers, keep DB data
-docker compose down -v    # stop containers and delete DB data
+task down      # stop containers, keep DB data
+task reset     # stop containers and wipe DB data (fresh start)
+task test      # run unit tests
 ```
