@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/migrations"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver for database/sql, used by goose
@@ -93,7 +94,10 @@ func runMigrations(dsn string) error {
 		return err
 	}
 
-	if err := goose.Up(sqlDB, "migrations"); err != nil {
+	// Tell goose to read migration files from the embedded FS instead of disk.
+	// The path "." matches the root of migrations.FS where the .sql files live.
+	goose.SetBaseFS(migrations.FS)
+	if err := goose.Up(sqlDB, "."); err != nil {
 		return err
 	}
 
