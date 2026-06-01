@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/andreistefanciprian/phrasezzly/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )

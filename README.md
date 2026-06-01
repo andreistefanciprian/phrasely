@@ -1,4 +1,4 @@
-# Phrasezzly
+# Phrasely
 
 ## Prerequisites
 
