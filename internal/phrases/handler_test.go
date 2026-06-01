@@ -83,6 +83,10 @@ func TestListPhrases_EmptyReturnsArray(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
 	// Must return [] not null so the frontend can always iterate the response
 	var got []db.Phrase
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
