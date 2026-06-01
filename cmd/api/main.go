@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -88,6 +89,14 @@ func runMigrations(dsn string) error {
 		return err
 	}
 	defer sqlDB.Close()
+
+	// Verify connectivity before handing the connection to goose.
+	// Without this, goose would hang indefinitely if the DB is unreachable.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := sqlDB.PingContext(ctx); err != nil {
+		return fmt.Errorf("ping before migrations: %w", err)
+	}
 
 	goose.SetLogger(goose.NopLogger()) // silence goose's default output; we log ourselves
 	if err := goose.SetDialect("postgres"); err != nil {
