@@ -24,3 +24,20 @@ task down      # stop containers, keep DB data
 task reset     # stop containers and wipe DB data (fresh start)
 task test      # run unit tests
 ```
+
+## API script
+
+`scripts/api.sh` is a convenience script for hitting the API from the terminal.
+
+```bash
+./scripts/api.sh add-phrases                     # seed a batch of sample phrases
+./scripts/api.sh add-phrase                      # add a single sample phrase
+./scripts/api.sh list-phrases                    # list all phrases
+./scripts/api.sh list-phrases serendipitous      # filter by keyword
+```
+
+Point it at a different host with `API_URL`:
+
+```bash
+API_URL=https://your-app.railway.app ./scripts/api.sh list-phrases
+```

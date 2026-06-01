@@ -21,7 +21,24 @@ func NewHandler(store db.Store) *Handler {
 
 // RegisterRoutes attaches phrase endpoints to the given router.
 func (h *Handler) RegisterRoutes(r *mux.Router) {
+	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
+}
+
+// list handles GET /api/v1/phrases.
+// Accepts an optional ?keyword= query param for filtering by keyword.
+// Always returns a JSON array — empty array when there are no results.
+func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
+	keyword := r.URL.Query().Get("keyword")
+
+	phrases, err := h.store.ListPhrases(r.Context(), keyword)
+	if err != nil {
+		slog.Error("list phrases", "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to list phrases")
+		return
+	}
+
+	respond(w, http.StatusOK, phrases)
 }
 
 // maxBodyBytes is the maximum request body size we accept (1 KB).
