@@ -17,10 +17,18 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - Dependency injection via constructors (urlshortener pattern)
 - `docker compose up --build` to run everything; no local Go needed
 
+## API endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Health check |
+| POST | `/api/v1/phrases` | Create a phrase |
+
 ## PR log
 
 - **PR 1** — project skeleton: module, Docker Compose, Postgres connection, `db.Store` interface, `/health` endpoint
 - **PR 2** — rename project to phrasely across repo, Go module, Postgres credentials
 - **PR 3** — goose migrations wired into startup; `phrases` table; SQL files embedded into binary via `migrations/embed.go`
+- **PR 4** — `POST /api/v1/phrases` with input validation, unit tests, Taskfile
 
 ## Data Model
