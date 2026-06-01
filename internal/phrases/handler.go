@@ -24,11 +24,23 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
 }
 
+// maxBodyBytes is the maximum request body size we accept (1 KB).
+// A phrase, keyword, and note easily fit within this; anything larger is rejected.
+const maxBodyBytes = 1024
+
 // create handles POST /api/v1/phrases.
 // It decodes the request body, validates required fields, and inserts the phrase.
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
+	// Cap the body size before reading to prevent oversized payloads.
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+
+	dec := json.NewDecoder(r.Body)
+	// Reject requests that send fields not defined in CreatePhraseRequest.
+	// Catches typos early and avoids silently ignoring unexpected input.
+	dec.DisallowUnknownFields()
+
 	var req db.CreatePhraseRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := dec.Decode(&req); err != nil {
 		respondErr(w, http.StatusBadRequest, "invalid request body")
 		return
 	}

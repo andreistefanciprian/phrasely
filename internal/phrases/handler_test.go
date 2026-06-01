@@ -126,3 +126,50 @@ func TestCreatePhrase_InvalidJSON(t *testing.T) {
 		t.Errorf("expected 400, got %d", resp.StatusCode)
 	}
 }
+
+func TestCreatePhrase_UnknownFields(t *testing.T) {
+	store := &mockStore{
+		createPhrase: func(_ context.Context, _ db.CreatePhraseRequest) (*db.Phrase, error) {
+			t.Error("store should not be called when unknown fields are present")
+			return nil, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	body := `{"phrase":"It was serendipitous.","keyword":"serendipitous","unknown_field":"oops"}`
+	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestCreatePhrase_BodyTooLarge(t *testing.T) {
+	store := &mockStore{
+		createPhrase: func(_ context.Context, _ db.CreatePhraseRequest) (*db.Phrase, error) {
+			t.Error("store should not be called when body exceeds size limit")
+			return nil, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	// Build a payload larger than maxBodyBytes (1 KB)
+	oversized := `{"phrase":"` + string(make([]byte, 2048)) + `","keyword":"test"}`
+	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(oversized))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
