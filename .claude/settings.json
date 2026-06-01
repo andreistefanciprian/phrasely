@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf cmd internal migrations docker-compose.yml go.mod go.sum && ls)"
+    ],
+    "additionalDirectories": [
+      "/Users/stefanandrei/Documents/Projects/phrasezzly/cmd"
+    ]
+  }
+}

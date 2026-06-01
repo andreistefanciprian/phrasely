@@ -1,4 +1,4 @@
-module github.com/andreistefanciprian/phrasezzly
+module github.com/andreistefanciprian/phrasely
 
 go 1.26.1
 
