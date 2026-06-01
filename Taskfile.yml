@@ -1,0 +1,18 @@
+version: "3"
+
+tasks:
+  up:
+    desc: Build and start the API and database, then follow logs
+    cmd: docker compose up --build
+
+  down:
+    desc: Stop containers, keep database data
+    cmd: docker compose down
+
+  reset:
+    desc: Stop containers and delete all database data (fresh start)
+    cmd: docker compose down -v
+
+  test:
+    desc: Run all unit tests
+    cmd: go test ./... -v
