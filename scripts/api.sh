@@ -7,7 +7,7 @@
 
 BASE_URL="${API_URL:-http://localhost:8080}/api/v1"
 
-list-phrases() {
+list_phrases() {
   local keyword="$1"
   local url="$BASE_URL/phrases"
   [[ -n "$keyword" ]] && url="$url?keyword=$keyword"
@@ -16,7 +16,7 @@ list-phrases() {
   curl -s "$url" | jq
 }
 
-add-phrase() {
+add_phrase() {
   echo "POST $BASE_URL/phrases"
   curl -s -X POST "$BASE_URL/phrases" \
     -H "Content-Type: application/json" \
@@ -27,7 +27,7 @@ add-phrase() {
     }' | jq
 }
 
-add-phrases() {
+add_phrases() {
   local phrases=(
     '{"phrase":"It'\''s unfathomable to imagine yourself as a billionaire.","keyword":"unfathomable","note":"Used when something is so extreme it'\''s beyond normal comprehension."}'
     '{"phrase":"GCC is literally the linchpin of the american empire.","keyword":"linchpin","note":"The one thing that holds everything else together."}'
@@ -54,13 +54,12 @@ add-phrases() {
   done
 }
 
-# Dispatch to function based on first argument
 cmd="$1"
 shift
 case "$cmd" in
-  list-phrases)  list-phrases "$@" ;;
-  add-phrase)    add-phrase ;;
-  add-phrases)   add-phrases ;;
+  list-phrases) list_phrases "$@" ;;
+  add-phrase)   add_phrase ;;
+  add-phrases)  add_phrases ;;
   *)
     echo "Usage: $0 {list-phrases [keyword]|add-phrase|add-phrases}"
     exit 1
