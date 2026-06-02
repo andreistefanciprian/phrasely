@@ -39,8 +39,17 @@ A platform for building and sharing English phrase collections, with AI-powered 
 ## Frontend plan (not started)
 
 - **Stack**: Next.js + TailwindCSS + shadcn/ui, deployed on Railway
-- **Home**: keyword word cloud — bubble size proportional to phrase count per keyword
-- **Detail**: click a bubble → list of phrases for that keyword
+- **Home (`/bubble`)**: keyword word cloud — bubble size driven by `localStorage` view counts (no DB writes on click)
+- **Detail (`/phrases?keyword=`)**: phrase cards filtered by keyword; keyboard navigation (space/arrow to shuffle)
+- **Compound keywords**: `keyword` field stores `"word1 vs word2"` as-is; UI splits on ` vs ` to render individual Merriam-Webster links
+- **Reference**: PhraseFlow (`/Users/stefanandrei/Documents/Projects/PhraseFlow/`) has working bubble implementation — port the placement algorithm into a React component
+
+## Data model decisions
+
+- `keyword` — plain `TEXT`; compound keywords stored as `"word1 vs word2"`, no separate rows needed
+- `source_urls` — `TEXT[]` array; one URL per keyword (AI generates from Merriam-Webster); empty array for phrases without links
+- `view_count` — tracked in `localStorage` on the frontend only; no DB column needed
+- Next migration adds: `source_urls TEXT[] NOT NULL DEFAULT '{}'`
 
 ## PR log
 
