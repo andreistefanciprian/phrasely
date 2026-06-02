@@ -85,7 +85,7 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, keyword string) ([]Phra
 	if keyword != "" {
 		// array_to_string flattens keywords into a single string so the trigram GIN index is used.
 		// This makes ILIKE '%term%' fast even as the table grows.
-		query += ` WHERE array_to_string(keywords, ' ') ILIKE $1`
+		query += ` WHERE keywords_text(keywords) ILIKE $1`
 		args = append(args, "%"+keyword+"%")
 	}
 	query += ` ORDER BY created_at DESC`

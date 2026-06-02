@@ -36,10 +36,16 @@ CREATE TABLE phrases (
 -- GIN index on keywords array enables fast ANY() lookups across the array elements
 CREATE INDEX idx_phrases_keywords ON phrases USING GIN (keywords);
 
--- Trigram GIN index on the flattened keywords string enables fast ILIKE '%term%' search.
--- array_to_string joins the array into a single string so the trigram index can cover all keywords.
+-- Postgres requires index expression functions to be IMMUTABLE.
+-- array_to_string is only STABLE, so we wrap it in an IMMUTABLE function.
+CREATE OR REPLACE FUNCTION keywords_text(TEXT[])
+RETURNS TEXT LANGUAGE SQL IMMUTABLE AS $$
+    SELECT array_to_string($1, ' ')
+$$;
+
+-- Trigram GIN index enables fast ILIKE '%term%' search across all keywords.
 CREATE INDEX idx_phrases_keywords_trgm ON phrases
-    USING GIN (array_to_string(keywords, ' ') gin_trgm_ops);
+    USING GIN (keywords_text(keywords) gin_trgm_ops);
 
 -- Reusable function: sets updated_at to NOW() on any UPDATE.
 -- Defined once here; other tables can reuse it by creating their own trigger pointing at it.
@@ -65,5 +71,6 @@ CREATE TRIGGER phrases_set_updated_at
 DROP TRIGGER IF EXISTS phrases_set_updated_at ON phrases;
 DROP FUNCTION IF EXISTS set_updated_at;
 DROP TABLE IF EXISTS phrases;
+DROP FUNCTION IF EXISTS keywords_text;
 
 -- +goose StatementEnd
