@@ -27,6 +27,16 @@ get_phrase() {
   curl -s "$BASE_URL/phrases/$id" | jq
 }
 
+delete_phrase() {
+  local id="$1"
+  if [[ -z "$id" ]]; then
+    echo "Usage: $0 delete-phrase <id>"
+    exit 1
+  fi
+  echo "DELETE $BASE_URL/phrases/$id"
+  curl -s -o /dev/null -w "%{http_code}\n" -X DELETE "$BASE_URL/phrases/$id"
+}
+
 add_phrase() {
   echo "POST $BASE_URL/phrases"
   curl -s -X POST "$BASE_URL/phrases" \
@@ -92,18 +102,30 @@ run_all() {
 
   header "Get phrase by invalid ID (expect 404)"
   get_phrase "00000000-0000-0000-0000-000000000000"
+
+  header "Delete phrase by ID (expect 204)"
+  local del_id
+  del_id=$(curl -s "$BASE_URL/phrases" | jq -r '.[0].id')
+  delete_phrase "$del_id"
+
+  header "Delete same phrase again (expect 404)"
+  delete_phrase "$del_id"
+
+  header "Delete with invalid ID (expect 400)"
+  delete_phrase "not-a-uuid"
 }
 
 cmd="$1"
 shift
 case "$cmd" in
-  list-phrases) list_phrases "$@" ;;
-  get-phrase)   get_phrase "$@" ;;
-  add-phrase)   add_phrase ;;
-  add-phrases)  add_phrases ;;
-  "")           run_all ;;
+  list-phrases)   list_phrases "$@" ;;
+  get-phrase)     get_phrase "$@" ;;
+  delete-phrase)  delete_phrase "$@" ;;
+  add-phrase)     add_phrase ;;
+  add-phrases)    add_phrases ;;
+  "")             run_all ;;
   *)
-    echo "Usage: $0 {list-phrases [keyword]|get-phrase <id>|add-phrase|add-phrases}"
+    echo "Usage: $0 {list-phrases [keyword]|get-phrase <id>|delete-phrase <id>|add-phrase|add-phrases}"
     echo "       $0            (no args: run all tests in sequence)"
     exit 1
     ;;

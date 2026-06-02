@@ -39,6 +39,8 @@ type Store interface {
 	ListPhrases(ctx context.Context, keyword string) ([]Phrase, error)
 	// GetPhrase returns a single phrase by ID. Returns ErrNotFound if no match.
 	GetPhrase(ctx context.Context, id string) (*Phrase, error)
+	// DeletePhrase removes a phrase by ID. Returns ErrNotFound if no match.
+	DeletePhrase(ctx context.Context, id string) error
 }
 
 type PostgresStore struct {
@@ -105,6 +107,19 @@ func (s *PostgresStore) GetPhrase(ctx context.Context, id string) (*Phrase, erro
 		return nil, fmt.Errorf("get phrase: %w", err)
 	}
 	return &p, nil
+}
+
+// DeletePhrase removes a phrase by ID. Returns ErrNotFound if no row was deleted.
+func (s *PostgresStore) DeletePhrase(ctx context.Context, id string) error {
+	tag, err := s.Pool.Exec(ctx, `DELETE FROM phrases WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete phrase: %w", err)
+	}
+	// RowsAffected() == 0 means no row matched that ID — treat as not found
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // CreatePhrase inserts a new phrase and returns the full record including DB-generated fields.
