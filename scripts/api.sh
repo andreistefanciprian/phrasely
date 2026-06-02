@@ -57,27 +57,30 @@ add_phrase() {
     -d '{
       "phrase": "It was serendipitous, we met at the right time.",
       "keyword": "serendipitous",
-      "note": "A happy accident with a pleasant outcome."
+      "note": "A happy accident with a pleasant outcome.",
+      "source_urls": ["https://www.merriam-webster.com/dictionary/serendipitous"]
     }' | jq
 }
 
 add_phrases() {
   local phrases=(
-    '{"phrase":"It'\''s unfathomable to imagine yourself as a billionaire.","keyword":"unfathomable","note":"Used when something is so extreme it'\''s beyond normal comprehension."}'
-    '{"phrase":"GCC is literally the linchpin of the american empire.","keyword":"linchpin","note":"The one thing that holds everything else together."}'
-    '{"phrase":"Not everyone has the fortitude to take on these issues.","keyword":"fortitude","note":"Courage and resilience in the face of difficulty."}'
-    '{"phrase":"As soon as things get dicey, governments take control of gold.","keyword":"dicey","note":"Informal. Used when a situation starts feeling unstable or risky."}'
-    '{"phrase":"The gold market dwarfs the bitcoin market in terms of market cap.","keyword":"dwarfs","note":"Used when one thing is so much bigger it makes the other look insignificant."}'
-    '{"phrase":"Powell doesn'\''t want people to think that a rate cut is a foregone conclusion.","keyword":"foregone conclusion","note":"When the outcome feels decided before any debate has happened."}'
-    '{"phrase":"That'\''s a fallacy — the reasoning doesn'\''t hold up.","keyword":"fallacy","note":"A reasoning error that looks convincing but doesn'\''t hold up."}'
-    '{"phrase":"Bitcoin is antithetical to the current system.","keyword":"antithetical","note":"Stronger than different or opposite — implies deep structural incompatibility."}'
+    '{"phrase":"It'\''s unfathomable to imagine yourself as a billionaire.","keyword":"unfathomable","note":"Used when something is so extreme it'\''s beyond normal comprehension.","source_urls":["https://www.merriam-webster.com/dictionary/unfathomable"]}'
+    '{"phrase":"GCC is literally the linchpin of the american empire.","keyword":"linchpin","note":"The one thing that holds everything else together.","source_urls":["https://www.merriam-webster.com/dictionary/linchpin"]}'
+    '{"phrase":"Not everyone has the fortitude to take on these issues.","keyword":"fortitude","note":"Courage and resilience in the face of difficulty.","source_urls":["https://www.merriam-webster.com/dictionary/fortitude"]}'
+    '{"phrase":"As soon as things get dicey, governments take control of gold.","keyword":"dicey","note":"Informal. Used when a situation starts feeling unstable or risky.","source_urls":["https://www.merriam-webster.com/dictionary/dicey"]}'
+    '{"phrase":"The gold market dwarfs the bitcoin market in terms of market cap.","keyword":"dwarfs","note":"Used when one thing is so much bigger it makes the other look insignificant.","source_urls":["https://www.merriam-webster.com/dictionary/dwarf"]}'
+    '{"phrase":"Powell doesn'\''t want people to think that a rate cut is a foregone conclusion.","keyword":"foregone conclusion","note":"When the outcome feels decided before any debate has happened.","source_urls":["https://www.merriam-webster.com/dictionary/foregone%20conclusion"]}'
+    '{"phrase":"That'\''s a fallacy — the reasoning doesn'\''t hold up.","keyword":"fallacy","note":"A reasoning error that looks convincing but doesn'\''t hold up.","source_urls":["https://www.merriam-webster.com/dictionary/fallacy"]}'
+    '{"phrase":"Bitcoin is antithetical to the current system.","keyword":"antithetical","note":"Stronger than different or opposite — implies deep structural incompatibility.","source_urls":["https://www.merriam-webster.com/dictionary/antithetical"]}'
     # Three ethos entries — use `./scripts/api.sh list-phrases ethos` to verify filtering works
-    '{"phrase":"The mid seventies ethos was to read history and sociology critically.","keyword":"ethos","note":"The spirit and guiding values of a group or era."}'
-    '{"phrase":"The ethos of the early internet was openness and decentralization.","keyword":"ethos","note":"Applied to a historical movement — the ethos of an era shapes its tools."}'
-    '{"phrase":"The company'\''s ethos is built around innovation.","keyword":"ethos","note":"A company'\''s ethos is its actual character — what it stands for in practice."}'
+    '{"phrase":"The mid seventies ethos was to read history and sociology critically.","keyword":"ethos","note":"The spirit and guiding values of a group or era.","source_urls":["https://www.merriam-webster.com/dictionary/ethos"]}'
+    '{"phrase":"The ethos of the early internet was openness and decentralization.","keyword":"ethos","note":"Applied to a historical movement — the ethos of an era shapes its tools.","source_urls":["https://www.merriam-webster.com/dictionary/ethos"]}'
+    '{"phrase":"The company'\''s ethos is built around innovation.","keyword":"ethos","note":"A company'\''s ethos is its actual character — what it stands for in practice.","source_urls":["https://www.merriam-webster.com/dictionary/ethos"]}'
     # conspicuous + inconspicuous — search `cons` to verify partial matching returns both
-    '{"phrase":"The sign was placed in a very conspicuous spot.","keyword":"conspicuous","note":"Hard to miss or ignore. Often used when something stands out more than expected."}'
-    '{"phrase":"He sat in an inconspicuous corner, hoping no one would notice him.","keyword":"inconspicuous","note":"Opposite of conspicuous — blending in, not drawing attention."}'
+    '{"phrase":"The sign was placed in a very conspicuous spot.","keyword":"conspicuous","note":"Hard to miss or ignore. Often used when something stands out more than expected.","source_urls":["https://www.merriam-webster.com/dictionary/conspicuous"]}'
+    '{"phrase":"He sat in an inconspicuous corner, hoping no one would notice him.","keyword":"inconspicuous","note":"Opposite of conspicuous — blending in, not drawing attention.","source_urls":["https://www.merriam-webster.com/dictionary/inconspicuous"]}'
+    # vs keyword — two source_urls, one per word
+    '{"phrase":"Unfettered (unrestrained), inalienable (cannot be taken away) property rights are essential to a free society.","keyword":"unfettered vs inalienable","note":"Two powerful words often used together in political and philosophical contexts about freedom and rights.","source_urls":["https://www.merriam-webster.com/dictionary/unfettered","https://www.merriam-webster.com/dictionary/inalienable"]}'
   )
 
   for phrase in "${phrases[@]}"; do

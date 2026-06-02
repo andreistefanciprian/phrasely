@@ -19,6 +19,10 @@ CREATE TABLE phrases (
     -- Usage guidance: when and how to use the word
     note       TEXT        NOT NULL DEFAULT '',
 
+    -- One URL per keyword; compound keywords (e.g. "word1 vs word2") get one URL per word.
+    -- Empty array for phrases without external references.
+    source_urls TEXT[]      NOT NULL DEFAULT '{}',
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
