@@ -2,11 +2,16 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// ErrNotFound is returned when a requested record does not exist in the database.
+var ErrNotFound = errors.New("not found")
 
 // Phrase represents a single phrase record as stored in the database.
 type Phrase struct {
@@ -32,6 +37,8 @@ type Store interface {
 	CreatePhrase(ctx context.Context, req CreatePhraseRequest) (*Phrase, error)
 	// ListPhrases returns all phrases, optionally filtered by keyword (case-insensitive partial match).
 	ListPhrases(ctx context.Context, keyword string) ([]Phrase, error)
+	// GetPhrase returns a single phrase by ID. Returns ErrNotFound if no match.
+	GetPhrase(ctx context.Context, id string) (*Phrase, error)
 }
 
 type PostgresStore struct {
@@ -83,6 +90,21 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, keyword string) ([]Phra
 		phrases = append(phrases, p)
 	}
 	return phrases, rows.Err()
+}
+
+// GetPhrase fetches a single phrase by its UUID. Returns ErrNotFound if no row matches.
+func (s *PostgresStore) GetPhrase(ctx context.Context, id string) (*Phrase, error) {
+	var p Phrase
+	err := s.Pool.QueryRow(ctx,
+		`SELECT id, phrase, keyword, note, created_at, updated_at FROM phrases WHERE id = $1`, id,
+	).Scan(&p.ID, &p.Phrase, &p.Keyword, &p.Note, &p.CreatedAt, &p.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get phrase: %w", err)
+	}
+	return &p, nil
 }
 
 // CreatePhrase inserts a new phrase and returns the full record including DB-generated fields.

@@ -2,6 +2,7 @@
 # Usage:
 #   ./scripts/api.sh list-phrases
 #   ./scripts/api.sh list-phrases serendipitous
+#   ./scripts/api.sh get-phrase <id>
 #   ./scripts/api.sh add-phrase
 #   ./scripts/api.sh add-phrases
 
@@ -14,6 +15,16 @@ list_phrases() {
 
   echo "GET $url"
   curl -s "$url" | jq
+}
+
+get_phrase() {
+  local id="$1"
+  if [[ -z "$id" ]]; then
+    echo "Usage: $0 get-phrase <id>"
+    exit 1
+  fi
+  echo "GET $BASE_URL/phrases/$id"
+  curl -s "$BASE_URL/phrases/$id" | jq
 }
 
 add_phrase() {
@@ -54,14 +65,46 @@ add_phrases() {
   done
 }
 
+header() {
+  echo ""
+  echo "=================================================="
+  echo "  $1"
+  echo "=================================================="
+}
+
+run_all() {
+  header "Seeding phrases"
+  add_phrases
+
+  header "List all phrases"
+  list_phrases
+
+  header "Filter by keyword: ethos (expect 3)"
+  list_phrases "ethos"
+
+  header "Filter by keyword: cons (expect conspicuous + inconspicuous)"
+  list_phrases "cons"
+
+  header "Get phrase by ID"
+  local id
+  id=$(curl -s "$BASE_URL/phrases" | jq -r '.[0].id')
+  get_phrase "$id"
+
+  header "Get phrase by invalid ID (expect 404)"
+  get_phrase "00000000-0000-0000-0000-000000000000"
+}
+
 cmd="$1"
 shift
 case "$cmd" in
   list-phrases) list_phrases "$@" ;;
+  get-phrase)   get_phrase "$@" ;;
   add-phrase)   add_phrase ;;
   add-phrases)  add_phrases ;;
+  "")           run_all ;;
   *)
-    echo "Usage: $0 {list-phrases [keyword]|add-phrase|add-phrases}"
+    echo "Usage: $0 {list-phrases [keyword]|get-phrase <id>|add-phrase|add-phrases}"
+    echo "       $0            (no args: run all tests in sequence)"
     exit 1
     ;;
 esac

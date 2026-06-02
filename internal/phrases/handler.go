@@ -2,10 +2,12 @@ package phrases
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -23,6 +25,29 @@ func NewHandler(store db.Store) *Handler {
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
+	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
+}
+
+// get handles GET /api/v1/phrases/{id}.
+// Returns 404 if the phrase does not exist.
+func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+
+	phrase, err := h.store.GetPhrase(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respondErr(w, http.StatusNotFound, "phrase not found")
+			return
+		}
+		slog.Error("get phrase", "id", id, "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to get phrase")
+		return
+	}
+
+	respond(w, http.StatusOK, phrase)
 }
 
 // list handles GET /api/v1/phrases.
@@ -76,6 +101,18 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, http.StatusCreated, phrase)
+}
+
+// parseID extracts and validates the {id} path variable as a UUID.
+// It writes a 400 response and returns false if the value is not a valid UUID,
+// so callers can return immediately without hitting the database.
+func parseID(w http.ResponseWriter, r *http.Request) (string, bool) {
+	raw := mux.Vars(r)["id"]
+	if _, err := uuid.Parse(raw); err != nil {
+		respondErr(w, http.StatusBadRequest, "invalid id: must be a UUID")
+		return "", false
+	}
+	return raw, true
 }
 
 func respond(w http.ResponseWriter, status int, body any) {
