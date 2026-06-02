@@ -17,6 +17,12 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - Dependency injection via constructors (urlshortener pattern)
 - `docker compose up --build` to run everything; no local Go needed
 
+## Git workflow
+
+- Every change goes in a PR — never push directly to `main`
+- Always ask for review before pushing
+- Branch naming: `pr/<number>-<short-description>`
+
 ## API endpoints
 
 | Method | Path | Description |
