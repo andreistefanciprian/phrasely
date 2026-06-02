@@ -30,11 +30,15 @@ task test      # run unit tests
 `scripts/api.sh` is a convenience script for hitting the API from the terminal.
 
 ```bash
+./scripts/api.sh                                 # run all commands in sequence (good for a quick sanity check)
 ./scripts/api.sh add-phrases                     # seed a batch of sample phrases
 ./scripts/api.sh add-phrase                      # add a single sample phrase
 ./scripts/api.sh list-phrases                    # list all phrases
 ./scripts/api.sh list-phrases serendipitous      # filter by keyword
+./scripts/api.sh get-phrase <id>                 # get a single phrase by ID
 ```
+
+> Run `task reset` before `./scripts/api.sh` to start from a clean DB.
 
 Point it at a different host with `API_URL`:
 
