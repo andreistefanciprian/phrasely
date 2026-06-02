@@ -31,7 +31,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 }
 
 // update handles PATCH /api/v1/phrases/{id}.
-// Only fields present in the request body are updated; omitted fields keep their current value.
+// Only fields present in the request body are updated; omitted (or null) fields keep their current value.
 func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseID(w, r)
 	if !ok {
@@ -51,6 +51,15 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	// Reject a body that has no fields at all — nothing to update
 	if req.Phrase == nil && req.Keyword == nil && req.Note == nil {
 		respondErr(w, http.StatusBadRequest, "at least one field must be provided")
+		return
+	}
+	// phrase and keyword are required when provided — empty string is not a valid value
+	if req.Phrase != nil && *req.Phrase == "" {
+		respondErr(w, http.StatusBadRequest, "phrase cannot be empty")
+		return
+	}
+	if req.Keyword != nil && *req.Keyword == "" {
+		respondErr(w, http.StatusBadRequest, "keyword cannot be empty")
 		return
 	}
 

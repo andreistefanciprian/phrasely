@@ -266,6 +266,42 @@ func TestUpdatePhrase_EmptyBody(t *testing.T) {
 	}
 }
 
+func TestUpdatePhrase_EmptyFieldValues(t *testing.T) {
+	store := &mockStore{
+		updatePhrase: func(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
+			t.Error("store should not be called when provided fields are empty strings")
+			return nil, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"empty phrase", `{"phrase":""}`},
+		{"empty keyword", `{"keyword":""}`},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req, _ := http.NewRequest(http.MethodPatch, srv.URL+"/api/v1/phrases/"+validUUID, bytes.NewBufferString(tc.body))
+			req.Header.Set("Content-Type", "application/json")
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusBadRequest {
+				t.Errorf("expected 400, got %d", resp.StatusCode)
+			}
+		})
+	}
+}
+
 func TestUpdatePhrase_NotFound(t *testing.T) {
 	store := &mockStore{
 		updatePhrase: func(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
