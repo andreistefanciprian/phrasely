@@ -17,6 +17,11 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - Dependency injection via constructors (urlshortener pattern)
 - `docker compose up --build` to run everything; no local Go needed
 
+## Open questions
+
+- **Should keywords be required?** Currently POST requires at least one keyword and PATCH cannot set keywords to empty. But should a user be able to save a phrase without identifying the keyword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `keywords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
+- **Empty string keywords** — `{"keywords":[""]}` is currently accepted. Should we validate that each element in the array is non-blank?
+
 ## Git workflow
 
 - Every change goes in a PR — never push directly to `main`
