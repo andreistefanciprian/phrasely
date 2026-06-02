@@ -115,7 +115,7 @@ func (s *PostgresStore) DeletePhrase(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("delete phrase: %w", err)
 	}
-	// RowsAffected() == 0 means the ID existed but no row matched — treat as not found
+	// RowsAffected() == 0 means no row matched that ID — treat as not found
 	if tag.RowsAffected() == 0 {
 		return ErrNotFound
 	}
