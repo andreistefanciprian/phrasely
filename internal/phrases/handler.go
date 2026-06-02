@@ -26,7 +26,55 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
 	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
+	r.HandleFunc("/api/v1/phrases/{id}", h.update).Methods(http.MethodPatch)
 	r.HandleFunc("/api/v1/phrases/{id}", h.delete).Methods(http.MethodDelete)
+}
+
+// update handles PATCH /api/v1/phrases/{id}.
+// Only fields present in the request body are updated; omitted (or null) fields keep their current value.
+func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	var req db.UpdatePhraseRequest
+	if err := dec.Decode(&req); err != nil {
+		respondErr(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// Reject a body that has no fields at all — nothing to update
+	if req.Phrase == nil && req.Keyword == nil && req.Note == nil {
+		respondErr(w, http.StatusBadRequest, "at least one field must be provided")
+		return
+	}
+	// phrase and keyword are required when provided — empty string is not a valid value
+	if req.Phrase != nil && *req.Phrase == "" {
+		respondErr(w, http.StatusBadRequest, "phrase cannot be empty")
+		return
+	}
+	if req.Keyword != nil && *req.Keyword == "" {
+		respondErr(w, http.StatusBadRequest, "keyword cannot be empty")
+		return
+	}
+
+	phrase, err := h.store.UpdatePhrase(r.Context(), id, req)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respondErr(w, http.StatusNotFound, "phrase not found")
+			return
+		}
+		slog.Error("update phrase", "id", id, "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to update phrase")
+		return
+	}
+
+	respond(w, http.StatusOK, phrase)
 }
 
 // delete handles DELETE /api/v1/phrases/{id}.
