@@ -19,6 +19,7 @@ type mockStore struct {
 	createPhrase func(ctx context.Context, req db.CreatePhraseRequest) (*db.Phrase, error)
 	listPhrases  func(ctx context.Context, keyword string) ([]db.Phrase, error)
 	getPhrase    func(ctx context.Context, id string) (*db.Phrase, error)
+	deletePhrase func(ctx context.Context, id string) error
 }
 
 func (m *mockStore) Close() {}
@@ -30,6 +31,9 @@ func (m *mockStore) ListPhrases(ctx context.Context, keyword string) ([]db.Phras
 }
 func (m *mockStore) GetPhrase(ctx context.Context, id string) (*db.Phrase, error) {
 	return m.getPhrase(ctx, id)
+}
+func (m *mockStore) DeletePhrase(ctx context.Context, id string) error {
+	return m.deletePhrase(ctx, id)
 }
 
 // newTestServer wires a Handler with the given store and returns a test HTTP server.
@@ -191,6 +195,69 @@ func TestGetPhrase_InvalidID(t *testing.T) {
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/v1/phrases/not-a-uuid")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestDeletePhrase_Success(t *testing.T) {
+	store := &mockStore{
+		deletePhrase: func(_ context.Context, _ string) error { return nil },
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodDelete, srv.URL+"/api/v1/phrases/"+validUUID, nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		t.Errorf("expected 204, got %d", resp.StatusCode)
+	}
+}
+
+func TestDeletePhrase_NotFound(t *testing.T) {
+	store := &mockStore{
+		deletePhrase: func(_ context.Context, _ string) error { return db.ErrNotFound },
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodDelete, srv.URL+"/api/v1/phrases/"+validUUID, nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
+func TestDeletePhrase_InvalidID(t *testing.T) {
+	store := &mockStore{
+		deletePhrase: func(_ context.Context, _ string) error {
+			t.Error("store should not be called for an invalid UUID")
+			return nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodDelete, srv.URL+"/api/v1/phrases/not-a-uuid", nil)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -26,6 +26,29 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
 	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
+	r.HandleFunc("/api/v1/phrases/{id}", h.delete).Methods(http.MethodDelete)
+}
+
+// delete handles DELETE /api/v1/phrases/{id}.
+// Returns 204 on success, 404 if the phrase does not exist.
+func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+
+	if err := h.store.DeletePhrase(r.Context(), id); err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respondErr(w, http.StatusNotFound, "phrase not found")
+			return
+		}
+		slog.Error("delete phrase", "id", id, "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to delete phrase")
+		return
+	}
+
+	// 204 No Content — success with no body
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // get handles GET /api/v1/phrases/{id}.
