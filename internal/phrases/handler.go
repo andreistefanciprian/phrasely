@@ -2,6 +2,7 @@ package phrases
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -23,6 +24,26 @@ func NewHandler(store db.Store) *Handler {
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
+	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
+}
+
+// get handles GET /api/v1/phrases/{id}.
+// Returns 404 if the phrase does not exist.
+func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	phrase, err := h.store.GetPhrase(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respondErr(w, http.StatusNotFound, "phrase not found")
+			return
+		}
+		slog.Error("get phrase", "id", id, "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to get phrase")
+		return
+	}
+
+	respond(w, http.StatusOK, phrase)
 }
 
 // list handles GET /api/v1/phrases.

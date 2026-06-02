@@ -2,6 +2,7 @@
 # Usage:
 #   ./scripts/api.sh list-phrases
 #   ./scripts/api.sh list-phrases serendipitous
+#   ./scripts/api.sh get-phrase <id>
 #   ./scripts/api.sh add-phrase
 #   ./scripts/api.sh add-phrases
 
@@ -14,6 +15,16 @@ list_phrases() {
 
   echo "GET $url"
   curl -s "$url" | jq
+}
+
+get_phrase() {
+  local id="$1"
+  if [[ -z "$id" ]]; then
+    echo "Usage: $0 get-phrase <id>"
+    exit 1
+  fi
+  echo "GET $BASE_URL/phrases/$id"
+  curl -s "$BASE_URL/phrases/$id" | jq
 }
 
 add_phrase() {
@@ -58,10 +69,11 @@ cmd="$1"
 shift
 case "$cmd" in
   list-phrases) list_phrases "$@" ;;
+  get-phrase)   get_phrase "$@" ;;
   add-phrase)   add_phrase ;;
   add-phrases)  add_phrases ;;
   *)
-    echo "Usage: $0 {list-phrases [keyword]|add-phrase|add-phrases}"
+    echo "Usage: $0 {list-phrases [keyword]|get-phrase <id>|add-phrase|add-phrases}"
     exit 1
     ;;
 esac

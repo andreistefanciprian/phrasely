@@ -18,6 +18,7 @@ import (
 type mockStore struct {
 	createPhrase func(ctx context.Context, req db.CreatePhraseRequest) (*db.Phrase, error)
 	listPhrases  func(ctx context.Context, keyword string) ([]db.Phrase, error)
+	getPhrase    func(ctx context.Context, id string) (*db.Phrase, error)
 }
 
 func (m *mockStore) Close() {}
@@ -26,6 +27,9 @@ func (m *mockStore) CreatePhrase(ctx context.Context, req db.CreatePhraseRequest
 }
 func (m *mockStore) ListPhrases(ctx context.Context, keyword string) ([]db.Phrase, error) {
 	return m.listPhrases(ctx, keyword)
+}
+func (m *mockStore) GetPhrase(ctx context.Context, id string) (*db.Phrase, error) {
+	return m.getPhrase(ctx, id)
 }
 
 // newTestServer wires a Handler with the given store and returns a test HTTP server.
@@ -120,6 +124,56 @@ func TestListPhrases_KeywordFilter(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestGetPhrase_Success(t *testing.T) {
+	store := &mockStore{
+		getPhrase: func(_ context.Context, id string) (*db.Phrase, error) {
+			return &db.Phrase{ID: id, Phrase: "It was serendipitous.", Keyword: "serendipitous"}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/some-uuid")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got db.Phrase
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.ID != "some-uuid" {
+		t.Errorf("expected id %q, got %q", "some-uuid", got.ID)
+	}
+}
+
+func TestGetPhrase_NotFound(t *testing.T) {
+	store := &mockStore{
+		getPhrase: func(_ context.Context, _ string) (*db.Phrase, error) {
+			return nil, db.ErrNotFound
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/does-not-exist")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
 	}
 }
 
