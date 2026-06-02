@@ -127,6 +127,8 @@ func TestListPhrases_KeywordFilter(t *testing.T) {
 	}
 }
 
+const validUUID = "550e8400-e29b-41d4-a716-446655440000"
+
 func TestGetPhrase_Success(t *testing.T) {
 	store := &mockStore{
 		getPhrase: func(_ context.Context, id string) (*db.Phrase, error) {
@@ -137,7 +139,7 @@ func TestGetPhrase_Success(t *testing.T) {
 	srv := newTestServer(store)
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/api/v1/phrases/some-uuid")
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/" + validUUID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,8 +153,8 @@ func TestGetPhrase_Success(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if got.ID != "some-uuid" {
-		t.Errorf("expected id %q, got %q", "some-uuid", got.ID)
+	if got.ID != validUUID {
+		t.Errorf("expected id %q, got %q", validUUID, got.ID)
 	}
 }
 
@@ -166,7 +168,7 @@ func TestGetPhrase_NotFound(t *testing.T) {
 	srv := newTestServer(store)
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/api/v1/phrases/does-not-exist")
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/" + validUUID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,6 +176,28 @@ func TestGetPhrase_NotFound(t *testing.T) {
 
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
+func TestGetPhrase_InvalidID(t *testing.T) {
+	store := &mockStore{
+		getPhrase: func(_ context.Context, _ string) (*db.Phrase, error) {
+			t.Error("store should not be called for an invalid UUID")
+			return nil, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/not-a-uuid")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
 	}
 }
 

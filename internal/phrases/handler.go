@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -30,7 +31,10 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 // get handles GET /api/v1/phrases/{id}.
 // Returns 404 if the phrase does not exist.
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
 
 	phrase, err := h.store.GetPhrase(r.Context(), id)
 	if err != nil {
@@ -97,6 +101,18 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, http.StatusCreated, phrase)
+}
+
+// parseID extracts and validates the {id} path variable as a UUID.
+// It writes a 400 response and returns false if the value is not a valid UUID,
+// so callers can return immediately without hitting the database.
+func parseID(w http.ResponseWriter, r *http.Request) (string, bool) {
+	raw := mux.Vars(r)["id"]
+	if _, err := uuid.Parse(raw); err != nil {
+		respondErr(w, http.StatusBadRequest, "invalid id: must be a UUID")
+		return "", false
+	}
+	return raw, true
 }
 
 func respond(w http.ResponseWriter, status int, body any) {
