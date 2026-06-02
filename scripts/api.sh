@@ -92,7 +92,7 @@ add_phrases() {
     echo "POST $BASE_URL/phrases"
     curl -s -X POST "$BASE_URL/phrases" \
       -H "Content-Type: application/json" \
-      -d "$phrase" | jq .keyword
+      -d "$phrase" | jq .keywords
   done
 }
 
