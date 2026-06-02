@@ -209,6 +209,31 @@ func TestGetPhrase_InvalidID(t *testing.T) {
 	}
 }
 
+func TestUpdatePhrase_SourceURLsOnly(t *testing.T) {
+	store := &mockStore{
+		updatePhrase: func(_ context.Context, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
+			return &db.Phrase{ID: validUUID, SourceURLs: req.SourceURLs}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	// Sending only source_urls should be accepted — not rejected as "no fields provided"
+	body := `{"source_urls":["https://www.merriam-webster.com/dictionary/test"]}`
+	req, _ := http.NewRequest(http.MethodPatch, srv.URL+"/api/v1/phrases/"+validUUID, bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+}
+
 func TestUpdatePhrase_Success(t *testing.T) {
 	updated := "updated note"
 	store := &mockStore{

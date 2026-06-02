@@ -36,7 +36,7 @@ type CreatePhraseRequest struct {
 // Pointer fields allow partial updates: nil means "leave this field unchanged".
 type UpdatePhraseRequest struct {
 	Phrase     *string  `json:"phrase"`
-	Keywords   []string `json:"keywords"`   // nil = leave unchanged; [] = clear all keywords
+	Keywords   []string `json:"keywords"` // nil = leave unchanged; when provided, must contain at least one keyword
 	Note       *string  `json:"note"`
 	SourceURLs []string `json:"source_urls"` // nil = leave unchanged; [] = clear all URLs
 }

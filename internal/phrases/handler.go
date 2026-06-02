@@ -49,7 +49,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reject a body that has no fields at all — nothing to update
-	if req.Phrase == nil && req.Keywords == nil && req.Note == nil {
+	if req.Phrase == nil && req.Keywords == nil && req.Note == nil && req.SourceURLs == nil {
 		respondErr(w, http.StatusBadRequest, "at least one field must be provided")
 		return
 	}
