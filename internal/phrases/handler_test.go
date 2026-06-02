@@ -20,6 +20,7 @@ type mockStore struct {
 	listPhrases  func(ctx context.Context, keyword string) ([]db.Phrase, error)
 	getPhrase    func(ctx context.Context, id string) (*db.Phrase, error)
 	deletePhrase func(ctx context.Context, id string) error
+	updatePhrase func(ctx context.Context, id string, req db.UpdatePhraseRequest) (*db.Phrase, error)
 }
 
 func (m *mockStore) Close() {}
@@ -34,6 +35,9 @@ func (m *mockStore) GetPhrase(ctx context.Context, id string) (*db.Phrase, error
 }
 func (m *mockStore) DeletePhrase(ctx context.Context, id string) error {
 	return m.deletePhrase(ctx, id)
+}
+func (m *mockStore) UpdatePhrase(ctx context.Context, id string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
+	return m.updatePhrase(ctx, id, req)
 }
 
 // newTestServer wires a Handler with the given store and returns a test HTTP server.
@@ -202,6 +206,86 @@ func TestGetPhrase_InvalidID(t *testing.T) {
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestUpdatePhrase_Success(t *testing.T) {
+	updated := "updated note"
+	store := &mockStore{
+		updatePhrase: func(_ context.Context, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
+			return &db.Phrase{ID: validUUID, Phrase: "It was serendipitous.", Keyword: "serendipitous", Note: *req.Note}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	body := `{"note":"` + updated + `"}`
+	req, _ := http.NewRequest(http.MethodPatch, srv.URL+"/api/v1/phrases/"+validUUID, bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got db.Phrase
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.Note != updated {
+		t.Errorf("expected note %q, got %q", updated, got.Note)
+	}
+}
+
+func TestUpdatePhrase_EmptyBody(t *testing.T) {
+	store := &mockStore{
+		updatePhrase: func(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
+			t.Error("store should not be called when no fields provided")
+			return nil, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodPatch, srv.URL+"/api/v1/phrases/"+validUUID, bytes.NewBufferString(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestUpdatePhrase_NotFound(t *testing.T) {
+	store := &mockStore{
+		updatePhrase: func(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
+			return nil, db.ErrNotFound
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodPatch, srv.URL+"/api/v1/phrases/"+validUUID, bytes.NewBufferString(`{"note":"test"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
 	}
 }
 

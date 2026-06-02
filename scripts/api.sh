@@ -27,6 +27,19 @@ get_phrase() {
   curl -s "$BASE_URL/phrases/$id" | jq
 }
 
+update_phrase() {
+  local id="$1"
+  local body="$2"
+  if [[ -z "$id" || -z "$body" ]]; then
+    echo "Usage: $0 update-phrase <id> '<json>'"
+    exit 1
+  fi
+  echo "PATCH $BASE_URL/phrases/$id"
+  curl -s -X PATCH "$BASE_URL/phrases/$id" \
+    -H "Content-Type: application/json" \
+    -d "$body" | jq
+}
+
 delete_phrase() {
   local id="$1"
   if [[ -z "$id" ]]; then
@@ -103,9 +116,17 @@ run_all() {
   header "Get phrase by invalid ID (expect 404)"
   get_phrase "00000000-0000-0000-0000-000000000000"
 
+  header "Update phrase note by ID (expect 200)"
+  local upd_id
+  upd_id=$(curl -s "$BASE_URL/phrases" | jq -r '.[0].id')
+  update_phrase "$upd_id" '{"note":"updated note via run_all"}'
+
+  header "Update with empty body (expect 400)"
+  update_phrase "$upd_id" '{}'
+
   header "Delete phrase by ID (expect 204)"
   local del_id
-  del_id=$(curl -s "$BASE_URL/phrases" | jq -r '.[0].id')
+  del_id=$(curl -s "$BASE_URL/phrases" | jq -r '.[1].id')
   delete_phrase "$del_id"
 
   header "Delete same phrase again (expect 404)"
@@ -120,12 +141,13 @@ shift
 case "$cmd" in
   list-phrases)   list_phrases "$@" ;;
   get-phrase)     get_phrase "$@" ;;
+  update-phrase)  update_phrase "$@" ;;
   delete-phrase)  delete_phrase "$@" ;;
   add-phrase)     add_phrase ;;
   add-phrases)    add_phrases ;;
   "")             run_all ;;
   *)
-    echo "Usage: $0 {list-phrases [keyword]|get-phrase <id>|delete-phrase <id>|add-phrase|add-phrases}"
+    echo "Usage: $0 {list-phrases [keyword]|get-phrase <id>|update-phrase <id> '<json>'|delete-phrase <id>|add-phrase|add-phrases}"
     echo "       $0            (no args: run all tests in sequence)"
     exit 1
     ;;

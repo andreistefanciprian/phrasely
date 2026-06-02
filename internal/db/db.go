@@ -30,6 +30,14 @@ type CreatePhraseRequest struct {
 	Note    string `json:"note"`
 }
 
+// UpdatePhraseRequest holds the fields that may be updated on an existing phrase.
+// Pointer fields allow partial updates: nil means "leave this field unchanged".
+type UpdatePhraseRequest struct {
+	Phrase  *string `json:"phrase"`
+	Keyword *string `json:"keyword"`
+	Note    *string `json:"note"`
+}
+
 // Store is the interface all database implementations must satisfy.
 // Methods for each domain (phrases, collections, etc.) will be added here as we build them.
 type Store interface {
@@ -41,6 +49,8 @@ type Store interface {
 	GetPhrase(ctx context.Context, id string) (*Phrase, error)
 	// DeletePhrase removes a phrase by ID. Returns ErrNotFound if no match.
 	DeletePhrase(ctx context.Context, id string) error
+	// UpdatePhrase applies a partial update to an existing phrase. Returns ErrNotFound if no match.
+	UpdatePhrase(ctx context.Context, id string, req UpdatePhraseRequest) (*Phrase, error)
 }
 
 type PostgresStore struct {
@@ -120,6 +130,28 @@ func (s *PostgresStore) DeletePhrase(ctx context.Context, id string) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+// UpdatePhrase applies a partial update using COALESCE: nil fields keep their current DB value.
+// Returns ErrNotFound if no row matches the given ID.
+func (s *PostgresStore) UpdatePhrase(ctx context.Context, id string, req UpdatePhraseRequest) (*Phrase, error) {
+	var p Phrase
+	err := s.Pool.QueryRow(ctx,
+		`UPDATE phrases
+		 SET phrase   = COALESCE($1, phrase),
+		     keyword  = COALESCE($2, keyword),
+		     note     = COALESCE($3, note)
+		 WHERE id = $4
+		 RETURNING id, phrase, keyword, note, created_at, updated_at`,
+		req.Phrase, req.Keyword, req.Note, id,
+	).Scan(&p.ID, &p.Phrase, &p.Keyword, &p.Note, &p.CreatedAt, &p.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("update phrase: %w", err)
+	}
+	return &p, nil
 }
 
 // CreatePhrase inserts a new phrase and returns the full record including DB-generated fields.
