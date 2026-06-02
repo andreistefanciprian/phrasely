@@ -51,8 +51,8 @@ func TestListPhrases_ReturnsAll(t *testing.T) {
 	store := &mockStore{
 		listPhrases: func(_ context.Context, keyword string) ([]db.Phrase, error) {
 			return []db.Phrase{
-				{ID: "1", Phrase: "It was serendipitous.", Keyword: "serendipitous"},
-				{ID: "2", Phrase: "A fortuitous meeting.", Keyword: "fortuitous"},
+				{ID: "1", Phrase: "It was serendipitous.", Keywords: []string{"serendipitous"}},
+				{ID: "2", Phrase: "A fortuitous meeting.", Keywords: []string{"fortuitous"}},
 			}, nil
 		},
 	}
@@ -116,7 +116,7 @@ func TestListPhrases_KeywordFilter(t *testing.T) {
 				t.Errorf("expected keyword %q, got %q", "serendipitous", keyword)
 			}
 			return []db.Phrase{
-				{ID: "1", Phrase: "It was serendipitous.", Keyword: "serendipitous"},
+				{ID: "1", Phrase: "It was serendipitous.", Keywords: []string{"serendipitous"}},
 			}, nil
 		},
 	}
@@ -140,7 +140,7 @@ const validUUID = "550e8400-e29b-41d4-a716-446655440000"
 func TestGetPhrase_Success(t *testing.T) {
 	store := &mockStore{
 		getPhrase: func(_ context.Context, id string) (*db.Phrase, error) {
-			return &db.Phrase{ID: id, Phrase: "It was serendipitous.", Keyword: "serendipitous"}, nil
+			return &db.Phrase{ID: id, Phrase: "It was serendipitous.", Keywords: []string{"serendipitous"}}, nil
 		},
 	}
 
@@ -213,7 +213,7 @@ func TestUpdatePhrase_Success(t *testing.T) {
 	updated := "updated note"
 	store := &mockStore{
 		updatePhrase: func(_ context.Context, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
-			return &db.Phrase{ID: validUUID, Phrase: "It was serendipitous.", Keyword: "serendipitous", Note: *req.Note}, nil
+			return &db.Phrase{ID: validUUID, Phrase: "It was serendipitous.", Keywords: []string{"serendipitous"}, Note: *req.Note}, nil
 		},
 	}
 
@@ -282,7 +282,7 @@ func TestUpdatePhrase_EmptyFieldValues(t *testing.T) {
 		body string
 	}{
 		{"empty phrase", `{"phrase":""}`},
-		{"empty keyword", `{"keyword":""}`},
+		{"empty keywords", `{"keywords":[]}`},
 	}
 
 	for _, tc := range tests {
@@ -395,7 +395,7 @@ func TestCreatePhrase_Success(t *testing.T) {
 			return &db.Phrase{
 				ID:        "some-uuid",
 				Phrase:    req.Phrase,
-				Keyword:   req.Keyword,
+				Keywords:  req.Keywords,
 				Note:      req.Note,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
@@ -406,7 +406,7 @@ func TestCreatePhrase_Success(t *testing.T) {
 	srv := newTestServer(store)
 	defer srv.Close()
 
-	body := `{"phrase":"It was serendipitous.","keyword":"serendipitous","note":"A happy accident."}`
+	body := `{"phrase":"It was serendipitous.","keywords":["serendipitous"],"note":"A happy accident."}`
 	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(body))
 	if err != nil {
 		t.Fatal(err)
@@ -421,8 +421,8 @@ func TestCreatePhrase_Success(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if got.Keyword != "serendipitous" {
-		t.Errorf("expected keyword %q, got %q", "serendipitous", got.Keyword)
+	if got.Keywords[0] != "serendipitous" {
+		t.Errorf("expected keyword %q, got %q", "serendipitous", got.Keywords[0])
 	}
 }
 
@@ -442,8 +442,8 @@ func TestCreatePhrase_MissingFields(t *testing.T) {
 		name string
 		body string
 	}{
-		{"missing phrase", `{"keyword":"serendipitous"}`},
-		{"missing keyword", `{"phrase":"It was serendipitous."}`},
+		{"missing phrase", `{"keywords":["serendipitous"]}`},
+		{"missing keywords", `{"phrase":"It was serendipitous."}`},
 		{"empty body", `{}`},
 	}
 
@@ -495,7 +495,7 @@ func TestCreatePhrase_UnknownFields(t *testing.T) {
 	srv := newTestServer(store)
 	defer srv.Close()
 
-	body := `{"phrase":"It was serendipitous.","keyword":"serendipitous","unknown_field":"oops"}`
+	body := `{"phrase":"It was serendipitous.","keywords":["serendipitous"],"unknown_field":"oops"}`
 	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(body))
 	if err != nil {
 		t.Fatal(err)
@@ -519,7 +519,7 @@ func TestCreatePhrase_BodyTooLarge(t *testing.T) {
 	defer srv.Close()
 
 	// Build a payload larger than maxBodyBytes (1 KB)
-	oversized := `{"phrase":"` + string(make([]byte, 2048)) + `","keyword":"test"}`
+	oversized := `{"phrase":"` + string(make([]byte, 2048)) + `","keywords":["test"]}`
 	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(oversized))
 	if err != nil {
 		t.Fatal(err)

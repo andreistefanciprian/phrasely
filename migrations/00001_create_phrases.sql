@@ -13,8 +13,10 @@ CREATE TABLE phrases (
     -- matching the "phrase" field in phrases.json
     phrase     TEXT        NOT NULL,
 
-    -- The word or expression being illustrated (used for search/filtering)
-    keyword    TEXT        NOT NULL,
+    -- One or more keywords illustrated by the phrase.
+    -- Stored as an array so compound entries ("unfettered vs inalienable") need no string parsing.
+    -- source_urls aligns by index: keywords[0] → source_urls[0].
+    keywords   TEXT[]      NOT NULL,
 
     -- Usage guidance: when and how to use the word
     note       TEXT        NOT NULL DEFAULT '',
@@ -27,8 +29,8 @@ CREATE TABLE phrases (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Index on keyword so filtering by word is fast even with thousands of phrases
-CREATE INDEX idx_phrases_keyword ON phrases (keyword);
+-- GIN index on keywords array enables fast ANY() lookups across the array elements
+CREATE INDEX idx_phrases_keywords ON phrases USING GIN (keywords);
 
 -- Reusable function: sets updated_at to NOW() on any UPDATE.
 -- Defined once here; other tables can reuse it by creating their own trigger pointing at it.

@@ -49,17 +49,17 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reject a body that has no fields at all — nothing to update
-	if req.Phrase == nil && req.Keyword == nil && req.Note == nil {
+	if req.Phrase == nil && req.Keywords == nil && req.Note == nil {
 		respondErr(w, http.StatusBadRequest, "at least one field must be provided")
 		return
 	}
-	// phrase and keyword are required when provided — empty string is not a valid value
+	// phrase cannot be set to empty; keywords array cannot be set to empty
 	if req.Phrase != nil && *req.Phrase == "" {
 		respondErr(w, http.StatusBadRequest, "phrase cannot be empty")
 		return
 	}
-	if req.Keyword != nil && *req.Keyword == "" {
-		respondErr(w, http.StatusBadRequest, "keyword cannot be empty")
+	if req.Keywords != nil && len(req.Keywords) == 0 {
+		respondErr(w, http.StatusBadRequest, "keywords cannot be empty")
 		return
 	}
 
@@ -158,9 +158,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// phrase and keyword are required; note is optional
-	if req.Phrase == "" || req.Keyword == "" {
-		respondErr(w, http.StatusBadRequest, "phrase and keyword are required")
+	// phrase and at least one keyword are required; note is optional
+	if req.Phrase == "" || len(req.Keywords) == 0 {
+		respondErr(w, http.StatusBadRequest, "phrase and at least one keyword are required")
 		return
 	}
 
