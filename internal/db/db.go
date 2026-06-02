@@ -83,8 +83,9 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, keyword string) ([]Phra
 	args := []any{}
 
 	if keyword != "" {
-		// EXISTS + ILIKE across the array — matches any element that contains the search term
-		query += ` WHERE EXISTS (SELECT 1 FROM unnest(keywords) k WHERE k ILIKE $1)`
+		// array_to_string flattens keywords into a single string so the trigram GIN index is used.
+		// This makes ILIKE '%term%' fast even as the table grows.
+		query += ` WHERE array_to_string(keywords, ' ') ILIKE $1`
 		args = append(args, "%"+keyword+"%")
 	}
 	query += ` ORDER BY created_at DESC`
