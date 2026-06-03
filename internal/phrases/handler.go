@@ -107,7 +107,8 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 // update handles PATCH /api/v1/phrases/{id}.
-// Only fields present in the request body are updated; omitted fields keep their current value.
+// Only non-null fields in the request body are updated; omitted fields and
+// explicit JSON null values both leave the current value unchanged.
 func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserIDFromContext(r.Context())
 	id, ok := parseID(w, r)
