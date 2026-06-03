@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -112,7 +111,8 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusUnauthorized, map[string]string{"error": "token already used"})
 		return
 	}
-	if time.Now().After(record.ExpiresAt) {
+	// !Before means >= — matches the DB's expires_at > NOW() so both agree on the boundary.
+	if !time.Now().Before(record.ExpiresAt) {
 		respond(w, http.StatusUnauthorized, map[string]string{"error": "token expired"})
 		return
 	}
@@ -131,12 +131,7 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Issue a signed JWT containing the user ID
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": record.UserID,
-		"exp": time.Now().Add(jwtTTL).Unix(),
-		"iat": time.Now().Unix(),
-	})
-	signed, err := token.SignedString(h.jwtSecret)
+	signed, err := signJWT(record.UserID, h.jwtSecret, jwtTTL)
 	if err != nil {
 		slog.Error("sign jwt", "error", err)
 		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to issue token"})
