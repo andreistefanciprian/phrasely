@@ -16,6 +16,21 @@ CREATE TABLE users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- One-time tokens emailed to the user as a magic link.
+-- expires_at: 15 minutes from creation.
+-- used_at: set when the token is consumed; null means unused.
+CREATE TABLE magic_link_tokens (
+    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token      UUID        NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at    TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Index so token lookups (by token value) are fast
+CREATE INDEX idx_magic_link_tokens_token ON magic_link_tokens (token);
+
 CREATE TABLE phrases (
     -- UUID primary key: globally unique, safe to expose in URLs, no sequential ID guessing
     id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,6 +99,7 @@ CREATE TRIGGER phrases_set_updated_at
 DROP TRIGGER IF EXISTS phrases_set_updated_at ON phrases;
 DROP FUNCTION IF EXISTS set_updated_at;
 DROP TABLE IF EXISTS phrases;
+DROP TABLE IF EXISTS magic_link_tokens;
 DROP TABLE IF EXISTS users;
 DROP FUNCTION IF EXISTS headwords_text(TEXT[]);
 
