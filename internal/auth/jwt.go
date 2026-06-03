@@ -22,9 +22,9 @@ func signJWT(userID string, secret []byte, ttl time.Duration) (string, error) {
 	return signed, nil
 }
 
-// parseJWT validates a signed JWT and returns the user ID from the sub claim.
+// ParseJWT validates a signed JWT and returns the user ID from the sub claim.
 // Returns an error if the token is invalid, expired, or tampered with.
-func parseJWT(tokenStr string, secret []byte) (string, error) {
+func ParseJWT(tokenStr string, secret []byte) (string, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 		// Ensure the signing method is what we expect — reject tokens signed with other algorithms.
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
