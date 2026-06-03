@@ -13,6 +13,23 @@ import (
 // ErrNotFound is returned when a requested record does not exist in the database.
 var ErrNotFound = errors.New("not found")
 
+// User represents a registered user identified by email.
+type User struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// MagicLinkToken is a single-use token tied to a user, valid for 15 minutes.
+type MagicLinkToken struct {
+	ID        string     `json:"id"`
+	UserID    string     `json:"user_id"`
+	Token     string     `json:"token"`
+	ExpiresAt time.Time  `json:"expires_at"`
+	UsedAt    *time.Time `json:"used_at"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
 // Phrase represents a single phrase record as stored in the database.
 type Phrase struct {
 	ID         string    `json:"id"`
@@ -45,15 +62,17 @@ type UpdatePhraseRequest struct {
 // Methods for each domain (phrases, collections, etc.) will be added here as we build them.
 type Store interface {
 	Close()
+
+	// Phrase methods
 	CreatePhrase(ctx context.Context, req CreatePhraseRequest) (*Phrase, error)
-	// ListPhrases returns all phrases, optionally filtered by headword (case-insensitive partial match).
 	ListPhrases(ctx context.Context, headword string) ([]Phrase, error)
-	// GetPhrase returns a single phrase by ID. Returns ErrNotFound if no match.
 	GetPhrase(ctx context.Context, id string) (*Phrase, error)
-	// DeletePhrase removes a phrase by ID. Returns ErrNotFound if no match.
 	DeletePhrase(ctx context.Context, id string) error
-	// UpdatePhrase applies a partial update to an existing phrase. Returns ErrNotFound if no match.
 	UpdatePhrase(ctx context.Context, id string, req UpdatePhraseRequest) (*Phrase, error)
+
+	// Auth methods
+	UpsertUser(ctx context.Context, email string) (*User, error)
+	CreateMagicLinkToken(ctx context.Context, userID string, expiresAt time.Time) (*MagicLinkToken, error)
 }
 
 type PostgresStore struct {
@@ -179,4 +198,50 @@ func (s *PostgresStore) CreatePhrase(ctx context.Context, req CreatePhraseReques
 		return nil, fmt.Errorf("create phrase: %w", err)
 	}
 	return &p, nil
+}
+
+// UpsertUser finds a user by email or creates one if they don't exist yet.
+// Uses DO NOTHING on conflict to avoid writing a new row version for existing users.
+func (s *PostgresStore) UpsertUser(ctx context.Context, email string) (*User, error) {
+	var u User
+
+	// Try insert first; DO NOTHING avoids unnecessary write amplification on conflict.
+	err := s.Pool.QueryRow(ctx,
+		`INSERT INTO users (email)
+		 VALUES ($1)
+		 ON CONFLICT (email) DO NOTHING
+		 RETURNING id, email, created_at`,
+		email,
+	).Scan(&u.ID, &u.Email, &u.CreatedAt)
+
+	if err == nil {
+		return &u, nil // new user created
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("insert user: %w", err)
+	}
+
+	// User already exists — fetch them without touching the row.
+	err = s.Pool.QueryRow(ctx,
+		`SELECT id, email, created_at FROM users WHERE email = $1`, email,
+	).Scan(&u.ID, &u.Email, &u.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("fetch existing user: %w", err)
+	}
+	return &u, nil
+}
+
+// CreateMagicLinkToken inserts a new single-use token for the given user.
+func (s *PostgresStore) CreateMagicLinkToken(ctx context.Context, userID string, expiresAt time.Time) (*MagicLinkToken, error) {
+	var t MagicLinkToken
+	err := s.Pool.QueryRow(ctx,
+		`INSERT INTO magic_link_tokens (user_id, expires_at)
+		 VALUES ($1, $2)
+		 RETURNING id, user_id, token, expires_at, used_at, created_at`,
+		userID, expiresAt,
+	).Scan(&t.ID, &t.UserID, &t.Token, &t.ExpiresAt, &t.UsedAt, &t.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("create magic link token: %w", err)
+	}
+	return &t, nil
 }

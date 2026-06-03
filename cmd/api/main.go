@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/andreistefanciprian/phrasely/internal/auth"
 	"github.com/andreistefanciprian/phrasely/internal/curate"
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
@@ -65,6 +66,12 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}).Methods(http.MethodGet)
 
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:" + port
+	}
+
+	auth.NewHandler(store, baseURL).RegisterRoutes(r)
 	phrases.NewHandler(store).RegisterRoutes(r)
 
 	// Curate endpoint is optional — only registered when an API key is configured.
