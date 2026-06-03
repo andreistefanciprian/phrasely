@@ -71,7 +71,13 @@ func main() {
 		baseURL = "http://localhost:" + port
 	}
 
-	auth.NewHandler(store, baseURL).RegisterRoutes(r)
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		slog.Error("JWT_SECRET is not set")
+		os.Exit(1)
+	}
+
+	auth.NewHandler(store, baseURL, jwtSecret).RegisterRoutes(r)
 	phrases.NewHandler(store).RegisterRoutes(r)
 
 	// Curate endpoint is optional — only registered when an API key is configured.
