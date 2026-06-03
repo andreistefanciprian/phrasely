@@ -46,6 +46,9 @@ CREATE TABLE phrases (
 -- GIN index on headwords array enables fast ANY() lookups across the array elements
 CREATE INDEX idx_phrases_headwords ON phrases USING GIN (headwords);
 
+-- Index on user_id so FK cascade deletes and per-user phrase queries don't scan the full table
+CREATE INDEX idx_phrases_user_id ON phrases (user_id);
+
 -- Postgres requires index expression functions to be IMMUTABLE.
 -- array_to_string is only STABLE, so we wrap it in an IMMUTABLE function.
 CREATE OR REPLACE FUNCTION headwords_text(TEXT[])
@@ -82,6 +85,6 @@ DROP TRIGGER IF EXISTS phrases_set_updated_at ON phrases;
 DROP FUNCTION IF EXISTS set_updated_at;
 DROP TABLE IF EXISTS phrases;
 DROP TABLE IF EXISTS users;
-DROP FUNCTION IF EXISTS headwords_text;
+DROP FUNCTION IF EXISTS headwords_text(TEXT[]);
 
 -- +goose StatementEnd
