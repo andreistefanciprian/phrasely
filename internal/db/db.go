@@ -201,18 +201,32 @@ func (s *PostgresStore) CreatePhrase(ctx context.Context, req CreatePhraseReques
 }
 
 // UpsertUser finds a user by email or creates one if they don't exist yet.
-// Safe to call on every magic link request.
+// Uses DO NOTHING on conflict to avoid writing a new row version for existing users.
 func (s *PostgresStore) UpsertUser(ctx context.Context, email string) (*User, error) {
 	var u User
+
+	// Try insert first; DO NOTHING avoids unnecessary write amplification on conflict.
 	err := s.Pool.QueryRow(ctx,
 		`INSERT INTO users (email)
 		 VALUES ($1)
-		 ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+		 ON CONFLICT (email) DO NOTHING
 		 RETURNING id, email, created_at`,
 		email,
 	).Scan(&u.ID, &u.Email, &u.CreatedAt)
+
+	if err == nil {
+		return &u, nil // new user created
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("insert user: %w", err)
+	}
+
+	// User already exists — fetch them without touching the row.
+	err = s.Pool.QueryRow(ctx,
+		`SELECT id, email, created_at FROM users WHERE email = $1`, email,
+	).Scan(&u.ID, &u.Email, &u.CreatedAt)
 	if err != nil {
-		return nil, fmt.Errorf("upsert user: %w", err)
+		return nil, fmt.Errorf("fetch existing user: %w", err)
 	}
 	return &u, nil
 }
