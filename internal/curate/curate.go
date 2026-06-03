@@ -104,18 +104,18 @@ JSON shape:
 }
 `
 
-// Curater calls the OpenAI API to curate a raw phrase input.
-type Curater struct {
+// Curator calls the OpenAI API to curate a raw phrase input.
+type Curator struct {
 	client *openai.Client
 }
 
-func NewCurater(apiKey string) *Curater {
-	return &Curater{client: openai.NewClient(apiKey)}
+func NewCurator(apiKey string) *Curator {
+	return &Curator{client: openai.NewClient(apiKey)}
 }
 
 // Curate takes a raw phrase from the user and returns a structured, corrected phrase
 // ready to be saved, with headwords, a usage note, and Merriam-Webster URLs.
-func (c *Curater) Curate(ctx context.Context, input string) (*db.CreatePhraseRequest, error) {
+func (c *Curator) Curate(ctx context.Context, input string) (*db.CreatePhraseRequest, error) {
 	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{

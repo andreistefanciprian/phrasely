@@ -9,11 +9,11 @@ import (
 )
 
 type Handler struct {
-	curater *Curater
+	curator *Curator
 }
 
-func NewHandler(curater *Curater) *Handler {
-	return &Handler{curater: curater}
+func NewHandler(curator *Curator) *Handler {
+	return &Handler{curator: curator}
 }
 
 func (h *Handler) RegisterRoutes(r *mux.Router) {
@@ -39,7 +39,7 @@ func (h *Handler) curate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.curater.Curate(r.Context(), req.Input)
+	result, err := h.curator.Curate(r.Context(), req.Input)
 	if err != nil {
 		slog.Error("curate phrase", "error", err)
 		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to curate phrase"})
