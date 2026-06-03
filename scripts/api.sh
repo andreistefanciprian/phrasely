@@ -56,7 +56,7 @@ add_phrase() {
     -H "Content-Type: application/json" \
     -d '{
       "phrase": "It was serendipitous, we met at the right time.",
-      "keywords": ["serendipitous"],
+      "headwords": ["serendipitous"],
       "note": "A happy accident with a pleasant outcome.",
       "source_urls": ["https://www.merriam-webster.com/dictionary/serendipitous"]
     }' | jq

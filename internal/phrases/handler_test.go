@@ -109,7 +109,7 @@ func TestListPhrases_EmptyReturnsArray(t *testing.T) {
 	}
 }
 
-func TestListPhrases_KeywordFilter(t *testing.T) {
+func TestListPhrases_HeadwordFilter(t *testing.T) {
 	store := &mockStore{
 		listPhrases: func(_ context.Context, headword string) ([]db.Phrase, error) {
 			if headword != "serendipitous" {
@@ -447,7 +447,7 @@ func TestCreatePhrase_Success(t *testing.T) {
 		t.Fatalf("decode response: %v", err)
 	}
 	if got.Headwords[0] != "serendipitous" {
-		t.Errorf("expected keyword %q, got %q", "serendipitous", got.Headwords[0])
+		t.Errorf("expected headword %q, got %q", "serendipitous", got.Headwords[0])
 	}
 }
 

@@ -122,7 +122,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 }
 
 // list handles GET /api/v1/phrases.
-// Accepts an optional ?headword= query param for filtering by keyword.
+// Accepts an optional ?headword= query param for filtering by headword.
 // Always returns a JSON array — empty array when there are no results.
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	headword := r.URL.Query().Get("headword")

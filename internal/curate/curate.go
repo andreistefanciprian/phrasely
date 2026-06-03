@@ -114,7 +114,7 @@ func NewCurater(apiKey string) *Curater {
 }
 
 // Curate takes a raw phrase from the user and returns a structured, corrected phrase
-// ready to be saved, with keywords, a usage note, and Merriam-Webster URLs.
+// ready to be saved, with headwords, a usage note, and Merriam-Webster URLs.
 func (c *Curater) Curate(ctx context.Context, input string) (*db.CreatePhraseRequest, error) {
 	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,

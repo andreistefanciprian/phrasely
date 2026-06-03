@@ -36,7 +36,7 @@ type CreatePhraseRequest struct {
 // Pointer fields allow partial updates: nil means "leave this field unchanged".
 type UpdatePhraseRequest struct {
 	Phrase     *string  `json:"phrase"`
-	Headwords  []string `json:"headwords"` // nil = leave unchanged; when provided, must contain at least one keyword
+	Headwords  []string `json:"headwords"` // nil = leave unchanged; when provided, must contain at least one headword
 	Note       *string  `json:"note"`
 	SourceURLs []string `json:"source_urls"` // nil = leave unchanged; [] = clear all URLs
 }
@@ -148,7 +148,7 @@ func (s *PostgresStore) UpdatePhrase(ctx context.Context, id string, req UpdateP
 		     note        = COALESCE($3, note),
 		     source_urls = CASE WHEN $4::text[] IS NOT NULL THEN $4 ELSE source_urls END
 		 WHERE id = $5
-		 RETURNING id, phrase, keywords, note, source_urls, created_at, updated_at`,
+		 RETURNING id, phrase, headwords, note, source_urls, created_at, updated_at`,
 		req.Phrase, req.Headwords, req.Note, req.SourceURLs, id,
 	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -172,7 +172,7 @@ func (s *PostgresStore) CreatePhrase(ctx context.Context, req CreatePhraseReques
 	err := s.Pool.QueryRow(ctx,
 		`INSERT INTO phrases (phrase, headwords, note, source_urls)
 		 VALUES ($1, $2, $3, $4)
-		 RETURNING id, phrase, keywords, note, source_urls, created_at, updated_at`,
+		 RETURNING id, phrase, headwords, note, source_urls, created_at, updated_at`,
 		req.Phrase, req.Headwords, req.Note, req.SourceURLs,
 	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
