@@ -13,6 +13,7 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/auth"
 	"github.com/andreistefanciprian/phrasely/internal/curate"
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
 	"github.com/andreistefanciprian/phrasely/migrations"
 	"github.com/gorilla/mux"
@@ -76,6 +77,8 @@ func main() {
 		slog.Error("JWT_SECRET is not set")
 		os.Exit(1)
 	}
+
+	r.Use(middleware.Authenticate(jwtSecret))
 
 	auth.NewHandler(store, baseURL, jwtSecret).RegisterRoutes(r)
 	phrases.NewHandler(store).RegisterRoutes(r)

@@ -131,7 +131,7 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Issue a signed JWT containing the user ID
-	signed, err := signJWT(record.UserID, h.jwtSecret, jwtTTL)
+	signed, err := SignJWT(record.UserID, string(h.jwtSecret), jwtTTL)
 	if err != nil {
 		slog.Error("sign jwt", "error", err)
 		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to issue token"})
