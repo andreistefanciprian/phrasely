@@ -28,8 +28,6 @@ CREATE TABLE magic_link_tokens (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Index so token lookups (by token value) are fast
-CREATE INDEX idx_magic_link_tokens_token ON magic_link_tokens (token);
 
 CREATE TABLE phrases (
     -- UUID primary key: globally unique, safe to expose in URLs, no sequential ID guessing
