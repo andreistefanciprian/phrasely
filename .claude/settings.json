@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rm -rf cmd internal migrations docker-compose.yml go.mod go.sum && ls)"
+      "Bash(rm -rf cmd internal migrations docker-compose.yml go.mod go.sum && ls)",
+      "Bash(sed -i '' 's/listPhrases: func\\(_ context.Context, userID string, headword string\\) \\(\\\\[\\\\]db.Phrase, error\\) {/listPhrases: func\\(_ context.Context, userID string, headword string\\) \\([]db.Phrase, error\\) {\\\\n\\\\t\\\\t\\\\tif userID != testUserID { t.Errorf\\(\"expected userID %q, got %q\", testUserID, userID\\) }/g' /Users/stefanandrei/Documents/Projects/phrasezzly/internal/phrases/handler_test.go)",
+      "Bash(sed -i '' 's/getPhrase: func\\(_ context.Context, userID string, id string\\) \\(\\\\*db.Phrase, error\\) {/getPhrase: func\\(_ context.Context, userID string, id string\\) \\(*db.Phrase, error\\) {\\\\n\\\\t\\\\t\\\\tif userID != testUserID { t.Errorf\\(\"expected userID %q, got %q\", testUserID, userID\\) }/g' /Users/stefanandrei/Documents/Projects/phrasezzly/internal/phrases/handler_test.go)",
+      "Bash(sed -i '' 's/createPhrase: func\\(_ context.Context, userID string, req db.CreatePhraseRequest\\) \\(\\\\*db.Phrase, error\\) {/createPhrase: func\\(_ context.Context, userID string, req db.CreatePhraseRequest\\) \\(*db.Phrase, error\\) {\\\\n\\\\t\\\\t\\\\tif userID != testUserID { t.Errorf\\(\"expected userID %q, got %q\", testUserID, userID\\) }/g' /Users/stefanandrei/Documents/Projects/phrasezzly/internal/phrases/handler_test.go)"
     ],
     "additionalDirectories": [
       "/Users/stefanandrei/Documents/Projects/phrasezzly/cmd"
