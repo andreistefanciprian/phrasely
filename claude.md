@@ -30,28 +30,23 @@ A platform for building and sharing English phrase collections, with AI-powered 
 
 ## API endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/health` | Health check |
-| GET | `/api/v1/phrases` | List phrases (optional `?headword=` filter) |
-| GET | `/api/v1/phrases/{id}` | Get phrase by ID |
-| POST | `/api/v1/phrases` | Create a phrase |
-| PATCH | `/api/v1/phrases/{id}` | Update a phrase (partial) |
-| DELETE | `/api/v1/phrases/{id}` | Delete a phrase |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/health` | public | Health check |
+| POST | `/auth/request` | public | Send magic link to email |
+| GET | `/auth/verify?token=` | public | Verify token → JWT |
+| GET | `/api/v1/phrases` | JWT | List user's phrases (optional `?headword=` filter) |
+| GET | `/api/v1/phrases/{id}` | JWT | Get phrase by ID |
+| POST | `/api/v1/phrases` | JWT | Create a phrase |
+| PATCH | `/api/v1/phrases/{id}` | JWT | Update a phrase (partial) |
+| DELETE | `/api/v1/phrases/{id}` | JWT | Delete a phrase |
+| POST | `/api/v1/phrases/curate` | JWT | Curate a raw phrase via OpenAI |
 
-## Auth plan (magic link — in progress)
+## Auth (magic link — complete)
 
 - JWT expiry: 30 days; token expiry: 15 min; tokens are single-use
-- In dev: magic link logged to stdout (no email needed)
-- `phrases.user_id` nullable for now; made required once middleware is wired
-- No collections yet — phrases owned directly by user (Option B)
-
-| PR | What |
-|---|---|
-| PR 12 | `users` table + `user_id` nullable FK on `phrases` |
-| PR 13 | `magic_link_tokens` table + `POST /auth/request` |
-| PR 14 | `GET /auth/verify?token=` → signed JWT |
-| PR 15 | JWT middleware wired to protected routes |
+- In dev: magic link logged to stdout; in prod: email via Resend (not yet wired)
+- Phrases scoped to `user_id` from JWT context on all endpoints
 
 ## Frontend plan (not started)
 
@@ -80,5 +75,10 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - **PR 9** — `headwords TEXT[]` replacing `keyword TEXT`; trigram index for substring search
 - **PR 10** — fix trigram index (IMMUTABLE wrapper function)
 - **PR 11** — `POST /api/v1/phrases/curate` powered by OpenAI gpt-4o-mini
+- **PR 12** — `users` table + `user_id` nullable FK on `phrases`
+- **PR 13** — `magic_link_tokens` table + `POST /auth/request` (logs link to stdout in dev)
+- **PR 14** — `GET /auth/verify?token=` → signed JWT; `signJWT`/`parseJWT` helpers; auth tests
+- **PR 15** — JWT middleware scoping all routes; `WWW-Authenticate` header; middleware tests; `scripts/api.sh` full auth flow
+- **PR 16** — all phrase endpoints scoped to authenticated user (`user_id` injected from JWT context)
 
 ## Data Model
