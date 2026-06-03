@@ -2,28 +2,35 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
-const magicLinkTTL = 15 * time.Minute
+const (
+	magicLinkTTL = 15 * time.Minute
+	jwtTTL       = 30 * 24 * time.Hour // 30 days
+)
 
 type Handler struct {
-	store   db.Store
-	baseURL string // used to build the magic link; e.g. "http://localhost:8080"
+	store     db.Store
+	baseURL   string // used to build the magic link; e.g. "http://localhost:8080"
+	jwtSecret []byte // signs and verifies JWTs
 }
 
-func NewHandler(store db.Store, baseURL string) *Handler {
-	return &Handler{store: store, baseURL: baseURL}
+func NewHandler(store db.Store, baseURL, jwtSecret string) *Handler {
+	return &Handler{store: store, baseURL: baseURL, jwtSecret: []byte(jwtSecret)}
 }
 
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/auth/request", h.request).Methods(http.MethodPost)
+	r.HandleFunc("/auth/verify", h.verify).Methods(http.MethodGet)
 }
 
 type requestBody struct {
@@ -70,6 +77,68 @@ func (h *Handler) request(w http.ResponseWriter, r *http.Request) {
 	slog.Info("magic link", "email", body.Email, "link", link)
 
 	respond(w, http.StatusOK, map[string]string{"message": "magic link sent"})
+}
+
+// verify handles GET /auth/verify?token=<uuid>.
+// It validates the token (exists, not expired, not used), marks it used,
+// and returns a signed JWT the client uses for all subsequent requests.
+func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
+	rawToken := r.URL.Query().Get("token")
+	if rawToken == "" {
+		respond(w, http.StatusBadRequest, map[string]string{"error": "token is required"})
+		return
+	}
+	// Validate UUID format before hitting the DB — a non-UUID value would
+	// cause a Postgres cast error that would surface as a 500.
+	if _, err := uuid.Parse(rawToken); err != nil {
+		respond(w, http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+		return
+	}
+
+	record, err := h.store.GetMagicLinkToken(r.Context(), rawToken)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respond(w, http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+			return
+		}
+		slog.Error("get magic link token", "error", err)
+		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to verify token"})
+		return
+	}
+
+	// Token must be unused and not expired
+	if record.UsedAt != nil {
+		respond(w, http.StatusUnauthorized, map[string]string{"error": "token already used"})
+		return
+	}
+	// !Before means >= — matches the DB's expires_at > NOW() so both agree on the boundary.
+	if !time.Now().Before(record.ExpiresAt) {
+		respond(w, http.StatusUnauthorized, map[string]string{"error": "token expired"})
+		return
+	}
+
+	// Atomically consume the token — guards against concurrent requests
+	// claiming the same token. ErrNotFound means it was already used or
+	// expired between our SELECT and this UPDATE.
+	if err := h.store.MarkTokenUsed(r.Context(), record.ID); err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respond(w, http.StatusUnauthorized, map[string]string{"error": "token already used or expired"})
+			return
+		}
+		slog.Error("mark token used", "error", err)
+		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to verify token"})
+		return
+	}
+
+	// Issue a signed JWT containing the user ID
+	signed, err := signJWT(record.UserID, h.jwtSecret, jwtTTL)
+	if err != nil {
+		slog.Error("sign jwt", "error", err)
+		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to issue token"})
+		return
+	}
+
+	respond(w, http.StatusOK, map[string]string{"token": signed})
 }
 
 func respond(w http.ResponseWriter, status int, body any) {

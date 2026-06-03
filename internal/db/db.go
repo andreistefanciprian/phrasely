@@ -73,6 +73,8 @@ type Store interface {
 	// Auth methods
 	UpsertUser(ctx context.Context, email string) (*User, error)
 	CreateMagicLinkToken(ctx context.Context, userID string, expiresAt time.Time) (*MagicLinkToken, error)
+	GetMagicLinkToken(ctx context.Context, token string) (*MagicLinkToken, error)
+	MarkTokenUsed(ctx context.Context, tokenID string) error
 }
 
 type PostgresStore struct {
@@ -244,4 +246,41 @@ func (s *PostgresStore) CreateMagicLinkToken(ctx context.Context, userID string,
 		return nil, fmt.Errorf("create magic link token: %w", err)
 	}
 	return &t, nil
+}
+
+// GetMagicLinkToken fetches a token record by its token value.
+// Returns ErrNotFound if no match.
+func (s *PostgresStore) GetMagicLinkToken(ctx context.Context, token string) (*MagicLinkToken, error) {
+	var t MagicLinkToken
+	err := s.Pool.QueryRow(ctx,
+		`SELECT id, user_id, token, expires_at, used_at, created_at
+		 FROM magic_link_tokens WHERE token = $1`, token,
+	).Scan(&t.ID, &t.UserID, &t.Token, &t.ExpiresAt, &t.UsedAt, &t.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get magic link token: %w", err)
+	}
+	return &t, nil
+}
+
+// MarkTokenUsed atomically consumes the token in a single UPDATE.
+// The WHERE clause guards against race conditions: only succeeds if the token
+// is still unused and not yet expired. Returns ErrNotFound if another request
+// already consumed it, or if it expired between SELECT and UPDATE.
+func (s *PostgresStore) MarkTokenUsed(ctx context.Context, tokenID string) error {
+	tag, err := s.Pool.Exec(ctx,
+		`UPDATE magic_link_tokens
+		 SET used_at = NOW()
+		 WHERE id = $1 AND used_at IS NULL AND expires_at > NOW()`,
+		tokenID,
+	)
+	if err != nil {
+		return fmt.Errorf("mark token used: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
