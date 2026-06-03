@@ -39,13 +39,19 @@ A platform for building and sharing English phrase collections, with AI-powered 
 | PATCH | `/api/v1/phrases/{id}` | Update a phrase (partial) |
 | DELETE | `/api/v1/phrases/{id}` | Delete a phrase |
 
-## Auth plan (magic link — not started)
+## Auth plan (magic link — in progress)
 
-1. **Tables**: `users` (id, email, created_at), `magic_link_tokens` (id, user_id, token, expires_at, used_at)
-2. `POST /auth/request` — upsert user by email, generate token, send link via email (log to stdout in dev)
-3. `GET /auth/verify?token=` — validate token (not expired, not used), mark used, return signed JWT
-4. **JWT middleware** — validates `Authorization: Bearer <token>` on all protected routes
-5. JWT expiry: 30 days; token expiry: 15 min; tokens are single-use
+- JWT expiry: 30 days; token expiry: 15 min; tokens are single-use
+- In dev: magic link logged to stdout (no email needed)
+- `phrases.user_id` nullable for now; made required once middleware is wired
+- No collections yet — phrases owned directly by user (Option B)
+
+| PR | What |
+|---|---|
+| PR 12 | `users` table + `user_id` nullable FK on `phrases` |
+| PR 13 | `magic_link_tokens` table + `POST /auth/request` |
+| PR 14 | `GET /auth/verify?token=` → signed JWT |
+| PR 15 | JWT middleware wired to protected routes |
 
 ## Frontend plan (not started)
 
@@ -71,5 +77,8 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - **PR 6** — `GET /api/v1/phrases/{id}` with UUID validation
 - **PR 7** — `DELETE /api/v1/phrases/{id}`
 - **PR 8** — `PATCH /api/v1/phrases/{id}` with partial update via COALESCE
+- **PR 9** — `headwords TEXT[]` replacing `keyword TEXT`; trigram index for substring search
+- **PR 10** — fix trigram index (IMMUTABLE wrapper function)
+- **PR 11** — `POST /api/v1/phrases/curate` powered by OpenAI gpt-4o-mini
 
 ## Data Model

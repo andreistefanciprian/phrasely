@@ -9,6 +9,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- can use an index instead of scanning every row.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- users are identified by email; no password ever stored.
+CREATE TABLE users (
+    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    email      TEXT        UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE phrases (
     -- UUID primary key: globally unique, safe to expose in URLs, no sequential ID guessing
     id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -29,12 +36,18 @@ CREATE TABLE phrases (
     -- Empty array for phrases without external references.
     source_urls TEXT[]      NOT NULL DEFAULT '{}',
 
+    -- Nullable for now; required once JWT middleware is wired.
+    user_id    UUID        REFERENCES users(id) ON DELETE CASCADE,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- GIN index on headwords array enables fast ANY() lookups across the array elements
 CREATE INDEX idx_phrases_headwords ON phrases USING GIN (headwords);
+
+-- Index on user_id so FK cascade deletes and per-user phrase queries don't scan the full table
+CREATE INDEX idx_phrases_user_id ON phrases (user_id);
 
 -- Postgres requires index expression functions to be IMMUTABLE.
 -- array_to_string is only STABLE, so we wrap it in an IMMUTABLE function.
@@ -71,6 +84,7 @@ CREATE TRIGGER phrases_set_updated_at
 DROP TRIGGER IF EXISTS phrases_set_updated_at ON phrases;
 DROP FUNCTION IF EXISTS set_updated_at;
 DROP TABLE IF EXISTS phrases;
-DROP FUNCTION IF EXISTS headwords_text;
+DROP TABLE IF EXISTS users;
+DROP FUNCTION IF EXISTS headwords_text(TEXT[]);
 
 -- +goose StatementEnd
