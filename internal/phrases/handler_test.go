@@ -16,28 +16,28 @@ import (
 // mockStore satisfies db.Store without a real database.
 // Each test sets only the functions it needs; unset functions will panic if called.
 type mockStore struct {
-	createPhrase func(ctx context.Context, req db.CreatePhraseRequest) (*db.Phrase, error)
-	listPhrases  func(ctx context.Context, headword string) ([]db.Phrase, error)
-	getPhrase    func(ctx context.Context, id string) (*db.Phrase, error)
-	deletePhrase func(ctx context.Context, id string) error
-	updatePhrase func(ctx context.Context, id string, req db.UpdatePhraseRequest) (*db.Phrase, error)
+	createPhrase func(ctx context.Context, userID string, req db.CreatePhraseRequest) (*db.Phrase, error)
+	listPhrases  func(ctx context.Context, userID string, headword string) ([]db.Phrase, error)
+	getPhrase    func(ctx context.Context, userID string, id string) (*db.Phrase, error)
+	deletePhrase func(ctx context.Context, userID string, id string) error
+	updatePhrase func(ctx context.Context, userID string, id string, req db.UpdatePhraseRequest) (*db.Phrase, error)
 }
 
 func (m *mockStore) Close() {}
-func (m *mockStore) CreatePhrase(ctx context.Context, req db.CreatePhraseRequest) (*db.Phrase, error) {
-	return m.createPhrase(ctx, req)
+func (m *mockStore) CreatePhrase(ctx context.Context, userID string, req db.CreatePhraseRequest) (*db.Phrase, error) {
+	return m.createPhrase(ctx, userID, req)
 }
-func (m *mockStore) ListPhrases(ctx context.Context, headword string) ([]db.Phrase, error) {
-	return m.listPhrases(ctx, headword)
+func (m *mockStore) ListPhrases(ctx context.Context, userID string, headword string) ([]db.Phrase, error) {
+	return m.listPhrases(ctx, userID, headword)
 }
-func (m *mockStore) GetPhrase(ctx context.Context, id string) (*db.Phrase, error) {
-	return m.getPhrase(ctx, id)
+func (m *mockStore) GetPhrase(ctx context.Context, userID string, id string) (*db.Phrase, error) {
+	return m.getPhrase(ctx, userID, id)
 }
-func (m *mockStore) DeletePhrase(ctx context.Context, id string) error {
-	return m.deletePhrase(ctx, id)
+func (m *mockStore) DeletePhrase(ctx context.Context, userID string, id string) error {
+	return m.deletePhrase(ctx, userID, id)
 }
-func (m *mockStore) UpdatePhrase(ctx context.Context, id string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
-	return m.updatePhrase(ctx, id, req)
+func (m *mockStore) UpdatePhrase(ctx context.Context, userID string, id string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
+	return m.updatePhrase(ctx, userID, id, req)
 }
 
 // Auth methods — not used in phrase tests; panic if called unexpectedly.
@@ -63,7 +63,7 @@ func newTestServer(store db.Store) *httptest.Server {
 
 func TestListPhrases_ReturnsAll(t *testing.T) {
 	store := &mockStore{
-		listPhrases: func(_ context.Context, headword string) ([]db.Phrase, error) {
+		listPhrases: func(_ context.Context, _ string, headword string) ([]db.Phrase, error) {
 			return []db.Phrase{
 				{ID: "1", Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
 				{ID: "2", Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
@@ -95,7 +95,7 @@ func TestListPhrases_ReturnsAll(t *testing.T) {
 
 func TestListPhrases_EmptyReturnsArray(t *testing.T) {
 	store := &mockStore{
-		listPhrases: func(_ context.Context, _ string) ([]db.Phrase, error) {
+		listPhrases: func(_ context.Context, _ string, _ string) ([]db.Phrase, error) {
 			return []db.Phrase{}, nil
 		},
 	}
@@ -125,7 +125,7 @@ func TestListPhrases_EmptyReturnsArray(t *testing.T) {
 
 func TestListPhrases_HeadwordFilter(t *testing.T) {
 	store := &mockStore{
-		listPhrases: func(_ context.Context, headword string) ([]db.Phrase, error) {
+		listPhrases: func(_ context.Context, _ string, headword string) ([]db.Phrase, error) {
 			if headword != "serendipitous" {
 				t.Errorf("expected headword %q, got %q", "serendipitous", headword)
 			}
@@ -153,7 +153,7 @@ const validUUID = "550e8400-e29b-41d4-a716-446655440000"
 
 func TestGetPhrase_Success(t *testing.T) {
 	store := &mockStore{
-		getPhrase: func(_ context.Context, id string) (*db.Phrase, error) {
+		getPhrase: func(_ context.Context, _ string, id string) (*db.Phrase, error) {
 			return &db.Phrase{ID: id, Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}}, nil
 		},
 	}
@@ -182,7 +182,7 @@ func TestGetPhrase_Success(t *testing.T) {
 
 func TestGetPhrase_NotFound(t *testing.T) {
 	store := &mockStore{
-		getPhrase: func(_ context.Context, _ string) (*db.Phrase, error) {
+		getPhrase: func(_ context.Context, _ string, _ string) (*db.Phrase, error) {
 			return nil, db.ErrNotFound
 		},
 	}
@@ -203,7 +203,7 @@ func TestGetPhrase_NotFound(t *testing.T) {
 
 func TestGetPhrase_InvalidID(t *testing.T) {
 	store := &mockStore{
-		getPhrase: func(_ context.Context, _ string) (*db.Phrase, error) {
+		getPhrase: func(_ context.Context, _ string, _ string) (*db.Phrase, error) {
 			t.Error("store should not be called for an invalid UUID")
 			return nil, nil
 		},
@@ -225,7 +225,7 @@ func TestGetPhrase_InvalidID(t *testing.T) {
 
 func TestUpdatePhrase_SourceURLsOnly(t *testing.T) {
 	store := &mockStore{
-		updatePhrase: func(_ context.Context, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
+		updatePhrase: func(_ context.Context, _ string, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
 			return &db.Phrase{ID: validUUID, SourceURLs: req.SourceURLs}, nil
 		},
 	}
@@ -251,7 +251,7 @@ func TestUpdatePhrase_SourceURLsOnly(t *testing.T) {
 func TestUpdatePhrase_Success(t *testing.T) {
 	updated := "updated note"
 	store := &mockStore{
-		updatePhrase: func(_ context.Context, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
+		updatePhrase: func(_ context.Context, _ string, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
 			return &db.Phrase{ID: validUUID, Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}, Note: *req.Note}, nil
 		},
 	}
@@ -283,7 +283,7 @@ func TestUpdatePhrase_Success(t *testing.T) {
 
 func TestUpdatePhrase_EmptyBody(t *testing.T) {
 	store := &mockStore{
-		updatePhrase: func(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
+		updatePhrase: func(_ context.Context, _ string, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
 			t.Error("store should not be called when no fields provided")
 			return nil, nil
 		},
@@ -307,7 +307,7 @@ func TestUpdatePhrase_EmptyBody(t *testing.T) {
 
 func TestUpdatePhrase_EmptyFieldValues(t *testing.T) {
 	store := &mockStore{
-		updatePhrase: func(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
+		updatePhrase: func(_ context.Context, _ string, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
 			t.Error("store should not be called when provided fields are empty strings")
 			return nil, nil
 		},
@@ -343,7 +343,7 @@ func TestUpdatePhrase_EmptyFieldValues(t *testing.T) {
 
 func TestUpdatePhrase_NotFound(t *testing.T) {
 	store := &mockStore{
-		updatePhrase: func(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
+		updatePhrase: func(_ context.Context, _ string, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
 			return nil, db.ErrNotFound
 		},
 	}
@@ -366,7 +366,7 @@ func TestUpdatePhrase_NotFound(t *testing.T) {
 
 func TestDeletePhrase_Success(t *testing.T) {
 	store := &mockStore{
-		deletePhrase: func(_ context.Context, _ string) error { return nil },
+		deletePhrase: func(_ context.Context, _ string, _ string) error { return nil },
 	}
 
 	srv := newTestServer(store)
@@ -386,7 +386,7 @@ func TestDeletePhrase_Success(t *testing.T) {
 
 func TestDeletePhrase_NotFound(t *testing.T) {
 	store := &mockStore{
-		deletePhrase: func(_ context.Context, _ string) error { return db.ErrNotFound },
+		deletePhrase: func(_ context.Context, _ string, _ string) error { return db.ErrNotFound },
 	}
 
 	srv := newTestServer(store)
@@ -406,7 +406,7 @@ func TestDeletePhrase_NotFound(t *testing.T) {
 
 func TestDeletePhrase_InvalidID(t *testing.T) {
 	store := &mockStore{
-		deletePhrase: func(_ context.Context, _ string) error {
+		deletePhrase: func(_ context.Context, _ string, _ string) error {
 			t.Error("store should not be called for an invalid UUID")
 			return nil
 		},
@@ -429,7 +429,7 @@ func TestDeletePhrase_InvalidID(t *testing.T) {
 
 func TestCreatePhrase_Success(t *testing.T) {
 	store := &mockStore{
-		createPhrase: func(_ context.Context, req db.CreatePhraseRequest) (*db.Phrase, error) {
+		createPhrase: func(_ context.Context, _ string, req db.CreatePhraseRequest) (*db.Phrase, error) {
 			// Return a phrase that mirrors what Postgres would give back
 			return &db.Phrase{
 				ID:        "some-uuid",
@@ -468,7 +468,7 @@ func TestCreatePhrase_Success(t *testing.T) {
 func TestCreatePhrase_MissingFields(t *testing.T) {
 	// Store should never be called when validation fails
 	store := &mockStore{
-		createPhrase: func(_ context.Context, _ db.CreatePhraseRequest) (*db.Phrase, error) {
+		createPhrase: func(_ context.Context, _ string, _ db.CreatePhraseRequest) (*db.Phrase, error) {
 			t.Error("store should not be called on invalid input")
 			return nil, nil
 		},
@@ -503,7 +503,7 @@ func TestCreatePhrase_MissingFields(t *testing.T) {
 
 func TestCreatePhrase_InvalidJSON(t *testing.T) {
 	store := &mockStore{
-		createPhrase: func(_ context.Context, _ db.CreatePhraseRequest) (*db.Phrase, error) {
+		createPhrase: func(_ context.Context, _ string, _ db.CreatePhraseRequest) (*db.Phrase, error) {
 			t.Error("store should not be called on invalid JSON")
 			return nil, nil
 		},
@@ -525,7 +525,7 @@ func TestCreatePhrase_InvalidJSON(t *testing.T) {
 
 func TestCreatePhrase_UnknownFields(t *testing.T) {
 	store := &mockStore{
-		createPhrase: func(_ context.Context, _ db.CreatePhraseRequest) (*db.Phrase, error) {
+		createPhrase: func(_ context.Context, _ string, _ db.CreatePhraseRequest) (*db.Phrase, error) {
 			t.Error("store should not be called when unknown fields are present")
 			return nil, nil
 		},
@@ -548,7 +548,7 @@ func TestCreatePhrase_UnknownFields(t *testing.T) {
 
 func TestCreatePhrase_BodyTooLarge(t *testing.T) {
 	store := &mockStore{
-		createPhrase: func(_ context.Context, _ db.CreatePhraseRequest) (*db.Phrase, error) {
+		createPhrase: func(_ context.Context, _ string, _ db.CreatePhraseRequest) (*db.Phrase, error) {
 			t.Error("store should not be called when body exceeds size limit")
 			return nil, nil
 		},

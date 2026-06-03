@@ -41,19 +41,19 @@ func (m *mockStore) GetMagicLinkToken(ctx context.Context, token string) (*db.Ma
 func (m *mockStore) MarkTokenUsed(ctx context.Context, tokenID string) error {
 	return m.markTokenUsed(ctx, tokenID)
 }
-func (m *mockStore) CreatePhrase(_ context.Context, _ db.CreatePhraseRequest) (*db.Phrase, error) {
+func (m *mockStore) CreatePhrase(_ context.Context, _ string, _ db.CreatePhraseRequest) (*db.Phrase, error) {
 	panic("not expected in auth tests")
 }
-func (m *mockStore) ListPhrases(_ context.Context, _ string) ([]db.Phrase, error) {
+func (m *mockStore) ListPhrases(_ context.Context, _ string, _ string) ([]db.Phrase, error) {
 	panic("not expected in auth tests")
 }
-func (m *mockStore) GetPhrase(_ context.Context, _ string) (*db.Phrase, error) {
+func (m *mockStore) GetPhrase(_ context.Context, _ string, _ string) (*db.Phrase, error) {
 	panic("not expected in auth tests")
 }
-func (m *mockStore) DeletePhrase(_ context.Context, _ string) error {
+func (m *mockStore) DeletePhrase(_ context.Context, _ string, _ string) error {
 	panic("not expected in auth tests")
 }
-func (m *mockStore) UpdatePhrase(_ context.Context, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
+func (m *mockStore) UpdatePhrase(_ context.Context, _ string, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
 	panic("not expected in auth tests")
 }
 
