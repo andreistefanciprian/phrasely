@@ -265,13 +265,22 @@ func (s *PostgresStore) GetMagicLinkToken(ctx context.Context, token string) (*M
 	return &t, nil
 }
 
-// MarkTokenUsed stamps used_at on the token so it cannot be reused.
+// MarkTokenUsed atomically consumes the token in a single UPDATE.
+// The WHERE clause guards against race conditions: only succeeds if the token
+// is still unused and not yet expired. Returns ErrNotFound if another request
+// already consumed it, or if it expired between SELECT and UPDATE.
 func (s *PostgresStore) MarkTokenUsed(ctx context.Context, tokenID string) error {
-	_, err := s.Pool.Exec(ctx,
-		`UPDATE magic_link_tokens SET used_at = NOW() WHERE id = $1`, tokenID,
+	tag, err := s.Pool.Exec(ctx,
+		`UPDATE magic_link_tokens
+		 SET used_at = NOW()
+		 WHERE id = $1 AND used_at IS NULL AND expires_at > NOW()`,
+		tokenID,
 	)
 	if err != nil {
 		return fmt.Errorf("mark token used: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
 	}
 	return nil
 }

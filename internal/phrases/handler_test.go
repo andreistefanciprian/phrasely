@@ -40,6 +40,20 @@ func (m *mockStore) UpdatePhrase(ctx context.Context, id string, req db.UpdatePh
 	return m.updatePhrase(ctx, id, req)
 }
 
+// Auth methods — not used in phrase tests; panic if called unexpectedly.
+func (m *mockStore) UpsertUser(_ context.Context, _ string) (*db.User, error) {
+	panic("UpsertUser not expected in phrase tests")
+}
+func (m *mockStore) CreateMagicLinkToken(_ context.Context, _ string, _ time.Time) (*db.MagicLinkToken, error) {
+	panic("CreateMagicLinkToken not expected in phrase tests")
+}
+func (m *mockStore) GetMagicLinkToken(_ context.Context, _ string) (*db.MagicLinkToken, error) {
+	panic("GetMagicLinkToken not expected in phrase tests")
+}
+func (m *mockStore) MarkTokenUsed(_ context.Context, _ string) error {
+	panic("MarkTokenUsed not expected in phrase tests")
+}
+
 // newTestServer wires a Handler with the given store and returns a test HTTP server.
 func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()

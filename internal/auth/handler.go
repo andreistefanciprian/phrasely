@@ -10,6 +10,7 @@ import (
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -88,6 +89,12 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusBadRequest, map[string]string{"error": "token is required"})
 		return
 	}
+	// Validate UUID format before hitting the DB — a non-UUID value would
+	// cause a Postgres cast error that would surface as a 500.
+	if _, err := uuid.Parse(rawToken); err != nil {
+		respond(w, http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+		return
+	}
 
 	record, err := h.store.GetMagicLinkToken(r.Context(), rawToken)
 	if err != nil {
@@ -110,8 +117,14 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Consume the token — single use only
+	// Atomically consume the token — guards against concurrent requests
+	// claiming the same token. ErrNotFound means it was already used or
+	// expired between our SELECT and this UPDATE.
 	if err := h.store.MarkTokenUsed(r.Context(), record.ID); err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respond(w, http.StatusUnauthorized, map[string]string{"error": "token already used or expired"})
+			return
+		}
 		slog.Error("mark token used", "error", err)
 		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to verify token"})
 		return
