@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
@@ -33,8 +34,18 @@ type requestBody struct {
 // It upserts the user by email, generates a magic link token,
 // and logs the link to stdout (in production this would send an email).
 func (h *Handler) request(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
 	var body requestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Email == "" {
+	if err := dec.Decode(&body); err != nil {
+		respond(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	body.Email = strings.TrimSpace(body.Email)
+	if body.Email == "" {
 		respond(w, http.StatusBadRequest, map[string]string{"error": "email is required"})
 		return
 	}
