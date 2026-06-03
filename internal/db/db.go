@@ -17,7 +17,7 @@ var ErrNotFound = errors.New("not found")
 type Phrase struct {
 	ID         string    `json:"id"`
 	Phrase     string    `json:"phrase"`
-	Keywords   []string  `json:"keywords"`
+	Headwords  []string  `json:"headwords"`
 	Note       string    `json:"note"`
 	SourceURLs []string  `json:"source_urls"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -27,7 +27,7 @@ type Phrase struct {
 // CreatePhraseRequest holds the fields needed to insert a new phrase.
 type CreatePhraseRequest struct {
 	Phrase     string   `json:"phrase"`
-	Keywords   []string `json:"keywords"`
+	Headwords  []string `json:"headwords"`
 	Note       string   `json:"note"`
 	SourceURLs []string `json:"source_urls"`
 }
@@ -36,7 +36,7 @@ type CreatePhraseRequest struct {
 // Pointer fields allow partial updates: nil means "leave this field unchanged".
 type UpdatePhraseRequest struct {
 	Phrase     *string  `json:"phrase"`
-	Keywords   []string `json:"keywords"` // nil = leave unchanged; when provided, must contain at least one keyword
+	Headwords  []string `json:"headwords"` // nil = leave unchanged; when provided, must contain at least one headword
 	Note       *string  `json:"note"`
 	SourceURLs []string `json:"source_urls"` // nil = leave unchanged; [] = clear all URLs
 }
@@ -46,8 +46,8 @@ type UpdatePhraseRequest struct {
 type Store interface {
 	Close()
 	CreatePhrase(ctx context.Context, req CreatePhraseRequest) (*Phrase, error)
-	// ListPhrases returns all phrases, optionally filtered by keyword (case-insensitive partial match).
-	ListPhrases(ctx context.Context, keyword string) ([]Phrase, error)
+	// ListPhrases returns all phrases, optionally filtered by headword (case-insensitive partial match).
+	ListPhrases(ctx context.Context, headword string) ([]Phrase, error)
 	// GetPhrase returns a single phrase by ID. Returns ErrNotFound if no match.
 	GetPhrase(ctx context.Context, id string) (*Phrase, error)
 	// DeletePhrase removes a phrase by ID. Returns ErrNotFound if no match.
@@ -77,16 +77,16 @@ func (s *PostgresStore) Close() {
 }
 
 // ListPhrases returns all phrases ordered by creation date, newest first.
-// If keyword is non-empty, results are filtered to phrases where any element matches (case-insensitive).
-func (s *PostgresStore) ListPhrases(ctx context.Context, keyword string) ([]Phrase, error) {
-	query := `SELECT id, phrase, keywords, note, source_urls, created_at, updated_at FROM phrases`
+// If headword is non-empty, results are filtered to phrases where any element matches (case-insensitive).
+func (s *PostgresStore) ListPhrases(ctx context.Context, headword string) ([]Phrase, error) {
+	query := `SELECT id, phrase, headwords, note, source_urls, created_at, updated_at FROM phrases`
 	args := []any{}
 
-	if keyword != "" {
-		// array_to_string flattens keywords into a single string so the trigram GIN index is used.
+	if headword != "" {
+		// array_to_string flattens headwords into a single string so the trigram GIN index is used.
 		// This makes ILIKE '%term%' fast even as the table grows.
-		query += ` WHERE keywords_text(keywords) ILIKE $1`
-		args = append(args, "%"+keyword+"%")
+		query += ` WHERE headwords_text(headwords) ILIKE $1`
+		args = append(args, "%"+headword+"%")
 	}
 	query += ` ORDER BY created_at DESC`
 
@@ -100,7 +100,7 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, keyword string) ([]Phra
 	phrases := []Phrase{}
 	for rows.Next() {
 		var p Phrase
-		if err := rows.Scan(&p.ID, &p.Phrase, &p.Keywords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan phrase: %w", err)
 		}
 		phrases = append(phrases, p)
@@ -112,8 +112,8 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, keyword string) ([]Phra
 func (s *PostgresStore) GetPhrase(ctx context.Context, id string) (*Phrase, error) {
 	var p Phrase
 	err := s.Pool.QueryRow(ctx,
-		`SELECT id, phrase, keywords, note, source_urls, created_at, updated_at FROM phrases WHERE id = $1`, id,
-	).Scan(&p.ID, &p.Phrase, &p.Keywords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
+		`SELECT id, phrase, headwords, note, source_urls, created_at, updated_at FROM phrases WHERE id = $1`, id,
+	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -137,20 +137,20 @@ func (s *PostgresStore) DeletePhrase(ctx context.Context, id string) error {
 }
 
 // UpdatePhrase applies a partial update using COALESCE: nil fields keep their current DB value.
-// For keywords/source_urls: nil = leave unchanged; [] = clear.
+// For headwords/source_urls: nil = leave unchanged; [] = clear.
 // Returns ErrNotFound if no row matches the given ID.
 func (s *PostgresStore) UpdatePhrase(ctx context.Context, id string, req UpdatePhraseRequest) (*Phrase, error) {
 	var p Phrase
 	err := s.Pool.QueryRow(ctx,
 		`UPDATE phrases
 		 SET phrase      = COALESCE($1, phrase),
-		     keywords    = CASE WHEN $2::text[] IS NOT NULL THEN $2 ELSE keywords END,
+		     headwords   = CASE WHEN $2::text[] IS NOT NULL THEN $2 ELSE headwords END,
 		     note        = COALESCE($3, note),
 		     source_urls = CASE WHEN $4::text[] IS NOT NULL THEN $4 ELSE source_urls END
 		 WHERE id = $5
-		 RETURNING id, phrase, keywords, note, source_urls, created_at, updated_at`,
-		req.Phrase, req.Keywords, req.Note, req.SourceURLs, id,
-	).Scan(&p.ID, &p.Phrase, &p.Keywords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
+		 RETURNING id, phrase, headwords, note, source_urls, created_at, updated_at`,
+		req.Phrase, req.Headwords, req.Note, req.SourceURLs, id,
+	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -162,19 +162,19 @@ func (s *PostgresStore) UpdatePhrase(ctx context.Context, id string, req UpdateP
 
 // CreatePhrase inserts a new phrase and returns the full record including DB-generated fields.
 func (s *PostgresStore) CreatePhrase(ctx context.Context, req CreatePhraseRequest) (*Phrase, error) {
-	if req.Keywords == nil {
-		req.Keywords = []string{}
+	if req.Headwords == nil {
+		req.Headwords = []string{}
 	}
 	if req.SourceURLs == nil {
 		req.SourceURLs = []string{}
 	}
 	var p Phrase
 	err := s.Pool.QueryRow(ctx,
-		`INSERT INTO phrases (phrase, keywords, note, source_urls)
+		`INSERT INTO phrases (phrase, headwords, note, source_urls)
 		 VALUES ($1, $2, $3, $4)
-		 RETURNING id, phrase, keywords, note, source_urls, created_at, updated_at`,
-		req.Phrase, req.Keywords, req.Note, req.SourceURLs,
-	).Scan(&p.ID, &p.Phrase, &p.Keywords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
+		 RETURNING id, phrase, headwords, note, source_urls, created_at, updated_at`,
+		req.Phrase, req.Headwords, req.Note, req.SourceURLs,
+	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create phrase: %w", err)
 	}

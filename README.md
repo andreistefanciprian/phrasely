@@ -34,7 +34,7 @@ task test      # run unit tests
 ./scripts/api.sh add-phrases                     # seed a batch of sample phrases
 ./scripts/api.sh add-phrase                      # add a single sample phrase
 ./scripts/api.sh list-phrases                    # list all phrases
-./scripts/api.sh list-phrases serendipitous      # filter by keyword
+./scripts/api.sh list-phrases serendipitous      # filter by headword
 ./scripts/api.sh get-phrase <id>                 # get a single phrase by ID
 ```
 

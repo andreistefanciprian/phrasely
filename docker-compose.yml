@@ -6,6 +6,7 @@ services:
     environment:
       DATABASE_URL: postgres://phrasely:phrasely@db:5432/phrasely?sslmode=disable
       PORT: "8080"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       db:
         condition: service_healthy

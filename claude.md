@@ -19,8 +19,8 @@ A platform for building and sharing English phrase collections, with AI-powered 
 
 ## Open questions
 
-- **Should keywords be required?** Currently POST requires at least one keyword and PATCH cannot set keywords to empty. But should a user be able to save a phrase without identifying the keyword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `keywords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
-- **Empty string keywords** — `{"keywords":[""]}` is currently accepted. Should we validate that each element in the array is non-blank?
+- **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
+- **Empty string headwords** — `{"headwords":[""]}` is currently accepted. Should we validate that each element in the array is non-blank?
 
 ## Git workflow
 
@@ -33,7 +33,7 @@ A platform for building and sharing English phrase collections, with AI-powered 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/health` | Health check |
-| GET | `/api/v1/phrases` | List phrases (optional `?keyword=` filter) |
+| GET | `/api/v1/phrases` | List phrases (optional `?headword=` filter) |
 | GET | `/api/v1/phrases/{id}` | Get phrase by ID |
 | POST | `/api/v1/phrases` | Create a phrase |
 | PATCH | `/api/v1/phrases/{id}` | Update a phrase (partial) |
@@ -50,17 +50,16 @@ A platform for building and sharing English phrase collections, with AI-powered 
 ## Frontend plan (not started)
 
 - **Stack**: Next.js + TailwindCSS + shadcn/ui, deployed on Railway
-- **Home (`/bubble`)**: keyword word cloud — bubble size driven by `localStorage` view counts (no DB writes on click)
-- **Detail (`/phrases?keyword=`)**: phrase cards filtered by keyword; keyboard navigation (space/arrow to shuffle)
-- **Compound keywords**: `keyword` field stores `"word1 vs word2"` as-is; UI splits on ` vs ` to render individual Merriam-Webster links
+- **Home (`/bubble`)**: headword cloud — bubble size driven by `localStorage` view counts (no DB writes on click)
+- **Detail (`/phrases?headword=`)**: phrase cards filtered by headword; keyboard navigation (space/arrow to shuffle)
+- **Compound headwords**: `headwords` array stores multiple entries e.g. `["unfettered","inalienable"]`; UI joins with " vs " and renders individual Merriam-Webster links
 - **Reference**: PhraseFlow (`/Users/stefanandrei/Documents/Projects/PhraseFlow/`) has working bubble implementation — port the placement algorithm into a React component
 
 ## Data model decisions
 
-- `keyword` — plain `TEXT`; compound keywords stored as `"word1 vs word2"`, no separate rows needed
-- `source_urls` — `TEXT[]` array; one URL per keyword (AI generates from Merriam-Webster); empty array for phrases without links
+- `headwords TEXT[]` — array of dictionary headwords or fixed expressions; aligned by index with `source_urls`
+- `source_urls TEXT[]` — one Merriam-Webster URL per headword; AI generates these; empty array for phrases without links
 - `view_count` — tracked in `localStorage` on the frontend only; no DB column needed
-- Next migration adds: `source_urls TEXT[] NOT NULL DEFAULT '{}'`
 
 ## PR log
 
@@ -68,7 +67,7 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - **PR 2** — rename project to phrasely across repo, Go module, Postgres credentials
 - **PR 3** — goose migrations wired into startup; `phrases` table; SQL files embedded into binary via `migrations/embed.go`
 - **PR 4** — `POST /api/v1/phrases` with input validation, unit tests, Taskfile
-- **PR 5** — `GET /api/v1/phrases` with keyword filter
+- **PR 5** — `GET /api/v1/phrases` with headword filter
 - **PR 6** — `GET /api/v1/phrases/{id}` with UUID validation
 - **PR 7** — `DELETE /api/v1/phrases/{id}`
 - **PR 8** — `PATCH /api/v1/phrases/{id}` with partial update via COALESCE

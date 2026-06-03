@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/andreistefanciprian/phrasely/internal/curate"
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
 	"github.com/andreistefanciprian/phrasely/migrations"
@@ -65,6 +66,14 @@ func main() {
 	}).Methods(http.MethodGet)
 
 	phrases.NewHandler(store).RegisterRoutes(r)
+
+	// Curate endpoint is optional — only registered when an API key is configured.
+	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
+		curate.NewHandler(curate.NewCurator(apiKey)).RegisterRoutes(r)
+		slog.Info("curate endpoint enabled")
+	} else {
+		slog.Warn("OPENAI_API_KEY not set — curate endpoint disabled")
+	}
 
 	// --- HTTP server ---
 	// Explicit timeouts prevent slow clients from holding connections open indefinitely.
