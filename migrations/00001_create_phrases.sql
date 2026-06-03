@@ -9,6 +9,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- can use an index instead of scanning every row.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- users are identified by email; no password ever stored.
+CREATE TABLE users (
+    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    email      TEXT        UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE phrases (
     -- UUID primary key: globally unique, safe to expose in URLs, no sequential ID guessing
     id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -28,6 +35,9 @@ CREATE TABLE phrases (
     -- One URL per headword; compound headwords (e.g. "word1 vs word2") get one URL per word.
     -- Empty array for phrases without external references.
     source_urls TEXT[]      NOT NULL DEFAULT '{}',
+
+    -- Nullable for now; required once JWT middleware is wired.
+    user_id    UUID        REFERENCES users(id) ON DELETE CASCADE,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -71,6 +81,7 @@ CREATE TRIGGER phrases_set_updated_at
 DROP TRIGGER IF EXISTS phrases_set_updated_at ON phrases;
 DROP FUNCTION IF EXISTS set_updated_at;
 DROP TABLE IF EXISTS phrases;
+DROP TABLE IF EXISTS users;
 DROP FUNCTION IF EXISTS headwords_text;
 
 -- +goose StatementEnd
