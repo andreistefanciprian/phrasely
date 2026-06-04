@@ -67,9 +67,11 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}).Methods(http.MethodGet)
 
+	// BASE_URL is the frontend origin — magic links point here so the browser
+	// lands on the frontend /auth-verify page, not the API's /auth/verify endpoint.
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:" + port
+		baseURL = "http://localhost:3000"
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
@@ -93,6 +95,7 @@ func main() {
 
 	// --- HTTP server ---
 	// Explicit timeouts prevent slow clients from holding connections open indefinitely.
+	// CORS is not needed — all browser traffic is proxied through nginx (same origin).
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           r,

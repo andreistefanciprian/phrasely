@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Phrases — Phrasely</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--navy);
+      min-height: 100dvh;
+      padding: 6.5rem 1.5rem 4rem;
+    }
+
+    .container { max-width: 680px; margin: 0 auto; }
+
+    .page-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    h1 { font-size: 1.1rem; font-weight: 600; }
+
+    .count {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    .phrase-list { list-style: none; }
+
+    /* --- Phrase row --- */
+    .phrase-item {
+      border-top: 1px solid var(--surface);
+      padding: 1.25rem 0;
+      animation: fadeUp 0.25s ease;
+    }
+
+    .phrase-item:last-child { border-bottom: 1px solid var(--surface); }
+
+    .phrase-text {
+      font-family: 'Lora', Georgia, serif;
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: var(--navy);
+      margin-bottom: 0.4rem;
+    }
+
+    .phrase-text .def { font-style: italic; color: var(--definition); }
+
+    .phrase-meta {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 0.3rem;
+    }
+
+    .phrase-note {
+      font-size: 0.85rem;
+      color: var(--secondary);
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+    }
+
+    .phrase-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+    .btn-link {
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      transition: color 0.15s;
+    }
+
+    .btn-edit  { color: var(--blue); }
+    .btn-edit:hover { color: var(--navy); }
+    .btn-delete { color: var(--muted); }
+    .btn-delete:hover { color: #e53e3e; }
+
+    /* --- Confirm delete --- */
+    .confirm-delete {
+      display: none;
+      font-size: 0.8rem;
+      color: var(--navy);
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .confirm-delete.visible { display: flex; }
+
+    .btn-confirm-yes {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #e53e3e;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 0;
+    }
+
+    .btn-confirm-no {
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 0;
+    }
+
+    /* --- Inline edit form --- */
+    .edit-form {
+      display: none;
+      margin-top: 0.75rem;
+      padding: 1rem;
+      background: var(--surface);
+      border-radius: 10px;
+      gap: 0.75rem;
+      flex-direction: column;
+    }
+
+    .edit-form.visible { display: flex; }
+
+    .edit-form label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .edit-form textarea,
+    .edit-form input[type="text"] {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border-default);
+      border-radius: 7px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.95rem;
+      color: var(--navy);
+      background: var(--white);
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .edit-form input[type="text"] { font-family: 'Inter', sans-serif; font-size: 0.875rem; }
+
+    .edit-form textarea:focus,
+    .edit-form input[type="text"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(90,84,255,0.1);
+    }
+
+    .edit-form-actions { display: flex; gap: 0.6rem; margin-top: 0.25rem; }
+
+    .btn-save {
+      padding: 0.5rem 1.1rem;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-save:hover { opacity: 0.88; }
+    .btn-save:disabled { opacity: 0.5; cursor: default; }
+
+    .btn-cancel {
+      padding: 0.5rem 1rem;
+      background: none;
+      border: 1px solid var(--border-default);
+      border-radius: 7px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .btn-cancel:hover { color: var(--navy); }
+
+    .edit-error { font-size: 0.8rem; color: #e53e3e; }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 3rem 0;
+    }
+
+    .empty a { color: var(--teal); text-decoration: none; }
+    .empty a:hover { text-decoration: underline; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<script src="navbar.js"></script>
+
+<div class="container">
+  <div class="page-header">
+    <h1>My Phrases</h1>
+    <span class="count" id="count"></span>
+  </div>
+  <ul class="phrase-list" id="phrase-list"></ul>
+</div>
+
+<script>
+
+  let phrases = [];
+
+  function token() { return localStorage.getItem('phrasely_token'); }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function format(text) {
+    return escapeHtml(text).replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
+  }
+
+  async function load() {
+    const res = await fetch(`/api/v1/phrases`, {
+      headers: { Authorization: `Bearer ${token()}` },
+    });
+    if (!res.ok) { location.href = 'login.html'; return; }
+    phrases = await res.json();
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('phrase-list');
+    const countEl = document.getElementById('count');
+    countEl.textContent = `${phrases.length} phrase${phrases.length !== 1 ? 's' : ''}`;
+
+    if (phrases.length === 0) {
+      list.innerHTML = '<li class="empty">No phrases yet. <a href="add.html">Add your first →</a></li>';
+      return;
+    }
+
+    list.innerHTML = phrases.map(p => {
+      const id        = escapeHtml(p.id);
+      const phrase    = format(p.phrase);
+      const meta      = escapeHtml((p.headwords || []).join(' vs '));
+      const note      = escapeHtml(p.note || '');
+      const hwVal     = escapeHtml((p.headwords || []).join(', '));
+      const urlsVal   = escapeHtml((p.source_urls || []).join(', '));
+      const phraseVal = escapeHtml(p.phrase || '');
+      const noteVal   = escapeHtml(p.note || '');
+      return `
+      <li class="phrase-item" id="item-${id}">
+        <div class="phrase-text">${phrase}</div>
+        <div class="phrase-meta">${meta}</div>
+        <div class="phrase-note">${note}</div>
+
+        <div class="phrase-actions">
+          <button class="btn-link btn-edit" onclick="openEdit('${id}')">Edit</button>
+          <button class="btn-link btn-delete" onclick="showConfirm('${id}')">Delete</button>
+          <div class="confirm-delete" id="confirm-${id}">
+            Delete this phrase?
+            <button class="btn-confirm-yes" onclick="deletePhrase('${id}')">Yes, delete</button>
+            <button class="btn-confirm-no" onclick="hideConfirm('${id}')">Cancel</button>
+          </div>
+        </div>
+
+        <div class="edit-form" id="edit-${id}">
+          <div>
+            <label>Phrase</label>
+            <textarea id="ef-phrase-${id}" rows="3">${phraseVal}</textarea>
+          </div>
+          <div>
+            <label>Headwords (comma-separated)</label>
+            <input type="text" id="ef-headwords-${id}" value="${hwVal}">
+          </div>
+          <div>
+            <label>Note</label>
+            <textarea id="ef-note-${id}" rows="2">${noteVal}</textarea>
+          </div>
+          <div>
+            <label>Source URLs (comma-separated)</label>
+            <input type="text" id="ef-urls-${id}" value="${urlsVal}">
+          </div>
+          <div class="edit-form-actions">
+            <button class="btn-save" onclick="saveEdit('${id}')">Save</button>
+            <button class="btn-cancel" onclick="closeEdit('${id}')">Cancel</button>
+            <span class="edit-error" id="ef-error-${id}"></span>
+          </div>
+        </div>
+      </li>`;
+    }).join('');
+  }
+
+  function showConfirm(id) {
+    document.getElementById(`confirm-${id}`).classList.add('visible');
+  }
+
+  function hideConfirm(id) {
+    document.getElementById(`confirm-${id}`).classList.remove('visible');
+  }
+
+  function openEdit(id) {
+    closeAllEdits();
+    document.getElementById(`edit-${id}`).classList.add('visible');
+  }
+
+  function closeEdit(id) {
+    document.getElementById(`edit-${id}`).classList.remove('visible');
+    document.getElementById(`ef-error-${id}`).textContent = '';
+  }
+
+  function closeAllEdits() {
+    document.querySelectorAll('.edit-form').forEach(el => el.classList.remove('visible'));
+    document.querySelectorAll('.edit-error').forEach(el => el.textContent = '');
+  }
+
+  async function saveEdit(id) {
+    const phrase    = document.getElementById(`ef-phrase-${id}`).value.trim();
+    const headwords = document.getElementById(`ef-headwords-${id}`).value
+      .split(',').map(s => s.trim()).filter(Boolean);
+    const note      = document.getElementById(`ef-note-${id}`).value.trim();
+    const sourceUrls = document.getElementById(`ef-urls-${id}`).value
+      .split(',').map(s => s.trim()).filter(Boolean);
+    const errEl     = document.getElementById(`ef-error-${id}`);
+    const saveBtn   = document.querySelector(`#edit-${id} .btn-save`);
+
+    if (!phrase || headwords.length === 0) {
+      errEl.textContent = 'Phrase and at least one headword are required.';
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+
+    let res;
+    try {
+      res = await fetch(`/api/v1/phrases/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+        body: JSON.stringify({ phrase, headwords, note, source_urls: sourceUrls }),
+      });
+    } catch {
+      errEl.textContent = 'Save failed. Please check your connection and try again.';
+      return;
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+    }
+
+    if (res.ok) {
+      const updated = await res.json();
+      const idx = phrases.findIndex(p => p.id === id);
+      if (idx !== -1) phrases[idx] = updated;
+      render();
+    } else {
+      errEl.textContent = 'Save failed. Please try again.';
+    }
+  }
+
+  async function deletePhrase(id) {
+    let res;
+    try {
+      res = await fetch(`/api/v1/phrases/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+    } catch {
+      hideConfirm(id);
+      alert('Delete failed. Please check your connection and try again.');
+      return;
+    }
+
+    if (res.ok) {
+      phrases = phrases.filter(p => p.id !== id);
+      render();
+    } else {
+      hideConfirm(id);
+      alert('Delete failed. Please try again.');
+    }
+  }
+
+  load();
+</script>
+
+</body>
+</html>

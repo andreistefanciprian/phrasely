@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in — Phrasely</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0F1B6E;
+      --blue: #5A54FF;
+      --teal: #1FD3CC;
+      --muted: #9DA3CC;
+      --surface: #EEEEFF;
+      --white: #FFFFFF;
+      --border: #DDE1F5;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--navy);
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .logo { margin-bottom: 2.5rem; }
+    .logo img { width: 115px; height: 98px; }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--navy);
+      outline: none;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="email"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(90,84,255,0.12);
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--blue);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    button[type="submit"]:hover { opacity: 0.88; }
+    button[type="submit"]:disabled { opacity: 0.5; cursor: default; }
+
+    .error {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: #e53e3e;
+    }
+
+    .sent {
+      display: none;
+      padding: 1.25rem;
+      background: var(--surface);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--navy);
+    }
+
+    .sent strong { color: var(--teal); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card { animation: fadeUp 0.3s ease; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <img src="assets/icon-128px.png" alt="Phrasely">
+    </div>
+
+    <div id="form-section">
+      <h1>Sign in to Phrasely</h1>
+      <p class="subtitle">Enter your email and we'll send you a magic link.</p>
+
+      <form id="login-form">
+        <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+        <button type="submit" id="submit-btn">Send magic link</button>
+        <p class="error" id="error-msg"></p>
+      </form>
+    </div>
+
+    <div class="sent" id="sent-section">
+      <p>Check your inbox — we sent a magic link to <strong id="sent-email"></strong>.<br>It expires in 15 minutes.</p>
+    </div>
+  </div>
+
+  <script>
+
+
+    // Already signed in — go home
+    if (localStorage.getItem('phrasely_token')) location.href = 'index.html';
+
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const btn = document.getElementById('submit-btn');
+      const err = document.getElementById('error-msg');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      err.textContent = '';
+
+      const res = await fetch(`/auth/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        document.getElementById('form-section').style.display = 'none';
+        document.getElementById('sent-email').textContent = email;
+        document.getElementById('sent-section').style.display = 'block';
+      } else {
+        err.textContent = 'Something went wrong. Please try again.';
+        btn.disabled = false;
+        btn.textContent = 'Send magic link';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -4,7 +4,12 @@
       "Bash(rm -rf cmd internal migrations docker-compose.yml go.mod go.sum && ls)",
       "Bash(sed -i '' 's/listPhrases: func\\(_ context.Context, userID string, headword string\\) \\(\\\\[\\\\]db.Phrase, error\\) {/listPhrases: func\\(_ context.Context, userID string, headword string\\) \\([]db.Phrase, error\\) {\\\\n\\\\t\\\\t\\\\tif userID != testUserID { t.Errorf\\(\"expected userID %q, got %q\", testUserID, userID\\) }/g' /Users/stefanandrei/Documents/Projects/phrasezzly/internal/phrases/handler_test.go)",
       "Bash(sed -i '' 's/getPhrase: func\\(_ context.Context, userID string, id string\\) \\(\\\\*db.Phrase, error\\) {/getPhrase: func\\(_ context.Context, userID string, id string\\) \\(*db.Phrase, error\\) {\\\\n\\\\t\\\\t\\\\tif userID != testUserID { t.Errorf\\(\"expected userID %q, got %q\", testUserID, userID\\) }/g' /Users/stefanandrei/Documents/Projects/phrasezzly/internal/phrases/handler_test.go)",
-      "Bash(sed -i '' 's/createPhrase: func\\(_ context.Context, userID string, req db.CreatePhraseRequest\\) \\(\\\\*db.Phrase, error\\) {/createPhrase: func\\(_ context.Context, userID string, req db.CreatePhraseRequest\\) \\(*db.Phrase, error\\) {\\\\n\\\\t\\\\t\\\\tif userID != testUserID { t.Errorf\\(\"expected userID %q, got %q\", testUserID, userID\\) }/g' /Users/stefanandrei/Documents/Projects/phrasezzly/internal/phrases/handler_test.go)"
+      "Bash(sed -i '' 's/createPhrase: func\\(_ context.Context, userID string, req db.CreatePhraseRequest\\) \\(\\\\*db.Phrase, error\\) {/createPhrase: func\\(_ context.Context, userID string, req db.CreatePhraseRequest\\) \\(*db.Phrase, error\\) {\\\\n\\\\t\\\\t\\\\tif userID != testUserID { t.Errorf\\(\"expected userID %q, got %q\", testUserID, userID\\) }/g' /Users/stefanandrei/Documents/Projects/phrasezzly/internal/phrases/handler_test.go)",
+      "Bash(npx create-next-app@latest frontend --typescript --tailwind --eslint --app --no-src-dir --import-alias @/* --yes)",
+      "Bash(npx shadcn@latest init --yes)",
+      "Bash(npx shadcn@latest init -d)",
+      "Bash(npm --prefix /Users/stefanandrei/Documents/Projects/phrasezzly/frontend install @fontsource/inter @fontsource/lora)",
+      "Bash(npm --prefix /Users/stefanandrei/Documents/Projects/phrasezzly/frontend run build)"
     ],
     "additionalDirectories": [
       "/Users/stefanandrei/Documents/Projects/phrasezzly/cmd"
