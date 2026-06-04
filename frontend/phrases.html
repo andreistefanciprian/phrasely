@@ -261,47 +261,56 @@
       return;
     }
 
-    list.innerHTML = phrases.map((p, i) => `
-      <li class="phrase-item" id="item-${p.id}">
-        <div class="phrase-text">${format(p.phrase)}</div>
-        <div class="phrase-meta">${(p.headwords || []).join(' vs ')}</div>
-        <div class="phrase-note">${p.note || ''}</div>
+    list.innerHTML = phrases.map(p => {
+      const id        = escapeHtml(p.id);
+      const phrase    = format(p.phrase);
+      const meta      = escapeHtml((p.headwords || []).join(' vs '));
+      const note      = escapeHtml(p.note || '');
+      const hwVal     = escapeHtml((p.headwords || []).join(', '));
+      const urlsVal   = escapeHtml((p.source_urls || []).join(', '));
+      const phraseVal = escapeHtml(p.phrase || '');
+      const noteVal   = escapeHtml(p.note || '');
+      return `
+      <li class="phrase-item" id="item-${id}">
+        <div class="phrase-text">${phrase}</div>
+        <div class="phrase-meta">${meta}</div>
+        <div class="phrase-note">${note}</div>
 
         <div class="phrase-actions">
-          <button class="btn-link btn-edit" onclick="openEdit('${p.id}')">Edit</button>
-          <button class="btn-link btn-delete" onclick="showConfirm('${p.id}')">Delete</button>
-          <div class="confirm-delete" id="confirm-${p.id}">
+          <button class="btn-link btn-edit" onclick="openEdit('${id}')">Edit</button>
+          <button class="btn-link btn-delete" onclick="showConfirm('${id}')">Delete</button>
+          <div class="confirm-delete" id="confirm-${id}">
             Delete this phrase?
-            <button class="btn-confirm-yes" onclick="deletePhrase('${p.id}')">Yes, delete</button>
-            <button class="btn-confirm-no" onclick="hideConfirm('${p.id}')">Cancel</button>
+            <button class="btn-confirm-yes" onclick="deletePhrase('${id}')">Yes, delete</button>
+            <button class="btn-confirm-no" onclick="hideConfirm('${id}')">Cancel</button>
           </div>
         </div>
 
-        <div class="edit-form" id="edit-${p.id}">
+        <div class="edit-form" id="edit-${id}">
           <div>
             <label>Phrase</label>
-            <textarea id="ef-phrase-${p.id}" rows="3">${p.phrase || ''}</textarea>
+            <textarea id="ef-phrase-${id}" rows="3">${phraseVal}</textarea>
           </div>
           <div>
             <label>Headwords (comma-separated)</label>
-            <input type="text" id="ef-headwords-${p.id}" value="${(p.headwords || []).join(', ')}">
+            <input type="text" id="ef-headwords-${id}" value="${hwVal}">
           </div>
           <div>
             <label>Note</label>
-            <textarea id="ef-note-${p.id}" rows="2">${p.note || ''}</textarea>
+            <textarea id="ef-note-${id}" rows="2">${noteVal}</textarea>
           </div>
           <div>
             <label>Source URLs (comma-separated)</label>
-            <input type="text" id="ef-urls-${p.id}" value="${(p.source_urls || []).join(', ')}">
+            <input type="text" id="ef-urls-${id}" value="${urlsVal}">
           </div>
           <div class="edit-form-actions">
-            <button class="btn-save" onclick="saveEdit('${p.id}')">Save</button>
-            <button class="btn-cancel" onclick="closeEdit('${p.id}')">Cancel</button>
-            <span class="edit-error" id="ef-error-${p.id}"></span>
+            <button class="btn-save" onclick="saveEdit('${id}')">Save</button>
+            <button class="btn-cancel" onclick="closeEdit('${id}')">Cancel</button>
+            <span class="edit-error" id="ef-error-${id}"></span>
           </div>
         </div>
-      </li>
-    `).join('');
+      </li>`;
+    }).join('');
   }
 
   function showConfirm(id) {

@@ -21,7 +21,8 @@ A platform for building and sharing English phrase collections, with AI-powered 
 
 - **Frontend (nginx)** — public, exposed via load balancer / ingress
 - **API (Go)** — private, only reachable from within the internal network; never directly exposed to the internet
-- This means the CORS origin in production will be the public frontend domain, and the API URL used by the frontend will be an internal service name (not a public URL)
+- nginx reverse-proxies `/api/` and `/auth/` to the API using `API_HOST` env var (`http://api:8080` locally, `http://api.railway.internal:8080` on Railway)
+- All frontend HTML uses relative paths — no hardcoded API URL; CORS not needed (same-origin)
 
 ## Security backlog (not yet implemented)
 

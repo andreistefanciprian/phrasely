@@ -33,6 +33,18 @@
   <p id="msg">Signing you in…</p>
   <script>
 
+    function showError(msg) {
+      const el = document.getElementById('msg');
+      const span = document.createElement('span');
+      span.className = 'error';
+      span.textContent = msg;
+      const a = document.createElement('a');
+      a.href = '/login.html';
+      a.textContent = 'Back to login';
+      el.textContent = '';
+      el.append(span, document.createElement('br'), a);
+    }
+
     const token = new URLSearchParams(location.search).get('token');
 
     if (!token) {
@@ -46,14 +58,10 @@
             localStorage.setItem('phrasely_token', data.token);
             location.href = '/index.html';
           } else {
-            document.getElementById('msg').innerHTML =
-              `<span class="error">${data.error || 'Invalid or expired link.'}</span><br><a href="/login.html">Back to login</a>`;
+            showError(data.error || 'Invalid or expired link.');
           }
         })
-        .catch(() => {
-          document.getElementById('msg').innerHTML =
-            '<span class="error">Something went wrong.</span><br><a href="/login.html">Back to login</a>';
-        });
+        .catch(() => showError('Something went wrong.'));
     }
   </script>
 </body>
