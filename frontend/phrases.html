@@ -234,8 +234,12 @@
 
   function token() { return localStorage.getItem('phrasely_token'); }
 
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
   function format(text) {
-    return (text || '').replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
+    return escapeHtml(text).replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
   }
 
   async function load() {
