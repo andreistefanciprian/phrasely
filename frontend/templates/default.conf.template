@@ -1,0 +1,39 @@
+server {
+    listen 8080;
+    root /usr/share/nginx/html;
+    index login.html;
+
+    # Proxy API and auth traffic to the internal API service.
+    # API_HOST is injected at container startup via envsubst.
+    # Local dev: http://api:8080  |  Railway: http://api.railway.internal:8080
+    location /api/ {
+        proxy_pass ${API_HOST};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /auth/ {
+        proxy_pass ${API_HOST};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /health {
+        proxy_pass ${API_HOST};
+    }
+
+    location = / {
+        try_files /home.html =404;
+    }
+
+    # Magic link landing page — different path from /auth/verify (which proxies to API)
+    location = /auth-verify {
+        try_files /auth-verify.html =404;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

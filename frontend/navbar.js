@@ -1,7 +1,7 @@
 (function () {
   // Redirect to login if no token stored (skip on login/verify pages)
   const isAuthPage = /login\.html|auth-verify\.html|home\.html/.test(location.pathname) ||
-                     location.pathname === '/auth/verify' ||
+                     location.pathname === '/auth-verify' ||
                      location.pathname === '/';
   if (!isAuthPage && !localStorage.getItem('phrasely_token')) {
     location.href = 'login.html';

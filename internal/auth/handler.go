@@ -73,7 +73,9 @@ func (h *Handler) request(w http.ResponseWriter, r *http.Request) {
 
 	// In production: send this link by email.
 	// Locally: log it to stdout so you can click it directly from the terminal.
-	link := h.baseURL + "/auth/verify?token=" + token.Token
+	// /auth-verify is the frontend page; it calls /auth/verify (API) internally.
+	// Keeps the browser landing page separate from the API endpoint.
+	link := h.baseURL + "/auth-verify?token=" + token.Token
 	slog.Info("magic link", "email", body.Email, "link", link)
 
 	respond(w, http.StatusOK, map[string]string{"message": "magic link sent"})

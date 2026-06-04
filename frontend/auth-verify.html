@@ -32,14 +32,14 @@
 <body>
   <p id="msg">Signing you in…</p>
   <script>
-    const API = 'http://localhost:8080';
+
     const token = new URLSearchParams(location.search).get('token');
 
     if (!token) {
       document.getElementById('msg').innerHTML =
         '<span class="error">Invalid link — no token found.</span><br><a href="/login.html">Back to login</a>';
     } else {
-      fetch(`${API}/auth/verify?token=${encodeURIComponent(token)}`)
+      fetch(`/auth/verify?token=${encodeURIComponent(token)}`)
         .then(r => r.json())
         .then(data => {
           if (data.token) {

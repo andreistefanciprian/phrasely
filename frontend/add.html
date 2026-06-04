@@ -204,7 +204,7 @@
 </div>
 
 <script>
-  const API = 'http://localhost:8080';
+
   let curated = null;
 
   document.getElementById('curate-btn').addEventListener('click', async () => {
@@ -220,7 +220,7 @@
     document.getElementById('success-msg').style.display = 'none';
 
     const token = localStorage.getItem('phrasely_token');
-    const res = await fetch(`${API}/api/v1/phrases/curate`, {
+    const res = await fetch(`/api/v1/phrases/curate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -264,7 +264,7 @@
     btn.textContent = 'Saving…';
 
     const token = localStorage.getItem('phrasely_token');
-    const res = await fetch(`${API}/api/v1/phrases`, {
+    const res = await fetch(`/api/v1/phrases`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

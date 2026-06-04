@@ -20,7 +20,6 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver for database/sql, used by goose
 	"github.com/pressly/goose/v3"
-	"github.com/rs/cors"
 )
 
 func main() {
@@ -94,24 +93,12 @@ func main() {
 		slog.Warn("OPENAI_API_KEY not set — curate endpoint disabled")
 	}
 
-	// --- CORS ---
-	// Allow the frontend origin and the standard auth/content-type headers.
-	// CORS_ORIGIN defaults to localhost:3000 for local dev; set it in production.
-	corsOrigin := os.Getenv("CORS_ORIGIN")
-	if corsOrigin == "" {
-		corsOrigin = "http://localhost:3000"
-	}
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{corsOrigin},
-		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"Authorization", "Content-Type"},
-	}).Handler(r)
-
 	// --- HTTP server ---
 	// Explicit timeouts prevent slow clients from holding connections open indefinitely.
+	// CORS is not needed — all browser traffic is proxied through nginx (same origin).
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           corsHandler,
+		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,

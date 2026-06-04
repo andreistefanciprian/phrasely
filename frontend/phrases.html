@@ -229,7 +229,7 @@
 </div>
 
 <script>
-  const API = 'http://localhost:8080';
+
   let phrases = [];
 
   function token() { return localStorage.getItem('phrasely_token'); }
@@ -239,7 +239,7 @@
   }
 
   async function load() {
-    const res = await fetch(`${API}/api/v1/phrases`, {
+    const res = await fetch(`/api/v1/phrases`, {
       headers: { Authorization: `Bearer ${token()}` },
     });
     if (!res.ok) { location.href = 'login.html'; return; }
@@ -341,7 +341,7 @@
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving…';
 
-    const res = await fetch(`${API}/api/v1/phrases/${id}`, {
+    const res = await fetch(`/api/v1/phrases/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -364,7 +364,7 @@
   }
 
   async function deletePhrase(id) {
-    const res = await fetch(`${API}/api/v1/phrases/${id}`, {
+    const res = await fetch(`/api/v1/phrases/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token()}` },
     });

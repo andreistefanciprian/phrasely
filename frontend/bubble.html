@@ -49,7 +49,7 @@
   <div id="bubble"></div>
 
   <script>
-    const API = 'http://localhost:8080';
+
 
     const palette = {
       high: ['#0F1B6E', '#1A2878'],
@@ -74,7 +74,7 @@
       bubble.innerHTML = '';
 
       const token = localStorage.getItem('phrasely_token');
-      const res = await fetch(`${API}/api/v1/phrases`, {
+      const res = await fetch(`/api/v1/phrases`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;

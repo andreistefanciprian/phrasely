@@ -137,7 +137,7 @@
   </div>
 
   <script>
-    const API = 'http://localhost:8080';
+
 
     // Already signed in — go home
     if (localStorage.getItem('phrasely_token')) location.href = 'index.html';
@@ -151,7 +151,7 @@
       btn.textContent = 'Sending…';
       err.textContent = '';
 
-      const res = await fetch(`${API}/auth/request`, {
+      const res = await fetch(`/auth/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

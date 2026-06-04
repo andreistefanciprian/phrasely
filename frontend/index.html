@@ -214,12 +214,12 @@
   <div id="search-results"></div>
 
   <script>
-    const API = 'http://localhost:8080';
+
     let phrases = [];
 
     async function load() {
       const token = localStorage.getItem('phrasely_token');
-      const res = await fetch(`${API}/api/v1/phrases`, {
+      const res = await fetch(`/api/v1/phrases`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) { location.href = 'login.html'; return; }

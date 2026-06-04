@@ -2,12 +2,16 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:80"
+      - "3000:8080"
+    environment:
+      API_HOST: http://api:8080
     depends_on:
       - api
 
   api:
     build: .
+    # Port only exposed for scripts/api.sh direct access in local dev.
+    # In production the API is private — all browser traffic routes through nginx.
     ports:
       - "8080:8080"
     environment:
@@ -16,7 +20,6 @@ services:
       BASE_URL: http://localhost:3000
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGIN: http://localhost:3000
     depends_on:
       db:
         condition: service_healthy
