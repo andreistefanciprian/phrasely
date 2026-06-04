@@ -204,6 +204,11 @@
 </div>
 
 <script>
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
 
   let curated = null;
 
@@ -239,18 +244,35 @@
 
     curated = await res.json();
 
-    // Render preview
+    // Render preview — use DOM nodes for headword links to prevent XSS
     document.getElementById('preview-phrase').innerHTML =
-      curated.phrase.replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
+      escapeHtml(curated.phrase).replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
 
     const headwords = curated.headwords || [];
     const sourceUrls = curated.source_urls || [];
-    document.getElementById('preview-headwords').innerHTML = headwords
-      .map((w, i) => {
-        const href = sourceUrls[i] || `https://www.merriam-webster.com/dictionary/${encodeURIComponent(w)}`;
-        return `<a href="${href}" target="_blank" rel="noopener">${w}</a>`;
-      })
-      .join('<span style="color:var(--muted);font-size:0.7rem;letter-spacing:0.08em"> vs </span>');
+    const hwEl = document.getElementById('preview-headwords');
+    hwEl.textContent = '';
+    headwords.forEach((w, i) => {
+      if (i > 0) {
+        const sep = document.createElement('span');
+        sep.textContent = ' vs ';
+        sep.style.cssText = 'color:var(--muted);font-size:0.7rem;letter-spacing:0.08em';
+        hwEl.appendChild(sep);
+      }
+      const a = document.createElement('a');
+      a.textContent = w;
+      const fallback = `https://www.merriam-webster.com/dictionary/${encodeURIComponent(w)}`;
+      const candidate = sourceUrls[i] || fallback;
+      let href = fallback;
+      try {
+        const u = new URL(candidate, location.origin);
+        if (u.protocol === 'http:' || u.protocol === 'https:') href = u.toString();
+      } catch {}
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      hwEl.appendChild(a);
+    });
 
     document.getElementById('preview-note').textContent = curated.note;
     document.getElementById('review').style.display = 'block';

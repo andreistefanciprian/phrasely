@@ -264,15 +264,32 @@
 
       phraseEl.innerHTML = format(item.phrase);
 
-      // Build keyword links from headwords + source_urls (aligned by index)
+      // Build keyword links using DOM nodes — never innerHTML — so headwords and
+      // source_urls (user-editable) cannot inject markup or javascript: URLs.
       const headwords = item.headwords || [];
       const sourceUrls = item.source_urls || [];
-      keywordEl.innerHTML = headwords
-        .map((w, i) => {
-          const href = sourceUrls[i] || `https://www.merriam-webster.com/dictionary/${encodeURIComponent(w)}`;
-          return `<a href="${href}" target="_blank" rel="noopener">${w}</a>`;
-        })
-        .join('<span style="color:var(--muted);font-size:0.7rem;letter-spacing:0.08em"> vs </span>');
+      keywordEl.textContent = '';
+      headwords.forEach((w, i) => {
+        if (i > 0) {
+          const sep = document.createElement('span');
+          sep.textContent = ' vs ';
+          sep.style.cssText = 'color:var(--muted);font-size:0.7rem;letter-spacing:0.08em';
+          keywordEl.appendChild(sep);
+        }
+        const a = document.createElement('a');
+        a.textContent = w;
+        const fallback = `https://www.merriam-webster.com/dictionary/${encodeURIComponent(w)}`;
+        const candidate = sourceUrls[i] || fallback;
+        let href = fallback;
+        try {
+          const u = new URL(candidate, location.origin);
+          if (u.protocol === 'http:' || u.protocol === 'https:') href = u.toString();
+        } catch {}
+        a.href = href;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        keywordEl.appendChild(a);
+      });
 
       noteEl.textContent = item.note;
 
