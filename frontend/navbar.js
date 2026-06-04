@@ -21,8 +21,8 @@
       <a href="bubble.html" class="nav-link${isBubble ? ' active' : ''}">Bubble</a>
       <a href="phrases.html" class="nav-link${isPhrases ? ' active' : ''}">Phrases</a>
       <a href="add.html" class="nav-link${isAdd ? ' active' : ''}">Add</a>
-      <input id="search-input" type="search" placeholder="Search…">
-      <button id="signout-btn" class="nav-link" style="margin-left:0.5rem;display:flex;align-items:center;" title="Sign out">
+      <input id="search-input" type="search" placeholder="Search…" aria-label="Search phrases">
+      <button id="signout-btn" class="nav-link" style="margin-left:0.5rem;display:flex;align-items:center;" title="Sign out" aria-label="Sign out">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <polyline points="16 17 21 12 16 7"/>
