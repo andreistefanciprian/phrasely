@@ -17,6 +17,19 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - Dependency injection via constructors (urlshortener pattern)
 - `docker compose up --build` to run everything; no local Go needed
 
+## Deployment architecture
+
+- **Frontend (nginx)** — public, exposed via load balancer / ingress
+- **API (Go)** — private, only reachable from within the internal network; never directly exposed to the internet
+- This means the CORS origin in production will be the public frontend domain, and the API URL used by the frontend will be an internal service name (not a public URL)
+
+## Security backlog (not yet implemented)
+
+- **Rate limit curate endpoint** — highest priority; each call costs OpenAI tokens. Target: 20 curations/hour per user using `golang.org/x/time/rate` (in-memory token bucket, no Redis needed).
+- **Rate limit `POST /auth/request`** — public endpoint, no JWT. Target: 5 requests/hour per IP + 2-minute cooldown per email to prevent inbox flooding.
+- **Rate limit phrase CRUD** — lower priority; target: 100 operations/hour per user to prevent DB flooding.
+- Already protected: JWT on all `/api/v1/` routes, CORS, `MaxBytesReader`, server timeouts, non-root container.
+
 ## Open questions
 
 - **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
