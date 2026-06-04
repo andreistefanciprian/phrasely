@@ -1,4 +1,11 @@
 services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
   api:
     build: .
     ports:
@@ -6,8 +13,10 @@ services:
     environment:
       DATABASE_URL: postgres://phrasely:phrasely@db:5432/phrasely?sslmode=disable
       PORT: "8080"
+      BASE_URL: http://localhost:3000
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: http://localhost:3000
     depends_on:
       db:
         condition: service_healthy

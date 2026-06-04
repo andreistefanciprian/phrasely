@@ -20,6 +20,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver for database/sql, used by goose
 	"github.com/pressly/goose/v3"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -67,9 +68,11 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}).Methods(http.MethodGet)
 
+	// BASE_URL is the frontend origin — magic links point here so the browser
+	// lands on the frontend /auth/verify page, not the API directly.
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:" + port
+		baseURL = "http://localhost:3000"
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
@@ -91,11 +94,24 @@ func main() {
 		slog.Warn("OPENAI_API_KEY not set — curate endpoint disabled")
 	}
 
+	// --- CORS ---
+	// Allow the frontend origin and the standard auth/content-type headers.
+	// CORS_ORIGIN defaults to localhost:3000 for local dev; set it in production.
+	corsOrigin := os.Getenv("CORS_ORIGIN")
+	if corsOrigin == "" {
+		corsOrigin = "http://localhost:3000"
+	}
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins: []string{corsOrigin},
+		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
+	}).Handler(r)
+
 	// --- HTTP server ---
 	// Explicit timeouts prevent slow clients from holding connections open indefinitely.
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           r,
+		Handler:           corsHandler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,

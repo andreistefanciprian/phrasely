@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Bubble — Phrasely</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    #bubble {
+      position: fixed;
+      top: 4.5rem;
+      left: 0; right: 0; bottom: 0;
+    }
+
+    .word {
+      position: absolute;
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-weight: 500;
+      white-space: nowrap;
+      text-decoration: none;
+      line-height: 1;
+      opacity: 0;
+      animation: appear 0.4s ease forwards;
+      animation-fill-mode: both;
+      transition: opacity 0.15s;
+    }
+
+    .word:hover { opacity: 0.5 !important; }
+
+    @keyframes appear {
+      from { opacity: 0; transform: scale(0.8); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+<script src="navbar.js"></script>
+
+  <div id="bubble"></div>
+
+  <script>
+    const API = 'http://localhost:8080';
+
+    const palette = {
+      high: ['#0F1B6E', '#1A2878'],
+      mid:  ['#5A54FF', '#6F6BFF', '#1FD3CC'],
+      low:  ['#7A80D4', '#9DA3CC', '#6ECFCB', '#6170B8'],
+    };
+
+    function pickColor(count, max) {
+      if (count === 0) return '#D0D3EA';
+      const t = count / max;
+      const arr = t > 0.6 ? palette.high : t > 0.25 ? palette.mid : palette.low;
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function sizeRem(count, max) {
+      if (count === 0) return 0.7;
+      return 0.85 + (count / max) * 1.45;
+    }
+
+    async function render() {
+      const bubble = document.getElementById('bubble');
+      bubble.innerHTML = '';
+
+      const token = localStorage.getItem('phrasely_token');
+      const res = await fetch(`${API}/api/v1/phrases`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const phrases = await res.json();
+
+      const views = JSON.parse(localStorage.getItem('pf_views') || '{}');
+
+      // Build unique headword labels and their view counts
+      const seen = {};
+      phrases.forEach(p => {
+        const label = p.headwords.join(' vs ');
+        seen[label] = true;
+      });
+
+      const words = Object.keys(seen)
+        .map(label => ({ label, count: views[label] || 0 }))
+        .sort((a, b) => b.count - a.count);
+
+      if (words.length === 0) {
+        bubble.innerHTML = '<p style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:0.9rem">No phrases yet — add some to see your bubble.</p>';
+        return;
+      }
+
+      const max = Math.max(...words.map(w => w.count), 1);
+      const navH = 72;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight - navH;
+      const cx = vw / 2;
+      const cy = vh / 2;
+      const pad = 14;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const logoRadius = 90;
+      const placed = [];
+      const total = words.length;
+      const maxR = Math.min(vw, vh) / 2;
+      let delay = 0;
+
+      function tooCloseToLogo(x, w, y, h) {
+        const wx = x + w / 2, wy = y + h / 2;
+        return Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2) < logoRadius;
+      }
+
+      function overlaps(x, w, y, h, p, gap) {
+        return x < p.x + p.w + gap && x + w + gap > p.x &&
+               y < p.y + p.h + gap && y + h + gap > p.y;
+      }
+
+      words.forEach(({ label, count }, i) => {
+        const rem = sizeRem(count, max);
+        const px = rem * 16;
+        ctx.font = `500 ${px}px Inter, sans-serif`;
+        const tw = ctx.measureText(label).width;
+        const w = tw + pad;
+        const h = px * 1.5;
+
+        const t = i / Math.max(total - 1, 1);
+        const innerR = logoRadius;
+        const outerR = logoRadius + maxR * 0.7 + t * maxR * 0.15;
+
+        let pos = null;
+
+        for (let attempt = 0; attempt < 300; attempt++) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = innerR + Math.random() * (outerR - innerR);
+          const x = Math.round(cx + Math.cos(angle) * r - w / 2);
+          const y = Math.round(cy + Math.sin(angle) * r - h / 2);
+          if (x < pad || x + w > vw - pad || y < pad || y + h > vh - pad) continue;
+          if (tooCloseToLogo(x, w, y, h)) continue;
+          if (!placed.some(p => overlaps(x, w, y, h, p, pad))) { pos = { x, y, w, h }; break; }
+        }
+
+        if (!pos) {
+          for (let attempt = 0; attempt < 400; attempt++) {
+            const x = pad + Math.random() * (vw - w - pad * 2);
+            const y = pad + Math.random() * (vh - h - pad * 2);
+            if (tooCloseToLogo(x, w, y, h)) continue;
+            if (!placed.some(p => overlaps(x, w, y, h, p, pad))) { pos = { x, y, w, h }; break; }
+          }
+        }
+
+        if (!pos) {
+          for (let attempt = 0; attempt < 300; attempt++) {
+            const x = 2 + Math.random() * (vw - w - 4);
+            const y = 2 + Math.random() * (vh - h - 4);
+            if (!placed.some(p => overlaps(x, w, y, h, p, 2))) { pos = { x, y, w, h }; break; }
+          }
+        }
+
+        if (!pos) return;
+        placed.push(pos);
+
+        const el = document.createElement('a');
+        el.textContent = label;
+        el.className = 'word';
+        el.href = `index.html?q=${encodeURIComponent(label)}`;
+        el.style.left = pos.x + 'px';
+        el.style.top  = pos.y + 'px';
+        el.style.fontSize = rem + 'rem';
+        el.style.color = pickColor(count, max);
+        el.style.animationDelay = delay + 'ms';
+        bubble.appendChild(el);
+        delay += 8;
+      });
+    }
+
+    render();
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(render, 200);
+    });
+  </script>
+
+</body>
+</html>

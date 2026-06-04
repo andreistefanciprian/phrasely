@@ -9,6 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.27.1
+	github.com/rs/cors v1.11.1
 	github.com/sashabaranov/go-openai v1.41.2
 )
 

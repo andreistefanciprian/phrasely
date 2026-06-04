@@ -1,0 +1,107 @@
+:root {
+  --navy: #0F1B6E;
+  --blue: #5A54FF;
+  --teal: #1FD3CC;
+  --definition: #7A80D4;
+  --secondary: #6170B8;
+  --muted: #9DA3CC;
+  --surface: #EEEEFF;
+  --white: #FFFFFF;
+
+  --border-default: #DDE1F5;
+  --border-hover: #C8CEF7;
+  --search-hover-bg: #F8F9FF;
+  --btn-hover-bg: #E4E7FF;
+  --btn-active-bg: #DDFBF8;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+#navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4.5rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-default);
+  z-index: 100;
+}
+
+#navbar-inner {
+  height: 100%;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#logo img {
+  height: auto;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+.nav-link {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.nav-link:hover { color: var(--secondary); }
+
+.nav-link.active {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+#search-input {
+  margin-left: auto;
+  width: 180px;
+  background: var(--white);
+  border: 1px solid var(--border-default);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--navy);
+  padding: 0.5rem 1.1rem;
+  border-radius: 100px;
+  outline: none;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, width 0.2s ease;
+}
+
+#search-input::placeholder { color: var(--muted); }
+#search-input:hover { background: var(--search-hover-bg); border-color: var(--border-hover); }
+#search-input:focus {
+  background: var(--white);
+  border: 2px solid var(--blue);
+  box-shadow: 0 0 0 4px rgba(90,84,255,0.12);
+  width: 300px;
+}
+
+@media (max-width: 600px) {
+  #navbar { height: 3.75rem; }
+  #navbar-inner { padding: 0 1rem; gap: 0.5rem; position: relative; }
+  #search-input { width: 100px; }
+
+  /* On focus: pin to right edge and grow leftward by using position absolute */
+  #search-input:focus {
+    position: absolute;
+    right: 2.5rem;   /* leaves room for the sign-out icon */
+    width: calc(100% - 3.5rem);
+    z-index: 10;
+  }
+}
