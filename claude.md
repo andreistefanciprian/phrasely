@@ -29,7 +29,7 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - **Rate limit curate endpoint** — highest priority; each call costs OpenAI tokens. Target: 20 curations/hour per user using `golang.org/x/time/rate` (in-memory token bucket, no Redis needed).
 - **Rate limit `POST /auth/request`** — public endpoint, no JWT. Target: 5 requests/hour per IP + 2-minute cooldown per email to prevent inbox flooding.
 - **Rate limit phrase CRUD** — lower priority; target: 100 operations/hour per user to prevent DB flooding.
-- Already protected: JWT on all `/api/v1/` routes, CORS, `MaxBytesReader`, server timeouts, non-root container.
+- Already protected: JWT on all `/api/v1/` routes, `MaxBytesReader`, server timeouts, non-root containers, same-origin via nginx (no CORS needed).
 
 ## Open questions
 

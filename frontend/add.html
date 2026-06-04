@@ -225,17 +225,20 @@
     document.getElementById('success-msg').style.display = 'none';
 
     const token = localStorage.getItem('phrasely_token');
-    const res = await fetch(`/api/v1/phrases/curate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ input }),
-    });
-
-    btn.disabled = false;
-    btn.textContent = 'Curate with AI';
+    let res;
+    try {
+      res = await fetch(`/api/v1/phrases/curate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ input }),
+      });
+    } catch {
+      err.textContent = 'Curation failed. Please check your connection and try again.';
+      return;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Curate with AI';
+    }
 
     if (!res.ok) {
       err.textContent = 'Curation failed. Please try again.';
@@ -286,22 +289,25 @@
     btn.textContent = 'Saving…';
 
     const token = localStorage.getItem('phrasely_token');
-    const res = await fetch(`/api/v1/phrases`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        phrase:      curated.phrase,
-        headwords:   curated.headwords,
-        note:        curated.note,
-        source_urls: curated.source_urls || [],
-      }),
-    });
-
-    btn.disabled = false;
-    btn.textContent = 'Save phrase';
+    let res;
+    try {
+      res = await fetch(`/api/v1/phrases`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          phrase:      curated.phrase,
+          headwords:   curated.headwords,
+          note:        curated.note,
+          source_urls: curated.source_urls || [],
+        }),
+      });
+    } catch {
+      document.getElementById('error-msg').textContent = 'Save failed. Please check your connection and try again.';
+      return;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save phrase';
+    }
 
     if (res.ok) {
       const saved = await res.json();

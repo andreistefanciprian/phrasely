@@ -5,6 +5,7 @@ server {
 
     # Proxy API and auth traffic to the internal API service.
     # API_HOST is injected at container startup via envsubst.
+    # IMPORTANT: API_HOST must NOT have a trailing slash (use http://api:8080, not http://api:8080/).
     # Local dev: http://api:8080  |  Railway: http://api.railway.internal:8080
     location /api/ {
         proxy_pass ${API_HOST};

@@ -64,7 +64,7 @@ Rules:
    - The headwords field must contain ONLY the raw word or expression.
    - Do NOT include definitions.
    - Do NOT include parentheses.
-   - Do NOT include quotes.
+   - Do NOT include quotation marks inside the headword text (JSON string quoting is required and separate).
    - Do NOT include explanatory text.
    - Do NOT include punctuation unless it is part of the expression.
 

@@ -354,17 +354,20 @@
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving…';
 
-    const res = await fetch(`/api/v1/phrases/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token()}`,
-      },
-      body: JSON.stringify({ phrase, headwords, note, source_urls: sourceUrls }),
-    });
-
-    saveBtn.disabled = false;
-    saveBtn.textContent = 'Save';
+    let res;
+    try {
+      res = await fetch(`/api/v1/phrases/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+        body: JSON.stringify({ phrase, headwords, note, source_urls: sourceUrls }),
+      });
+    } catch {
+      errEl.textContent = 'Save failed. Please check your connection and try again.';
+      return;
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+    }
 
     if (res.ok) {
       const updated = await res.json();
@@ -377,10 +380,17 @@
   }
 
   async function deletePhrase(id) {
-    const res = await fetch(`/api/v1/phrases/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token()}` },
-    });
+    let res;
+    try {
+      res = await fetch(`/api/v1/phrases/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+    } catch {
+      hideConfirm(id);
+      alert('Delete failed. Please check your connection and try again.');
+      return;
+    }
 
     if (res.ok) {
       phrases = phrases.filter(p => p.id !== id);
