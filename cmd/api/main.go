@@ -68,7 +68,7 @@ func main() {
 	}).Methods(http.MethodGet)
 
 	// BASE_URL is the frontend origin — magic links point here so the browser
-	// lands on the frontend /auth/verify page, not the API directly.
+	// lands on the frontend /auth-verify page, not the API's /auth/verify endpoint.
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
 		baseURL = "http://localhost:3000"

@@ -351,11 +351,11 @@
 
       resultsEl.innerHTML =
         `<div class="search-count">${matches.length} result${matches.length !== 1 ? 's' : ''}</div>` +
-        matches.map((p, i) =>
+        matches.map(p =>
           `<div class="search-result" onclick="show(phrases[${phrases.indexOf(p)}])">
             <div class="search-result-phrase">${format(p.phrase)}</div>
-            <div class="search-result-meta">${p.headwords.join(' vs ')}</div>
-            <div class="search-result-note">${p.note}</div>
+            <div class="search-result-meta">${escapeHtml((p.headwords || []).join(' vs '))}</div>
+            <div class="search-result-note">${escapeHtml(p.note || '')}</div>
           </div>`
         ).join('');
     }
