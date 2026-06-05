@@ -194,6 +194,42 @@
       color: var(--teal);
     }
 
+    /* ── Story ── */
+    .story-section {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+
+    .story-section h2 {
+      font-family: 'Lora', Georgia, serif;
+      font-size: clamp(1.3rem, 3.5vw, 1.75rem);
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.35;
+      margin-bottom: 1.5rem;
+    }
+
+    .story-section p {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.8;
+      margin-bottom: 0.75rem;
+    }
+
+    .story-section p:last-child { margin-bottom: 0; }
+
+    .story-link {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--blue);
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .story-link:hover { opacity: 0.75; }
+
     /* ── Footer ── */
     footer {
       text-align: center;
@@ -230,18 +266,18 @@
 
     <p class="subtitle">
       You hear a great word in a podcast. You write it down and forget it.
-      Phrasely fixes that — capture any phrase, let AI curate it,
+      Phrasely fixes that. Capture any phrase, let AI curate it,
       and watch your vocabulary grow into something you can actually see.
     </p>
 
-    <a href="login.html" class="cta-btn">Get started — it's free</a>
+    <a href="login.html" class="cta-btn">Get started, it's free</a>
 
     <div class="loop">
       <div class="loop-step">
         <span class="step-num">01</span>
         <div class="step-body">
           <h3>Capture</h3>
-          <p>Type a rough phrase you heard anywhere — a podcast, a book, a conversation. Even just a word and a question mark.</p>
+          <p>Type a rough phrase you heard anywhere: a podcast, a book, a conversation. Even just a word and a question mark.</p>
         </div>
       </div>
       <div class="loop-step">
@@ -261,10 +297,18 @@
     </div>
   </div>
 
+  <div class="story-section">
+    <h2>Why I built Phrasely</h2>
+    <p>I'm Cip, from Romania. I left in 2013 and have lived in six countries since, eventually settling in Australia. For years I collected phrases from podcasts, films, and newspapers. Hundreds of them, across notebooks, spreadsheets, and notes apps.</p>
+    <p>The problem was that collecting wasn't learning. I had created an archive, not a learning system.</p>
+    <p>Because collecting words is easy. Making them part of who you are is the hard part.</p>
+    <a href="story.html" class="story-link">Read my full story →</a>
+  </div>
+
   <div class="quote-section">
     <p class="quote">
       "The US government is fretting over (worrying anxiously about)
-      BRICS trading outside of the dollar — and rightly so."
+      BRICS trading outside of the dollar, and rightly so."
     </p>
     <p class="quote-meta">fret · captured from a podcast</p>
   </div>

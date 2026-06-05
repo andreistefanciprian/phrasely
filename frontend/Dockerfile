@@ -1,10 +1,12 @@
 FROM nginxinc/nginx-unprivileged:alpine
 
 # Copy only web assets — not Dockerfile, templates, or other build artefacts
-COPY *.html /usr/share/nginx/html/
-COPY *.js   /usr/share/nginx/html/
-COPY *.css  /usr/share/nginx/html/
-COPY assets/ /usr/share/nginx/html/assets/
+COPY *.html      /usr/share/nginx/html/
+COPY *.js        /usr/share/nginx/html/
+COPY *.css       /usr/share/nginx/html/
+COPY llms.txt    /usr/share/nginx/html/llms.txt
+COPY robots.txt  /usr/share/nginx/html/robots.txt
+COPY assets/     /usr/share/nginx/html/assets/
 
 # Templates are processed with envsubst at container startup.
 # API_HOST must be set in the environment (docker-compose or Railway).

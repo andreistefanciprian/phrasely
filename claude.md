@@ -7,7 +7,7 @@ A platform for building and sharing English phrase collections, with AI-powered 
 ## Stack
 
 - **API**: Go + gorilla/mux, slog, pgx/v5
-- **Frontend**: React + TailwindCSS (not started)
+- **Frontend**: Vanilla JS + plain CSS, served by nginx
 - **MCP Server**: Go Streamable HTTP (not started)
 - **DB**: PostgreSQL 17
 - **Infra**: Docker Compose (local), cloud-agnostic container deployment
