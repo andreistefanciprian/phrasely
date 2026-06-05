@@ -11,7 +11,10 @@ import (
 )
 
 //go:embed templates/magic-link.html
-var magicLinkTemplate string
+var magicLinkTemplateStr string
+
+// parsed once at startup — panics on bad template syntax rather than silently failing at send time
+var magicLinkTmpl = template.Must(template.New("magic-link").Parse(magicLinkTemplateStr))
 
 // Sender is the interface for sending magic link emails.
 // Implementations: ResendSender (production), LogSender (local dev).
@@ -57,12 +60,8 @@ func (s *LogSender) SendMagicLink(to, link string) error {
 }
 
 func renderMagicLink(to, link string) (string, error) {
-	tmpl, err := template.New("magic-link").Parse(magicLinkTemplate)
-	if err != nil {
-		return "", err
-	}
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, struct{ To, Link string }{to, link}); err != nil {
+	if err := magicLinkTmpl.Execute(&buf, struct{ To, Link string }{to, link}); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
