@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/email"
 	"github.com/gorilla/mux"
 )
 
@@ -23,16 +25,20 @@ const (
 // mockStore satisfies db.Store for auth tests.
 // Only the auth methods are wired; phrase methods panic if called.
 type mockStore struct {
-	getMagicLinkToken func(ctx context.Context, token string) (*db.MagicLinkToken, error)
-	markTokenUsed     func(ctx context.Context, tokenID string) error
-	upsertUser        func(ctx context.Context, email string) (*db.User, error)
+	getMagicLinkToken    func(ctx context.Context, token string) (*db.MagicLinkToken, error)
+	markTokenUsed        func(ctx context.Context, tokenID string) error
+	upsertUser           func(ctx context.Context, email string) (*db.User, error)
+	createMagicLinkToken func(ctx context.Context, userID string, expiresAt time.Time) (*db.MagicLinkToken, error)
 }
 
 func (m *mockStore) Close() {}
 func (m *mockStore) UpsertUser(ctx context.Context, email string) (*db.User, error) {
 	return m.upsertUser(ctx, email)
 }
-func (m *mockStore) CreateMagicLinkToken(_ context.Context, _ string, _ time.Time) (*db.MagicLinkToken, error) {
+func (m *mockStore) CreateMagicLinkToken(ctx context.Context, userID string, expiresAt time.Time) (*db.MagicLinkToken, error) {
+	if m.createMagicLinkToken != nil {
+		return m.createMagicLinkToken(ctx, userID, expiresAt)
+	}
 	panic("not expected in auth tests")
 }
 func (m *mockStore) GetMagicLinkToken(ctx context.Context, token string) (*db.MagicLinkToken, error) {
@@ -57,9 +63,22 @@ func (m *mockStore) UpdatePhrase(_ context.Context, _ string, _ string, _ db.Upd
 	panic("not expected in auth tests")
 }
 
+// spySender records calls to SendMagicLink for assertions.
+type spySender struct {
+	called bool
+	to     string
+	err    error // error to return
+}
+
+func (s *spySender) SendMagicLink(to, _ string) error {
+	s.called = true
+	s.to = to
+	return s.err
+}
+
 func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()
-	NewHandler(store, "http://localhost:8080", testSecret).RegisterRoutes(r)
+	NewHandler(store, "http://localhost:8080", testSecret, &email.LogSender{}).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 
@@ -237,21 +256,66 @@ func TestVerify_RaceConditionAlreadyConsumed(t *testing.T) {
 	}
 }
 
-func TestRequest_Success(t *testing.T) {
-	store := &mockStore{
+func newTestServerWithMailer(store db.Store, mailer email.Sender) *httptest.Server {
+	r := mux.NewRouter()
+	NewHandler(store, "http://localhost:8080", testSecret, mailer).RegisterRoutes(r)
+	return httptest.NewServer(r)
+}
+
+func requestStore() *mockStore {
+	return &mockStore{
 		upsertUser: func(_ context.Context, _ string) (*db.User, error) {
 			return &db.User{ID: testUserID, Email: "user@example.com"}, nil
+		},
+		createMagicLinkToken: func(_ context.Context, _ string, _ time.Time) (*db.MagicLinkToken, error) {
+			return validToken(), nil
 		},
 		getMagicLinkToken: func(_ context.Context, _ string) (*db.MagicLinkToken, error) {
 			return validToken(), nil
 		},
 		markTokenUsed: func(_ context.Context, _ string) error { return nil },
 	}
+}
 
-	// Override CreateMagicLinkToken inline via embedding not possible with our mock,
-	// so we test the happy-path response code only via a minimal store that panics on token creation.
-	// Full integration of request→verify is tested manually / E2E.
-	_ = store
+func TestRequest_MailerCalled(t *testing.T) {
+	spy := &spySender{}
+	srv := newTestServerWithMailer(requestStore(), spy)
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/auth/request", "application/json",
+		strings.NewReader(`{"email":"user@example.com"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	if !spy.called {
+		t.Error("expected mailer.SendMagicLink to be called")
+	}
+	if spy.to != "user@example.com" {
+		t.Errorf("expected to=user@example.com, got %q", spy.to)
+	}
+}
+
+func TestRequest_MailerErrorStillReturns200(t *testing.T) {
+	// A mailer error should not block the user — handler still responds 200
+	spy := &spySender{err: fmt.Errorf("smtp timeout")}
+	srv := newTestServerWithMailer(requestStore(), spy)
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/auth/request", "application/json",
+		strings.NewReader(`{"email":"user@example.com"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 even on mailer error, got %d", resp.StatusCode)
+	}
 }
 
 func TestRequest_MissingEmail(t *testing.T) {

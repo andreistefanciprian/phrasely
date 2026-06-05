@@ -13,6 +13,7 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/auth"
 	"github.com/andreistefanciprian/phrasely/internal/curate"
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/email"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
 	"github.com/andreistefanciprian/phrasely/migrations"
@@ -82,7 +83,17 @@ func main() {
 
 	r.Use(middleware.Authenticate(jwtSecret))
 
-	auth.NewHandler(store, baseURL, jwtSecret).RegisterRoutes(r)
+	var mailer email.Sender
+	resendKey := os.Getenv("RESEND_API_KEY")
+	emailFrom := os.Getenv("EMAIL_FROM")
+	if resendKey != "" && emailFrom != "" {
+		mailer = email.NewResendSender(resendKey, emailFrom)
+		slog.Info("email enabled", "from", emailFrom)
+	} else {
+		mailer = &email.LogSender{}
+		slog.Warn("RESEND_API_KEY or EMAIL_FROM not set — magic links logged to stdout")
+	}
+	auth.NewHandler(store, baseURL, jwtSecret, mailer).RegisterRoutes(r)
 	phrases.NewHandler(store).RegisterRoutes(r)
 
 	// Curate endpoint is optional — only registered when an API key is configured.
