@@ -6,7 +6,7 @@ server {
     # RESOLVER is read from /etc/resolv.conf at container startup by 16-set-resolver.envsh
     # and injected here via envsubst. This forces nginx to re-resolve the upstream
     # hostname on each request rather than caching the IP at startup.
-    resolver ${RESOLVER} valid=10s ipv6=off;
+    resolver ${RESOLVER} valid=10s;
 
     # Proxy API and auth traffic to the internal API service.
     # API_HOST is injected at container startup via envsubst.

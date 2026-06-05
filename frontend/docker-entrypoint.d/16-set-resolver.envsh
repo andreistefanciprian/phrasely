@@ -1,5 +1,10 @@
 # Sourced by the nginx entrypoint before envsubst runs on templates.
-# Reads the first IPv4 nameserver from /etc/resolv.conf so nginx can
-# re-resolve the upstream hostname dynamically instead of caching it at startup.
-RESOLVER=$(awk '/^nameserver/ && $2 ~ /^[0-9]/{print $2; exit}' /etc/resolv.conf)
+# Reads the nameserver from /etc/resolv.conf and formats it for nginx:
+# IPv4 addresses are used as-is; IPv6 addresses are wrapped in brackets.
+NS=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf)
+if echo "$NS" | grep -q ':'; then
+  RESOLVER="[$NS]"
+else
+  RESOLVER="$NS"
+fi
 export RESOLVER
