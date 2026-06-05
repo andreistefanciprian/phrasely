@@ -3,26 +3,34 @@ server {
     root /usr/share/nginx/html;
     index login.html;
 
+    # Use Railway's internal DNS resolver so the API hostname is re-resolved
+    # on every request rather than cached at startup. Without this, nginx caches
+    # the IP once and fails if the API restarts on a new IP.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     # Proxy API and auth traffic to the internal API service.
     # API_HOST is injected at container startup via envsubst.
     # IMPORTANT: API_HOST must NOT have a trailing slash (use http://api:8080, not http://api:8080/).
     # Local dev: http://api:8080  |  Railway: http://api.railway.internal:8080
     location /api/ {
-        proxy_pass ${API_HOST};
+        set $upstream ${API_HOST};
+        proxy_pass $upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     location /auth/ {
-        proxy_pass ${API_HOST};
+        set $upstream ${API_HOST};
+        proxy_pass $upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     location /health {
-        proxy_pass ${API_HOST};
+        set $upstream ${API_HOST};
+        proxy_pass $upstream;
     }
 
     location = / {
