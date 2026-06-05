@@ -32,10 +32,12 @@
     </div>
   `;
 
+  nav.setAttribute('aria-label', 'Top navigation');
   document.body.prepend(nav);
 
   // Bottom tab bar (mobile only — hidden via CSS on desktop)
   const tabBar = document.createElement('nav');
+  tabBar.setAttribute('aria-label', 'Bottom navigation');
   tabBar.id = 'tab-bar';
   tabBar.innerHTML = `
     <a href="bubble.html" class="tab${isBubble ? ' active' : ''}" aria-label="Bubble">
