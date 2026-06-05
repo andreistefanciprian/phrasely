@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/email"
 	"github.com/gorilla/mux"
 )
 
@@ -59,7 +60,7 @@ func (m *mockStore) UpdatePhrase(_ context.Context, _ string, _ string, _ db.Upd
 
 func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()
-	NewHandler(store, "http://localhost:8080", testSecret).RegisterRoutes(r)
+	NewHandler(store, "http://localhost:8080", testSecret, &email.LogSender{}).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 

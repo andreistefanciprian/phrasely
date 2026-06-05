@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/email"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
+
 
 const (
 	magicLinkTTL = 15 * time.Minute
@@ -20,12 +22,18 @@ const (
 
 type Handler struct {
 	store     db.Store
-	baseURL   string // used to build the magic link; e.g. "http://localhost:8080"
-	jwtSecret []byte // signs and verifies JWTs
+	baseURL   string       // used to build the magic link; e.g. "http://localhost:3000"
+	jwtSecret []byte       // signs and verifies JWTs
+	mailer    email.Sender // sends magic link emails (ResendSender or LogSender)
 }
 
-func NewHandler(store db.Store, baseURL, jwtSecret string) *Handler {
-	return &Handler{store: store, baseURL: baseURL, jwtSecret: []byte(jwtSecret)}
+func NewHandler(store db.Store, baseURL, jwtSecret string, mailer email.Sender) *Handler {
+	return &Handler{
+		store:     store,
+		baseURL:   baseURL,
+		jwtSecret: []byte(jwtSecret),
+		mailer:    mailer,
+	}
 }
 
 func (h *Handler) RegisterRoutes(r *mux.Router) {
@@ -76,7 +84,12 @@ func (h *Handler) request(w http.ResponseWriter, r *http.Request) {
 	// /auth-verify is the frontend page; it calls /auth/verify (API) internally.
 	// Keeps the browser landing page separate from the API endpoint.
 	link := h.baseURL + "/auth-verify?token=" + token.Token
-	slog.Info("magic link", "email", body.Email, "link", link)
+
+	if err := h.mailer.SendMagicLink(body.Email, link); err != nil {
+		slog.Error("send magic link", "error", err)
+		// Fall back to logging so the user isn't blocked if sending fails
+		slog.Info("magic link (send failed, logged as fallback)", "email", body.Email, "link", link)
+	}
 
 	respond(w, http.StatusOK, map[string]string{"message": "magic link sent"})
 }
