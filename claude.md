@@ -1,5 +1,7 @@
 # Phrasely
 
+Production: [getphrasely.com](https://getphrasely.com)
+
 A platform for building and sharing English phrase collections, with AI-powered learning via MCP.
 
 ## Stack

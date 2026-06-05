@@ -1,5 +1,13 @@
 # Phrasely
 
+![Phrasely](frontend/assets/logo.png)
+
+A personal vocabulary tool for collecting English phrases from real life, with AI-powered curation and a word cloud that grows as you learn.
+
+Production: [getphrasely.com](https://getphrasely.com)
+
+![Word bubble](frontend/assets/bubble-preview.png)
+
 ## Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
