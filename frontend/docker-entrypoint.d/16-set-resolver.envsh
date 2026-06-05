@@ -1,0 +1,5 @@
+# Sourced by the nginx entrypoint before envsubst runs on templates.
+# Reads the system DNS resolver from /etc/resolv.conf so nginx can
+# re-resolve the upstream hostname dynamically instead of caching it at startup.
+RESOLVER=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf)
+export RESOLVER
