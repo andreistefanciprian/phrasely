@@ -86,9 +86,8 @@ func (h *Handler) request(w http.ResponseWriter, r *http.Request) {
 	link := h.baseURL + "/auth-verify?token=" + token.Token
 
 	if err := h.mailer.SendMagicLink(body.Email, link); err != nil {
-		slog.Error("send magic link", "error", err)
-		// Fall back to logging so the user isn't blocked if sending fails
-		slog.Info("magic link (send failed, logged as fallback)", "email", body.Email, "link", link)
+		// Log the error but not the link — the link contains the token and must not appear in production logs
+		slog.Error("send magic link", "error", err, "email", body.Email)
 	}
 
 	respond(w, http.StatusOK, map[string]string{"message": "magic link sent"})
