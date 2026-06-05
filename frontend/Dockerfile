@@ -11,6 +11,8 @@ COPY assets/ /usr/share/nginx/html/assets/
 COPY templates/default.conf.template /etc/nginx/templates/default.conf.template
 
 # Sourced before envsubst runs — exports RESOLVER from /etc/resolv.conf
+# Must be executable so the nginx entrypoint doesn't ignore it
 COPY docker-entrypoint.d/16-set-resolver.envsh /docker-entrypoint.d/16-set-resolver.envsh
+RUN chmod +x /docker-entrypoint.d/16-set-resolver.envsh
 
 EXPOSE 8080
