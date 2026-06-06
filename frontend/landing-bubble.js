@@ -114,11 +114,7 @@
     ctx.clearRect(0, 0, vw, vh);
 
     const pad = 12;
-    const cx = vw / 2;
-    const cy = vh / 2;
-    const maxR = Math.min(vw, vh) / 2 - pad;
     const placed = [];
-    const total = words.length;
 
     // Use a separate canvas for text measurement (avoids transform issues)
     const mCtx = document.createElement('canvas').getContext('2d');
@@ -128,7 +124,7 @@
              y < p.y + p.h + gap && y + h + gap > p.y;
     }
 
-    words.forEach(({ label, count }, i) => {
+    words.forEach(({ label, count }) => {
       const rem = sizeRem(count);
       const px  = rem * 16;
       const fontStr = `500 ${px}px Inter,-apple-system,sans-serif`;
@@ -137,27 +133,15 @@
       const w  = tw + pad;
       const h  = px * 1.4;
 
-      // Larger words placed closer to centre, smaller pushed outward
-      const t = i / Math.max(total - 1, 1);
-      const outerR = maxR * 0.35 + t * maxR * 0.65;
-
       let pos = null;
 
-      for (let attempt = 0; attempt < 400; attempt++) {
-        const angle = Math.random() * Math.PI * 2;
-        const r = Math.random() * outerR;
-        const x = Math.round(cx + Math.cos(angle) * r - w / 2);
-        const y = Math.round(cy + Math.sin(angle) * r - h / 2);
-        if (x < pad || x + w > vw - pad || y < pad || y + h > vh - pad) continue;
-        if (!placed.some(p => overlaps(x, w, y, h, p, pad))) { pos = { x, y, w, h }; break; }
-      }
-
-      // Wider fallback sweep
-      if (!pos) {
-        for (let attempt = 0; attempt < 300; attempt++) {
-          const x = pad + Math.random() * (vw - w - pad * 2);
-          const y = pad + Math.random() * (vh - h - pad * 2);
-          if (!placed.some(p => overlaps(x, w, y, h, p, 4))) { pos = { x, y, w, h }; break; }
+      // Spread words randomly across the full canvas
+      for (let attempt = 0; attempt < 800; attempt++) {
+        const x = pad + Math.random() * Math.max(0, vw - w - pad * 2);
+        const y = pad + Math.random() * Math.max(0, vh - h - pad * 2);
+        if (!placed.some(p => overlaps(x, w, y, h, p, pad))) {
+          pos = { x, y, w, h };
+          break;
         }
       }
 
