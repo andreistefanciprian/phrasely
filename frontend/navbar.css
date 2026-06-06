@@ -63,6 +63,12 @@
 
 .nav-link:hover { color: var(--secondary); }
 
+#signout-btn {
+  margin-left: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
 .nav-link.active {
   color: var(--navy);
   font-weight: 700;
