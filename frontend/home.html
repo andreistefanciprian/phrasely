@@ -200,11 +200,22 @@
       text-align: center;
     }
 
-    .bubble-preview img {
+    .bubble-caption {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 1.25rem;
+    }
+
+    #landing-bubble {
       width: 100%;
-      max-width: 720px;
+      max-width: 860px;
       border-radius: 16px;
-      box-shadow: 0 8px 40px rgba(15,27,110,0.10);
+      background: var(--surface);
+      display: block;
+      margin: 0 auto;
     }
 
     /* ── Story ── */
@@ -311,8 +322,10 @@
   </div>
 
   <div class="bubble-preview">
-    <img src="assets/bubble-preview.png" alt="Phrasely word bubble — headwords sized by how often you revisit them">
+    <p class="bubble-caption">What your collection looks like after a few weeks</p>
+    <canvas id="landing-bubble" aria-label="Word bubble showing a personal vocabulary collection"></canvas>
   </div>
+  <script src="landing-bubble.js"></script>
 
   <div class="story-section">
     <h2>Why I built Phrasely</h2>
