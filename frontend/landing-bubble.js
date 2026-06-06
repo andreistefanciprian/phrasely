@@ -50,38 +50,26 @@
     { label: 'hinge on',                    count:  3 },
     { label: 'braggadocious',              count:  2 },
     { label: 'tantamount to',              count:  2 },
-    { label: 'perspicacity',              count:  2 },
-    { label: 'ostensibly',               count:  2 },
-    { label: 'unbeknownst',              count:  2 },
-    { label: 'linchpin',                count:  2 },
-    { label: 'remiss',                  count:  2 },
-    { label: 'conjecture',              count:  2 },
-    { label: 'unabashed',               count:  2 },
-    { label: 'jarring',                 count:  2 },
-    { label: 'peel back',               count:  2 },
-    { label: 'buoyant',                 count:  2 },
-    { label: 'per se',                  count:  2 },
-    { label: 'slander',                 count:  2 },
-    { label: 'surreptitiously',         count:  2 },
-    { label: 'gander',                  count:  1 },
-    { label: 'telltale',                count:  1 },
-    { label: 'veracity',                count:  1 },
-    { label: 'blunder',                 count:  1 },
-    { label: 'ebb and flow',            count:  1 },
-    { label: 'unequivocally',           count:  1 },
-    { label: 'taciturn',                count:  1 },
-    { label: 'zilch',                   count:  1 },
-    { label: 'doldrums',                count:  1 },
-    { label: 'cagey',                   count:  1 },
-    { label: 'edify',                   count:  1 },
-    { label: 'fictitious',              count:  1 },
-    { label: 'corny',                   count:  1 },
-    { label: 'fortitude',               count:  1 },
-    { label: 'flattering',              count:  1 },
-    { label: 'aided and abetted',       count:  1 },
-    { label: 'distraught',              count:  1 },
-    { label: 'put a bow on',            count:  1 },
-    { label: 'auspicious vs inauspicious', count: 1 },
+    { label: 'perspicacity',               count:  2 },
+    { label: 'ostensibly',                 count:  2 },
+    { label: 'unbeknownst',                count:  2 },
+    { label: 'linchpin',                   count:  2 },
+    { label: 'remiss',                     count:  2 },
+    { label: 'conjecture',                 count:  2 },
+    { label: 'unabashed',                  count:  2 },
+    { label: 'jarring',                    count:  2 },
+    { label: 'peel back',                  count:  2 },
+    { label: 'buoyant',                    count:  2 },
+    { label: 'per se',                     count:  2 },
+    { label: 'slander',                    count:  2 },
+    { label: 'surreptitiously',            count:  2 },
+    { label: 'ebb and flow',               count:  2 },
+    { label: 'gander',                     count:  2 },
+    { label: 'telltale',                   count:  2 },
+    { label: 'zilch',                      count:  2 },
+    { label: 'taciturn',                   count:  2 },
+    { label: 'fortitude',                  count:  2 },
+    { label: 'doldrums',                   count:  2 },
   ].sort((a, b) => b.count - a.count);
 
   const max = words[0].count;
@@ -93,7 +81,7 @@
   }
 
   function sizeRem(count) {
-    return 0.75 + (count / max) * 1.5;
+    return 1.0 + (count / max) * 1.6;
   }
 
   function render() {
@@ -101,7 +89,7 @@
     if (!canvas) return;
 
     const vw = canvas.parentElement.offsetWidth;
-    const vh = Math.min(Math.round(vw * 0.52), 500);
+    const vh = Math.min(Math.round(vw * 0.7), 640);
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width  = vw * dpr;
@@ -113,7 +101,7 @@
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, vw, vh);
 
-    const pad = 12;
+    const pad = 18;
     const placed = [];
 
     // Use a separate canvas for text measurement (avoids transform issues)
