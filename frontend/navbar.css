@@ -110,11 +110,14 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 4rem;
+    height: calc(4rem + env(safe-area-inset-bottom));
     background: var(--white);
     border-top: 1px solid var(--border-default);
     z-index: 100;
     padding-bottom: env(safe-area-inset-bottom);
+    /* Force GPU layer so mobile browsers don't squash the bar on scroll */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   .tab {
@@ -124,6 +127,7 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
+    min-height: 4rem;
     color: var(--muted);
     text-decoration: none;
     font-family: 'Inter', -apple-system, sans-serif;
@@ -139,5 +143,5 @@
   .tab.active { color: var(--navy); }
 
   /* Body padding so content isn't hidden behind tab bar */
-  body { padding-bottom: 4rem; }
+  body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 }
