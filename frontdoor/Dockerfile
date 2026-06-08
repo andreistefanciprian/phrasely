@@ -13,13 +13,12 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o frontdoor .
 
 # ── Final image ───────────────────────────────────────────────────────────────
-FROM alpine:3.22
+# scratch = completely empty — just the binary, no shell, no OS, zero attack surface
+FROM scratch
 
-RUN adduser -D -u 1001 appuser
-WORKDIR /app
+COPY --from=builder /app/frontdoor /frontdoor
 
-COPY --from=builder /app/frontdoor .
-
-USER appuser
 EXPOSE 3000
-CMD ["./frontdoor"]
+# Run as non-root (uid 1001) without needing adduser
+USER 1001
+ENTRYPOINT ["/frontdoor"]
