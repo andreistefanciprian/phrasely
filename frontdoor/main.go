@@ -82,8 +82,15 @@ func main() {
 		port = "3000"
 	}
 
+	// Wrap the entire mux with a global body size limit so no request body
+	// can consume unbounded memory before handlers even read it.
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, 8*1024) // 8 KB global limit
+		mux.ServeHTTP(w, r)
+	})
+
 	slog.Info("frontdoor listening", "port", port, "api", apiURL)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)
 	}
