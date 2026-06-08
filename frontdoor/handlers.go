@@ -67,7 +67,11 @@ func (app *application) loginPage(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		// Tighten the global limit: login only needs an email address
 		r.Body = http.MaxBytesReader(w, r.Body, 1024)
-		email := strings.TrimSpace(r.FormValue("email"))
+		if err := r.ParseForm(); err != nil {
+			app.render(w, "login.html", map[string]any{"Error": "Invalid request."})
+			return
+		}
+		email := strings.TrimSpace(r.PostForm.Get("email"))
 		if email == "" {
 			app.render(w, "login.html", map[string]any{"Error": "Email is required."})
 			return
