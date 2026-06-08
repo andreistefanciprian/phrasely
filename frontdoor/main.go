@@ -82,10 +82,17 @@ func main() {
 		port = "3000"
 	}
 
-	// Wrap the entire mux with a global body size limit so no request body
-	// can consume unbounded memory before handlers even read it.
+	// Wrap the entire mux with a global body size limit.
+	// Check Content-Length up-front to reject oversized requests immediately
+	// (before any streaming to upstream), then enforce with MaxBytesReader
+	// as a second line of defence for chunked/unknown-length bodies.
+	const maxBody int64 = 8 * 1024 // 8 KB
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, 8*1024) // 8 KB global limit
+		if r.ContentLength > maxBody {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
 		mux.ServeHTTP(w, r)
 	})
 
