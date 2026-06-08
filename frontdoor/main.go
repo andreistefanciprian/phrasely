@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 )
 
 //go:embed templates/* static/*
@@ -23,8 +24,11 @@ func main() {
 		apiURL = "http://localhost:8080"
 	}
 
+	sessions := newSessionStore()
+	sessions.startCleanup(1 * time.Hour)
+
 	app := &application{
-		sessions: newSessionStore(),
+		sessions: sessions,
 		api:      newAPIClient(apiURL),
 	}
 

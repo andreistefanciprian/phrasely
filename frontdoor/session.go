@@ -38,10 +38,36 @@ func (s *SessionStore) Get(id string) string {
 	s.mu.RLock()
 	sess, ok := s.sessions[id]
 	s.mu.RUnlock()
-	if !ok || time.Now().After(sess.expiresAt) {
+	if !ok {
+		return ""
+	}
+	if time.Now().After(sess.expiresAt) {
+		// Lazy delete — remove expired entry on access
+		s.mu.Lock()
+		delete(s.sessions, id)
+		s.mu.Unlock()
 		return ""
 	}
 	return sess.jwt
+}
+
+// startCleanup runs a background goroutine that purges expired sessions
+// periodically so entries that are never re-accessed don't accumulate.
+func (s *SessionStore) startCleanup(interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for range ticker.C {
+			now := time.Now()
+			s.mu.Lock()
+			for id, sess := range s.sessions {
+				if now.After(sess.expiresAt) {
+					delete(s.sessions, id)
+				}
+			}
+			s.mu.Unlock()
+		}
+	}()
 }
 
 func (s *SessionStore) Delete(id string) {
@@ -52,6 +78,8 @@ func (s *SessionStore) Delete(id string) {
 
 func randomID() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
+	}
 	return hex.EncodeToString(b)
 }
