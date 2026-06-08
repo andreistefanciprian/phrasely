@@ -2,4 +2,4 @@
 bin/
 .claude/
 .debug/
-frontdoor/frontdoor
+frontend_nginx/

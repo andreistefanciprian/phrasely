@@ -1,19 +1,24 @@
-FROM nginxinc/nginx-unprivileged:alpine
+FROM golang:1.26.1 AS builder
 
-# Copy only web assets — not Dockerfile, templates, or other build artefacts
-COPY *.html      /usr/share/nginx/html/
-COPY *.js        /usr/share/nginx/html/
-COPY *.css       /usr/share/nginx/html/
-COPY llms.txt    /usr/share/nginx/html/llms.txt
-COPY robots.txt  /usr/share/nginx/html/robots.txt
-COPY assets/     /usr/share/nginx/html/assets/
+WORKDIR /app
 
-# Templates are processed with envsubst at container startup.
-# API_HOST must be set in the environment (docker-compose or Railway).
-COPY templates/default.conf.template /etc/nginx/templates/default.conf.template
+COPY go.mod ./
+RUN go mod download
 
-# Sourced before envsubst runs — exports RESOLVER from /etc/resolv.conf
-# --chmod=755 sets executable bit at copy time (avoids chmod as non-root user)
-COPY --chmod=755 docker-entrypoint.d/16-set-resolver.envsh /docker-entrypoint.d/16-set-resolver.envsh
+COPY . .
 
-EXPOSE 8080
+# CGO_ENABLED=0  — static binary, no C runtime dependency
+# -trimpath      — removes local file paths from the binary (no source leakage)
+# -ldflags -s -w — strips debug symbols and DWARF info (smaller, no symbol table)
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o frontdoor .
+
+# ── Final image ───────────────────────────────────────────────────────────────
+# scratch = completely empty — just the binary, no shell, no OS, zero attack surface
+FROM scratch
+
+COPY --from=builder /app/frontdoor /frontdoor
+
+EXPOSE 3000
+# Run as non-root (uid 1001) without needing adduser
+USER 1001
+ENTRYPOINT ["/frontdoor"]
