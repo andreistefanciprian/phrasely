@@ -82,8 +82,22 @@ func main() {
 		port = "3000"
 	}
 
+	// Wrap the entire mux with a global body size limit.
+	// Check Content-Length up-front to reject oversized requests immediately
+	// (before any streaming to upstream), then enforce with MaxBytesReader
+	// as a second line of defence for chunked/unknown-length bodies.
+	const maxBody int64 = 8 * 1024 // 8 KB
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ContentLength > maxBody {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+		mux.ServeHTTP(w, r)
+	})
+
 	slog.Info("frontdoor listening", "port", port, "api", apiURL)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)
 	}
