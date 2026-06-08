@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# LLM crawler context
+# https://getphrasely.com/llms.txt
