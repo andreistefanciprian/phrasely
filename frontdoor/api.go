@@ -1,0 +1,102 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+// apiClient calls the private API on the internal network.
+// The browser never talks to the API directly.
+type apiClient struct {
+	baseURL string
+	http    *http.Client
+}
+
+func newAPIClient(baseURL string) *apiClient {
+	return &apiClient{
+		baseURL: baseURL,
+		http:    &http.Client{Timeout: 10 * time.Second},
+	}
+}
+
+// Proxy forwards a request to the API with the user's JWT and returns the raw response body + status.
+func (c *apiClient) Proxy(method, path, jwt string, body io.Reader, contentType string) (int, []byte, error) {
+	req, err := http.NewRequest(method, c.baseURL+path, body)
+	if err != nil {
+		return 0, nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return 0, nil, fmt.Errorf("proxy request: %w", err)
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	return resp.StatusCode, b, err
+}
+
+// RequestMagicLink asks the API to send a magic link to the given email.
+func (c *apiClient) RequestMagicLink(email string) error {
+	body := strings.NewReader(fmt.Sprintf(`{"email":%q}`, email))
+	resp, err := c.http.Post(c.baseURL+"/auth/request", "application/json", body)
+	if err != nil {
+		return fmt.Errorf("request magic link: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API returned %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// ListPhrases fetches all phrases for the authenticated user.
+func (c *apiClient) ListPhrases(jwt string) ([]map[string]any, error) {
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+"/api/v1/phrases", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("list phrases: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned %d", resp.StatusCode)
+	}
+	var phrases []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&phrases); err != nil {
+		return nil, fmt.Errorf("decode phrases: %w", err)
+	}
+	return phrases, nil
+}
+
+// VerifyToken exchanges a magic link token for a JWT.
+func (c *apiClient) VerifyToken(token string) (string, error) {
+	resp, err := c.http.Get(c.baseURL + "/auth/verify?token=" + url.QueryEscape(token))
+	if err != nil {
+		return "", fmt.Errorf("verify token: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("invalid or expired link")
+	}
+	var result struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode response: %w", err)
+	}
+	if result.Token == "" {
+		return "", fmt.Errorf("empty token in response")
+	}
+	return result.Token, nil
+}

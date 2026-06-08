@@ -1,0 +1,67 @@
+{{define "title"}}My Story — Phrasely{{end}}
+
+{{define "head"}}
+<meta name="description" content="Why Cip built Phrasely. A Romanian living in Australia, collecting English phrases for years before turning them into something that actually works.">
+<style>
+  body { color: #2D3561; }
+
+  nav {
+    position: sticky; top: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem; background: var(--white); border-bottom: 1px solid var(--border); z-index: 10;
+  }
+  nav img { height: auto; width: auto; display: block; max-height: 32px; }
+  .nav-cta { font-size: 0.875rem; font-weight: 600; color: var(--blue); text-decoration: none; transition: opacity 0.15s; }
+  .nav-cta:hover { opacity: 0.75; }
+
+  .story { max-width: 640px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+  .story h1 { font-family: 'Lora', Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 600; color: var(--navy); line-height: 1.25; margin-bottom: 2.5rem; }
+  .story p { font-size: 1rem; line-height: 1.85; color: #2D3561; margin-bottom: 0.85rem; }
+  .story p.emphasis { font-family: 'Lora', Georgia, serif; font-size: 1.1rem; font-style: italic; color: var(--navy); }
+  .story p:last-child { margin-bottom: 0; }
+
+  .cta-row { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+  .cta-row a { display: inline-block; padding: 0.75rem 1.75rem; background: var(--blue); color: var(--white); font-size: 0.875rem; font-weight: 600; border-radius: 100px; text-decoration: none; transition: opacity 0.15s; }
+  .cta-row a:hover { opacity: 0.88; }
+
+  footer { text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
+
+  @media (max-width: 600px) {
+    nav { padding: 1rem 1.25rem; }
+    .story { padding: 2.5rem 1.25rem 4rem; }
+  }
+</style>
+{{end}}
+
+{{define "content"}}
+<nav>
+  <a href="/"><img src="/static/logo.png" alt="Phrasely"></a>
+  <a href="/login" class="nav-cta">Sign in →</a>
+</nav>
+
+<div class="story">
+  <h1>Why I built Phrasely</h1>
+
+  <p>I'm Cip (pronounced Chip), from Romania.</p>
+  <p>I left in 2013 and have lived in six countries since, eventually settling in Australia. English was never my mother tongue, but wanting to communicate clearly and articulate my thoughts has been a constant.</p>
+  <p>For years I collected phrases.</p>
+  <p>Interesting expressions from podcasts. A clever sentence from a newspaper article. A word that made me stop and think, "I wish I could use that naturally."</p>
+  <p>Some went into a notebook. Some into spreadsheets. Some into a giant note on my phone. Some were carefully written down with context. Others were just a few words scribbled in a hurry while listening to a podcast on the way to work.</p>
+  <p>The collection grew into hundreds of entries.</p>
+  <p>The problem was that collecting wasn't learning.</p>
+  <p>Most of the phrases never became part of my vocabulary. Months later, I'd look at an entry and have no idea why I'd saved it. I had created an archive, not a learning system.</p>
+  <p>Then I started using AI to explain phrases, add context, identify the important word, and help me practise it. Suddenly things started to stick. A forgotten note became a memorable expression. A single word became a story. A phrase became something I could actually use.</p>
+  <p>But every conversation started from scratch. Nothing carried over.</p>
+  <p>So I built Phrasely.</p>
+  <p>A place where rough notes become memorable language. Paste a phrase, a fragment, or even a single word, and AI helps uncover what makes it worth remembering. Then, instead of burying it inside another endless list, Phrasely helps you revisit it until it becomes part of how you think and speak.</p>
+  <p>I built it for myself. But it isn't just for people learning English. It's for anyone who's ever heard a great expression and thought: "I want that to be part of my vocabulary."</p>
+  <p class="emphasis">Because collecting words is easy.</p>
+  <p class="emphasis">Making them part of who you are is the hard part.</p>
+
+  <div class="cta-row">
+    <a href="/login">Try Phrasely, it's free →</a>
+  </div>
+</div>
+
+<footer>&copy; 2026 Phrasely</footer>
+{{end}}

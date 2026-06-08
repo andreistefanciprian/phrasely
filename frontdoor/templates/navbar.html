@@ -1,0 +1,61 @@
+{{define "navbar"}}
+<nav id="navbar" aria-label="Top navigation">
+  <div id="navbar-inner">
+    <div id="logo">
+      <a href="/bubble"><img src="/static/logo.png" alt="Phrasely"></a>
+    </div>
+    <a href="/bubble"  class="nav-link{{if eq .Page "bubble"}} active{{end}}">Bubble</a>
+    <a href="/phrases" class="nav-link{{if eq .Page "phrases"}} active{{end}}">Phrases</a>
+    <a href="/add"     class="nav-link{{if eq .Page "add"}} active{{end}}">Add</a>
+    <form method="POST" action="/sign-out" style="margin-left:auto;">
+      <button id="signout-btn" class="nav-link" title="Sign out" aria-label="Sign out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+</nav>
+
+<nav id="tab-bar" aria-label="Bottom navigation">
+  <a href="/bubble"  class="tab{{if eq .Page "bubble"}} active{{end}}" aria-label="Bubble">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="9"  cy="10" r="2"   fill="currentColor" stroke="none"/>
+      <circle cx="15" cy="8"  r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="15" cy="14" r="1"   fill="currentColor" stroke="none"/>
+      <circle cx="9"  cy="15" r="1.2" fill="currentColor" stroke="none"/>
+    </svg>
+    <span>Bubble</span>
+  </a>
+  <a href="/phrases" class="tab{{if eq .Page "phrases"}} active{{end}}" aria-label="Phrases">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="8" y1="13" x2="16" y2="13"/>
+      <line x1="8" y1="17" x2="16" y2="17"/>
+    </svg>
+    <span>Phrases</span>
+  </a>
+  <a href="/add" class="tab{{if eq .Page "add"}} active{{end}}" aria-label="Add phrase">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="16"/>
+      <line x1="8"  y1="12" x2="16" y2="12"/>
+    </svg>
+    <span>Add</span>
+  </a>
+  <form method="POST" action="/sign-out" class="tab" style="flex:1;">
+    <button class="tab" aria-label="Sign out" style="width:100%;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      <span>Sign out</span>
+    </button>
+  </form>
+</nav>
+{{end}}

@@ -1,0 +1,75 @@
+:root {
+  --navy:      #0F1B6E;
+  --blue:      #5A54FF;
+  --teal:      #1FD3CC;
+  --definition:#7A80D4;
+  --secondary: #6170B8;
+  --muted:     #9DA3CC;
+  --surface:   #EEEEFF;
+  --white:     #FFFFFF;
+  --border:    #DDE1F5;
+  --border-hover: #C8CEF7;
+  --text:      #2D3561;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--white);
+  color: var(--navy);
+  min-height: 100dvh;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: var(--blue);
+  color: var(--white);
+  border: none;
+  border-radius: 100px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 16px rgba(90,84,255,0.25);
+}
+.btn-primary:hover { opacity: 0.9; color: var(--white); box-shadow: 0 6px 24px rgba(90,84,255,0.35); }
+.btn-primary:disabled { opacity: 0.5; cursor: default; }
+.btn-primary.w-full { width: 100%; text-align: center; }
+
+/* ── Form inputs ── */
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--navy);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input::placeholder { color: var(--muted); }
+.input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(90,84,255,0.12);
+}
+
+/* ── Utility ── */
+.text-muted   { color: var(--muted); }
+.text-teal    { color: var(--teal); }
+.text-navy    { color: var(--navy); }
+.bg-surface   { background: var(--surface); }
+
+/* ── Fade-up animation ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.35s ease both; }
