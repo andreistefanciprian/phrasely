@@ -82,17 +82,31 @@ func main() {
 		port = "3000"
 	}
 
-	// Wrap the entire mux with a global body size limit.
-	// Check Content-Length up-front to reject oversized requests immediately
-	// (before any streaming to upstream), then enforce with MaxBytesReader
-	// as a second line of defence for chunked/unknown-length bodies.
+	// Wrap the entire mux: body size limit + security headers on every response.
 	const maxBody int64 = 8 * 1024 // 8 KB
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Reject oversized requests before reading or proxying the body.
 		if r.ContentLength > maxBody {
 			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
 			return
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+
+		// Security headers on every response.
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		h.Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+		// CSP: allow fonts from Google, images from self + data URIs, no inline scripts
+		h.Set("Content-Security-Policy",
+			"default-src 'self'; "+
+				"script-src 'self' 'unsafe-inline'; "+ // inline JS in templates
+				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "+
+				"font-src https://fonts.gstatic.com; "+
+				"img-src 'self' data:; "+
+				"frame-ancestors 'none'")
+
 		mux.ServeHTTP(w, r)
 	})
 
