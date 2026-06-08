@@ -102,16 +102,6 @@ sequenceDiagram
     Frontend-->>Browser: JSON response
 ```
 
-## Session cookie vs JWT in localStorage
-
-| | localStorage (insecure) | Frontend session cookie |
-|---|---|---|
-| Auth token in browser | Full JWT | Random session ID only |
-| Readable by JavaScript | Yes — `localStorage.getItem(...)` | No — `document.cookie` returns empty |
-| Visible in DevTools | Application → Local Storage | Application → Cookies (ID only, not JWT) |
-| JWT leaves the server | Yes | Never |
-| Stolen token risk | Copy JWT, use anywhere | Session ID useless without server |
-
 ## Key properties
 
 | Property | Value |
