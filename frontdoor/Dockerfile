@@ -6,10 +6,14 @@ COPY go.mod ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o frontdoor .
 
-# ── Final image ──────────────────────────────────────────────────────────────
-FROM alpine:latest
+# CGO_ENABLED=0  — static binary, no C runtime dependency
+# -trimpath      — removes local file paths from the binary (no source leakage)
+# -ldflags -s -w — strips debug symbols and DWARF info (smaller, no symbol table)
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o frontdoor .
+
+# ── Final image ───────────────────────────────────────────────────────────────
+FROM alpine:3.22
 
 RUN adduser -D -u 1001 appuser
 WORKDIR /app
