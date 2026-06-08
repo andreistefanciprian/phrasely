@@ -85,27 +85,33 @@ func main() {
 	// Wrap the entire mux: body size limit + security headers on every response.
 	const maxBody int64 = 8 * 1024 // 8 KB
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Reject oversized requests before reading or proxying the body.
-		if r.ContentLength > maxBody {
-			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
-			return
-		}
-		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
-
-		// Security headers on every response.
+		// Security headers set first so they appear on every response,
+		// including early-exit error responses (413, etc.).
 		h := w.Header()
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		h.Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 		// CSP: allow fonts from Google, images from self + data URIs, no inline scripts
+		// CSP notes:
+		// - 'unsafe-inline' required for script-src and style-src because templates
+		//   embed <script> and <style> blocks directly in HTML.
+		// - data: allowed for img-src (canvas bubble uses data URIs).
+		// Moving scripts/styles to external files would allow removing 'unsafe-inline'.
 		h.Set("Content-Security-Policy",
 			"default-src 'self'; "+
-				"script-src 'self' 'unsafe-inline'; "+ // inline JS in templates
+				"script-src 'self' 'unsafe-inline'; "+
 				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "+
 				"font-src https://fonts.gstatic.com; "+
 				"img-src 'self' data:; "+
 				"frame-ancestors 'none'")
+
+		// Reject oversized requests before reading or proxying the body.
+		if r.ContentLength > maxBody {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
 
 		mux.ServeHTTP(w, r)
 	})
