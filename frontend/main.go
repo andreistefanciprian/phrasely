@@ -19,7 +19,7 @@ type application struct {
 }
 
 func main() {
-	apiURL := os.Getenv("API_URL")
+	apiURL := os.Getenv("API_HOST")
 	if apiURL == "" {
 		apiURL = "http://localhost:8080"
 	}
