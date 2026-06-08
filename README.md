@@ -1,12 +1,12 @@
 # Phrasely
 
-![Phrasely](frontend/assets/logo.png)
+![Phrasely](frontend/static/logo.png)
 
 A personal vocabulary tool for collecting English phrases from real life, with AI-powered curation and a word cloud that grows as you learn.
 
 Production: [getphrasely.com](https://getphrasely.com)
 
-![Word bubble](frontend/assets/bubble-preview.png)
+![Word bubble](frontend/static/bubble-preview.png)
 
 ## Prerequisites
 
