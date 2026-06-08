@@ -41,7 +41,8 @@ A platform for building and sharing English phrase collections, with AI-powered 
 ## Git workflow
 
 - Every change goes in a PR — never push directly to `main`
-- Always ask for review before pushing
+- **Always ask for review before pushing — no exceptions**
+- **Never push without explicit approval from the user**
 - Branch naming: `pr/<number>-<short-description>`
 
 ## API endpoints
