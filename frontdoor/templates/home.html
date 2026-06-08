@@ -1,0 +1,13 @@
+{{template "base.html" .}}
+
+{{define "title"}}Phrasely — Your vocabulary, built from real life{{end}}
+
+{{define "content"}}
+<main class="flex flex-col items-center justify-center min-h-screen px-6 text-center">
+  <h1 class="text-4xl font-bold text-indigo-900 mb-4">Phrasely</h1>
+  <p class="text-slate-500 text-lg mb-8">Your vocabulary, built from real life.</p>
+  <a href="/login" class="bg-indigo-500 text-white px-6 py-3 rounded-full font-semibold hover:opacity-90 transition">
+    Get started
+  </a>
+</main>
+{{end}}

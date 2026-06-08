@@ -1,17 +1,18 @@
 services:
-  frontend:
-    build: ./frontend
+  frontdoor:
+    build: ./frontdoor
     ports:
-      - "3000:8080"
+      - "3000:3000"
     environment:
-      API_HOST: http://api:8080
+      PORT: "3000"
+      API_URL: http://api:8080
     depends_on:
       - api
 
   api:
     build: .
     # Port only exposed for scripts/api.sh direct access in local dev.
-    # In production the API is private — all browser traffic routes through nginx.
+    # In production the API is private — all browser traffic routes through frontdoor.
     ports:
       - "8080:8080"
     environment:
