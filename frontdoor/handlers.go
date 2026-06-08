@@ -39,9 +39,14 @@ func (app *application) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // ── Page handlers ─────────────────────────────────────────────────────────────
 
+func (app *application) notFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+	app.render(w, "404.html", nil)
+}
+
 func (app *application) homePage(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		app.notFound(w, r)
 		return
 	}
 	// Already signed in → go to bubble

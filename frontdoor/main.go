@@ -44,6 +44,18 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
+	// LLM / SEO files served at root
+	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		f, _ := files.ReadFile("static/robots.txt")
+		w.Write(f)
+	})
+	mux.HandleFunc("/llms.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		f, _ := files.ReadFile("static/llms.txt")
+		w.Write(f)
+	})
+
 	// Public routes
 	mux.HandleFunc("/", app.homePage)
 	mux.HandleFunc("/login", app.loginPage)
