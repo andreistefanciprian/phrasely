@@ -50,7 +50,19 @@
 @media (max-width: 600px) {
   #navbar { height: 3.5rem; }
   #navbar-inner { padding: 0 1rem; }
-  .nav-link, #signout-btn { display: none; }
+  .nav-link { display: none; }
+
+  #top-signout-form { margin-left: auto; }
+  #signout-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
+    color: var(--muted);
+  }
+  #signout-btn:hover { color: var(--secondary); }
 
   #tab-bar {
     display: flex;

@@ -205,7 +205,7 @@ func (app *application) indexPage(w http.ResponseWriter, r *http.Request) {
 	}
 	phrasesJSON, _ := json.Marshal(phrases)
 	app.renderAuth(w, "index.html", map[string]any{
-		"Page":        "",
+		"Page":        "index",
 		"PhrasesJSON": template.JS(phrasesJSON),
 	})
 }
