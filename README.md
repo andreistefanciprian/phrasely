@@ -8,6 +8,16 @@ Production: [getphrasely.com](https://getphrasely.com)
 
 ![Word bubble](frontend/static/bubble-preview.png)
 
+## How It Works
+
+1. **Capture** a phrase, sentence fragment, or even a single word you encounter in a podcast, book, movie, article, or conversation.
+2. **Curate with AI** to enrich missing context, correct grammar, add clear definitions, attach Merriam-Webster links, and generate useful notes.
+3. **Build your vocabulary** by saving curated phrases to your personal collection.
+4. **Review and reinforce** in Shuffle mode, which presents one phrase at a time for focused learning.
+5. **Visualize your progress** with the Vocabulary Bubble, where the expressions you revisit most often grow larger over time.
+
+The goal is simple: turn interesting words and expressions you hear in everyday life into part of your active vocabulary.
+
 ## Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
@@ -19,11 +29,7 @@ Production: [getphrasely.com](https://getphrasely.com)
 task up        # build images, start API + Postgres, stream logs
 ```
 
-The API is available at `http://localhost:8080`.
-
-```bash
-curl http://localhost:8080/health
-```
+The UI is available at `http://localhost:3000`.
 
 ## Other commands
 
@@ -47,9 +53,3 @@ task test      # run unit tests
 ```
 
 > Run `task reset` before `./scripts/api.sh` to start from a clean DB.
-
-Point it at a different host with `API_URL`:
-
-```bash
-API_URL=https://your-app.railway.app ./scripts/api.sh list-phrases
-```
