@@ -100,12 +100,11 @@ func main() {
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
 		curator, err := curate.NewCurator(apiKey)
 		if err != nil {
-			slog.Error("failed to initialize curator", "error", err)
-			os.Exit(1)
+			slog.Warn("failed to initialize curator — curate endpoint disabled", "error", err)
+		} else {
+			curate.NewHandler(curator).RegisterRoutes(r)
+			slog.Info("curate endpoint enabled")
 		}
-
-		curate.NewHandler(curator).RegisterRoutes(r)
-		slog.Info("curate endpoint enabled")
 	} else {
 		slog.Warn("OPENAI_API_KEY not set — curate endpoint disabled")
 	}
