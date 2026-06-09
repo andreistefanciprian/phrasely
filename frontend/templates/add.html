@@ -125,6 +125,14 @@
 
     curated = await res.json();
 
+    if (curated.valid_input === false) {
+      err.textContent = (curated.invalid_reason || 'No valid expression or meaningful context was provided.').trim();
+      document.getElementById('review').style.display = 'none';
+      document.getElementById('content-adjusted-note').style.display = 'none';
+      curated = null;
+      return;
+    }
+
     const adjustedEl = document.getElementById('content-adjusted-note');
     adjustedEl.style.display = curated.content_adjusted ? 'flex' : 'none';
 
