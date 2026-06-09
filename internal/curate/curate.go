@@ -25,6 +25,8 @@ type CuratedPhrase struct {
 	Note            string   `json:"note"`
 	SourceURLs      []string `json:"source_urls"`
 	ContentAdjusted bool     `json:"content_adjusted"`
+	ValidInput      bool     `json:"valid_input"`
+	InvalidReason   string   `json:"invalid_reason"`
 }
 
 func NewCurator(apiKey string) (*Curator, error) {
@@ -66,9 +68,20 @@ func (c *Curator) Curate(ctx context.Context, input string) (*CuratedPhrase, err
 		return nil, fmt.Errorf("openai response: empty message content")
 	}
 
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(content), &raw); err != nil {
+		return nil, fmt.Errorf("parse response json object: %w", err)
+	}
+
 	var result CuratedPhrase
 	if err := json.Unmarshal([]byte(content), &result); err != nil {
 		return nil, fmt.Errorf("parse response: %w", err)
+	}
+	if _, ok := raw["valid_input"]; !ok {
+		result.ValidInput = true
+	}
+	if !result.ValidInput && strings.TrimSpace(result.InvalidReason) == "" {
+		result.InvalidReason = "No valid expression or meaningful context was provided."
 	}
 	return &result, nil
 }
