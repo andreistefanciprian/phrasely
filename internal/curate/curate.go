@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-  "os"
-  "strings"
+	"os"
+	"strings"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	openai "github.com/sashabaranov/go-openai"
@@ -39,7 +39,7 @@ func (c *Curator) Curate(ctx context.Context, input string) (*db.CreatePhraseReq
 	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
-      {Role: openai.ChatMessageRoleSystem, Content: c.systemPrompt},
+			{Role: openai.ChatMessageRoleSystem, Content: c.systemPrompt},
 			{Role: openai.ChatMessageRoleUser, Content: input},
 		},
 		ResponseFormat: &openai.ChatCompletionResponseFormat{

@@ -18,8 +18,8 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
 	"github.com/andreistefanciprian/phrasely/migrations"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver for database/sql, used by goose
+	"github.com/joho/godotenv"
 	"github.com/pressly/goose/v3"
 )
 
