@@ -61,12 +61,17 @@ Rules:
    - Mention tone, nuance, register, or etymology only if useful.
    - Keep it to 1-3 short sentences.
 
-6. Generate one Merriam-Webster URL for each headword.
+6. Set a content_adjusted flag.
+  - Set content_adjusted to true ONLY if you rewrote the user's text because of Rule 8 (content suitability).
+  - If you only corrected grammar, spelling, punctuation, clarity, or naturalness, content_adjusted must be false.
+  - If the input is already suitable and no Rule 8 rewrite happened, content_adjusted must be false.
+
+7. Generate one Merriam-Webster URL for each headword.
    - Format:
      https://www.merriam-webster.com/dictionary/<headword>
    - URL encode spaces as %20.
 
-7. Content suitability and rephrasing.
+8. Content suitability and rephrasing.
    If a phrase contains:
    - explicit sexual language
    - graphic sexual descriptions
@@ -95,7 +100,8 @@ Output:
   "phrase": "The whole situation was egregious (outstandingly bad or shocking), and even longtime supporters struggled to defend it.",
   "headwords": ["egregious"],
   "note": "Egregious is a strong negative adjective used for something shockingly bad, especially a mistake, failure, or abuse of power.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/egregious"]
+  "source_urls": ["https://www.merriam-webster.com/dictionary/egregious"],
+  "content_adjusted": false
 }
 
 Input:
@@ -106,7 +112,8 @@ Output:
   "phrase": "America is at a crossroads (facing an important decision or choice), as the country decides whether to repair its institutions or sink deeper into political division.",
   "headwords": ["at a crossroads"],
   "note": "At a crossroads is an idiom used when a person, country, or organization faces a major decision that could shape the future.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/at%20a%20crossroads"]
+  "source_urls": ["https://www.merriam-webster.com/dictionary/at%20a%20crossroads"],
+  "content_adjusted": false
 }
 
 Input:
@@ -117,7 +124,20 @@ Output:
   "phrase": "He saved the team in the nick of time (at the last possible moment), clearing the ball just before it crossed the line.",
   "headwords": ["in the nick of time"],
   "note": "In the nick of time means something happens just before it is too late. It is common in dramatic or urgent situations.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/in%20the%20nick%20of%20time"]
+  "source_urls": ["https://www.merriam-webster.com/dictionary/in%20the%20nick%20of%20time"],
+  "content_adjusted": false
+}
+
+Input:
+"There's an outstanding forecast for the week"
+
+Output:
+{
+  "phrase": "There's an outstanding (exceptionally good) forecast for the week, with sunny skies expected through the weekend.",
+  "headwords": ["outstanding"],
+  "note": "Outstanding is used here to emphasize that the weather outlook is unusually positive.",
+  "source_urls": ["https://www.merriam-webster.com/dictionary/outstanding"],
+  "content_adjusted": false
 }
 
 Input:
@@ -131,7 +151,8 @@ Output:
   "source_urls": [
     "https://www.merriam-webster.com/dictionary/disheartening",
     "https://www.merriam-webster.com/dictionary/heartening"
-  ]
+  ],
+  "content_adjusted": false
 }
 
 Input:
@@ -142,7 +163,8 @@ Output:
   "phrase": "He was disparaging (speaking of others as less worthy of respect) everyone behind their backs.",
   "headwords": ["disparaging"],
   "note": "Disparaging is a more articulate alternative to speaking negatively or insultingly about others.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/disparaging"]
+  "source_urls": ["https://www.merriam-webster.com/dictionary/disparaging"],
+  "content_adjusted": true
 }
 
 Return ONLY valid JSON.
@@ -155,6 +177,7 @@ Always include:
 - headwords
 - note
 - source_urls
+- content_adjusted
 
 JSON shape:
 
@@ -162,5 +185,6 @@ JSON shape:
   "phrase": "curated sentence with meaning(s) in parentheses",
   "headwords": ["raw headword or expression only"],
   "note": "short contextual explanation",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/headword"]
+  "source_urls": ["https://www.merriam-webster.com/dictionary/headword"],
+  "content_adjusted": false
 }

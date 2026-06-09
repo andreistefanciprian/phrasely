@@ -29,6 +29,29 @@
   #preview-headwords { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
   #preview-headwords a { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--navy); text-decoration: none; border-bottom: 1px solid var(--teal); padding-bottom: 1px; transition: color 0.15s; }
   #preview-headwords a:hover { color: var(--blue); }
+  #content-adjusted-note {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.9rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  #content-adjusted-note .badge {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 1px solid #f4b3b3;
+    background: #fff3f3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: #c24a4a;
+    flex: 0 0 auto;
+  }
   #preview-note { font-size: 0.9rem; line-height: 1.6; color: var(--secondary); margin-bottom: 1.75rem; }
 
   .success { display: none; margin-top: 2rem; padding: 1rem 1.25rem; background: var(--surface); border-radius: 10px; font-size: 0.9rem; color: var(--navy); animation: fadeUp 0.3s ease; }
@@ -54,6 +77,7 @@
     <p class="review-label">Review before saving</p>
     <p id="preview-phrase"></p>
     <div id="preview-headwords"></div>
+    <p id="content-adjusted-note"><span class="badge" aria-hidden="true">!</span>Some wording was adjusted to keep the example suitable for vocabulary-focused learning.</p>
     <p id="preview-note"></p>
     <div class="actions">
       <button class="btn btn-primary" id="save-btn">Save phrase</button>
@@ -100,6 +124,9 @@
     if (!res.ok) { err.textContent = 'Curation failed. Please try again.'; return; }
 
     curated = await res.json();
+
+    const adjustedEl = document.getElementById('content-adjusted-note');
+    adjustedEl.style.display = curated.content_adjusted ? 'flex' : 'none';
 
     document.getElementById('preview-phrase').innerHTML =
       escapeHtml(curated.phrase).replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
