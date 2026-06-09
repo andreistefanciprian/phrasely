@@ -5,6 +5,7 @@
       <a href="/bubble"><img src="/static/logo.png" alt="Phrasely"></a>
     </div>
     <a href="/bubble"  class="nav-link{{if eq .Page "bubble"}} active{{end}}">Bubble</a>
+    <a href="/index"   class="nav-link{{if eq .Page "index"}} active{{end}}">Shuffle</a>
     <a href="/phrases" class="nav-link{{if eq .Page "phrases"}} active{{end}}">Phrases</a>
     <a href="/add"     class="nav-link{{if eq .Page "add"}} active{{end}}">Add</a>
     <form method="POST" action="/sign-out" id="top-signout-form" style="margin-left:auto;">
