@@ -6,7 +6,12 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd ./cmd
-COPY --exclude=curate/system_prompt.txt internal ./internal
+COPY internal/auth ./internal/auth
+COPY internal/db ./internal/db
+COPY internal/email ./internal/email
+COPY internal/middleware ./internal/middleware
+COPY internal/phrases ./internal/phrases
+COPY internal/curate/*.go ./internal/curate/
 COPY migrations ./migrations
 # CGO_ENABLED=0  — static binary, no C runtime dependency
 # -trimpath      — removes local file paths from the binary
