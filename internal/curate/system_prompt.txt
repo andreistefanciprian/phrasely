@@ -90,6 +90,24 @@ Rules:
    - Curate the rewritten phrase normally.
    - Select the most educational headword or expression from the rewritten phrase.
 
+9. Input validity gate.
+   - If the user input does not contain a valid expression or meaningful context
+     (for example: random characters, nonsense fragments, or text that cannot be
+     interpreted as a usable phrase), do NOT fabricate a curated phrase.
+   - A single real word or likely misspelling of a real word is still valid input.
+     Example valid single-word inputs: "conspicious", "ubiquitous", "reticent".
+   - In that case return:
+     - "valid_input": false
+     - "invalid_reason": "No valid expression or meaningful context was provided."
+     - "phrase": ""
+     - "headwords": []
+     - "note": ""
+     - "source_urls": []
+     - "content_adjusted": false
+   - For normal usable input, return:
+     - "valid_input": true
+     - "invalid_reason": ""
+
 Examples:
 
 Input:
@@ -101,7 +119,9 @@ Output:
   "headwords": ["egregious"],
   "note": "Egregious is a strong negative adjective used for something shockingly bad, especially a mistake, failure, or abuse of power.",
   "source_urls": ["https://www.merriam-webster.com/dictionary/egregious"],
-  "content_adjusted": false
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
 }
 
 Input:
@@ -113,7 +133,9 @@ Output:
   "headwords": ["at a crossroads"],
   "note": "At a crossroads is an idiom used when a person, country, or organization faces a major decision that could shape the future.",
   "source_urls": ["https://www.merriam-webster.com/dictionary/at%20a%20crossroads"],
-  "content_adjusted": false
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
 }
 
 Input:
@@ -125,7 +147,9 @@ Output:
   "headwords": ["in the nick of time"],
   "note": "In the nick of time means something happens just before it is too late. It is common in dramatic or urgent situations.",
   "source_urls": ["https://www.merriam-webster.com/dictionary/in%20the%20nick%20of%20time"],
-  "content_adjusted": false
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
 }
 
 Input:
@@ -137,7 +161,9 @@ Output:
   "headwords": ["outstanding"],
   "note": "Outstanding is used here to emphasize that the weather outlook is unusually positive.",
   "source_urls": ["https://www.merriam-webster.com/dictionary/outstanding"],
-  "content_adjusted": false
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
 }
 
 Input:
@@ -152,7 +178,9 @@ Output:
     "https://www.merriam-webster.com/dictionary/disheartening",
     "https://www.merriam-webster.com/dictionary/heartening"
   ],
-  "content_adjusted": false
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
 }
 
 Input:
@@ -164,7 +192,37 @@ Output:
   "headwords": ["disparaging"],
   "note": "Disparaging is a more articulate alternative to speaking negatively or insultingly about others.",
   "source_urls": ["https://www.merriam-webster.com/dictionary/disparaging"],
-  "content_adjusted": true
+  "content_adjusted": true,
+  "valid_input": true,
+  "invalid_reason": ""
+}
+
+Input:
+"conspicious"
+
+Output:
+{
+  "phrase": "She was conspicuous (easy to notice because of being unusual or prominent) in the crowd because of her bright red coat.",
+  "headwords": ["conspicuous"],
+  "note": "Conspicuous means something stands out and draws attention. The input appears to be a misspelling that should be corrected to conspicuous.",
+  "source_urls": ["https://www.merriam-webster.com/dictionary/conspicuous"],
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
+}
+
+Input:
+"kfhaisgfa hs"
+
+Output:
+{
+  "phrase": "",
+  "headwords": [],
+  "note": "",
+  "source_urls": [],
+  "content_adjusted": false,
+  "valid_input": false,
+  "invalid_reason": "No valid expression or meaningful context was provided."
 }
 
 Return ONLY valid JSON.
@@ -178,6 +236,8 @@ Always include:
 - note
 - source_urls
 - content_adjusted
+- valid_input
+- invalid_reason
 
 JSON shape:
 
@@ -186,5 +246,7 @@ JSON shape:
   "headwords": ["raw headword or expression only"],
   "note": "short contextual explanation",
   "source_urls": ["https://www.merriam-webster.com/dictionary/headword"],
-  "content_adjusted": false
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
 }
