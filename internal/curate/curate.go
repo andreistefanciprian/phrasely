@@ -57,9 +57,17 @@ func (c *Curator) Curate(ctx context.Context, input string) (*CuratedPhrase, err
 	if err != nil {
 		return nil, fmt.Errorf("openai request: %w", err)
 	}
+	if len(resp.Choices) == 0 {
+		return nil, fmt.Errorf("openai response: empty choices")
+	}
+
+	content := strings.TrimSpace(resp.Choices[0].Message.Content)
+	if content == "" {
+		return nil, fmt.Errorf("openai response: empty message content")
+	}
 
 	var result CuratedPhrase
-	if err := json.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
+	if err := json.Unmarshal([]byte(content), &result); err != nil {
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 	return &result, nil
