@@ -7,7 +7,7 @@
     <a href="/bubble"  class="nav-link{{if eq .Page "bubble"}} active{{end}}">Bubble</a>
     <a href="/phrases" class="nav-link{{if eq .Page "phrases"}} active{{end}}">Phrases</a>
     <a href="/add"     class="nav-link{{if eq .Page "add"}} active{{end}}">Add</a>
-    <form method="POST" action="/sign-out" style="margin-left:auto;">
+    <form method="POST" action="/sign-out" id="top-signout-form" style="margin-left:auto;">
       <button id="signout-btn" class="nav-link" title="Sign out" aria-label="Sign out">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -47,15 +47,16 @@
     </svg>
     <span>Add</span>
   </a>
-  <form method="POST" action="/sign-out" class="tab" style="flex:1;">
-    <button class="tab" aria-label="Sign out" style="width:100%;">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-        <polyline points="16 17 21 12 16 7"/>
-        <line x1="21" y1="12" x2="9" y2="12"/>
-      </svg>
-      <span>Sign out</span>
-    </button>
-  </form>
+  <a href="/index" class="tab{{if eq .Page "index"}} active{{end}}" aria-label="Shuffle">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 3h5v5"/>
+      <path d="M4 20L21 3"/>
+      <path d="M3 7h5"/>
+      <path d="M8 7l5 5"/>
+      <path d="M16 21h5v-5"/>
+      <path d="M21 21l-8-8"/>
+    </svg>
+    <span>Shuffle</span>
+  </a>
 </nav>
 {{end}}
