@@ -98,7 +98,13 @@ func main() {
 
 	// Curate endpoint is optional — only registered when an API key is configured.
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
-		curate.NewHandler(curate.NewCurator(apiKey)).RegisterRoutes(r)
+		curator, err := curate.NewCurator(apiKey)
+		if err != nil {
+			slog.Error("failed to initialize curator", "error", err)
+			os.Exit(1)
+		}
+
+		curate.NewHandler(curator).RegisterRoutes(r)
 		slog.Info("curate endpoint enabled")
 	} else {
 		slog.Warn("OPENAI_API_KEY not set — curate endpoint disabled")
