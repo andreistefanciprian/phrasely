@@ -77,7 +77,9 @@ func newTestServer(store db.Store) *httptest.Server {
 func TestListPhrases_ReturnsAll(t *testing.T) {
 	store := &mockStore{
 		listPhrases: func(_ context.Context, userID string, headword string) ([]db.Phrase, error) {
-			if userID != testUserID { t.Errorf("expected userID %q, got %q", testUserID, userID) }
+			if userID != testUserID {
+				t.Errorf("expected userID %q, got %q", testUserID, userID)
+			}
 			return []db.Phrase{
 				{ID: "1", Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
 				{ID: "2", Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
@@ -140,7 +142,9 @@ func TestListPhrases_EmptyReturnsArray(t *testing.T) {
 func TestListPhrases_HeadwordFilter(t *testing.T) {
 	store := &mockStore{
 		listPhrases: func(_ context.Context, userID string, headword string) ([]db.Phrase, error) {
-			if userID != testUserID { t.Errorf("expected userID %q, got %q", testUserID, userID) }
+			if userID != testUserID {
+				t.Errorf("expected userID %q, got %q", testUserID, userID)
+			}
 			if headword != "serendipitous" {
 				t.Errorf("expected headword %q, got %q", "serendipitous", headword)
 			}
@@ -169,7 +173,9 @@ const validUUID = "550e8400-e29b-41d4-a716-446655440000"
 func TestGetPhrase_Success(t *testing.T) {
 	store := &mockStore{
 		getPhrase: func(_ context.Context, userID string, id string) (*db.Phrase, error) {
-			if userID != testUserID { t.Errorf("expected userID %q, got %q", testUserID, userID) }
+			if userID != testUserID {
+				t.Errorf("expected userID %q, got %q", testUserID, userID)
+			}
 			return &db.Phrase{ID: id, Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}}, nil
 		},
 	}
@@ -446,7 +452,9 @@ func TestDeletePhrase_InvalidID(t *testing.T) {
 func TestCreatePhrase_Success(t *testing.T) {
 	store := &mockStore{
 		createPhrase: func(_ context.Context, userID string, req db.CreatePhraseRequest) (*db.Phrase, error) {
-			if userID != testUserID { t.Errorf("expected userID %q, got %q", testUserID, userID) }
+			if userID != testUserID {
+				t.Errorf("expected userID %q, got %q", testUserID, userID)
+			}
 			// Return a phrase that mirrors what Postgres would give back
 			return &db.Phrase{
 				ID:        "some-uuid",

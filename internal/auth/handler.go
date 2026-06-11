@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-
 const (
 	magicLinkTTL = 15 * time.Minute
 	jwtTTL       = 30 * 24 * time.Hour // 30 days

@@ -125,12 +125,12 @@ func (app *application) signOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:    authCookieName,
-		Value:   "",
-		Path:    "/",
+		Name:     authCookieName,
+		Value:    "",
+		Path:     "/",
 		HttpOnly: true,
-		MaxAge:  -1,
-		Expires: time.Unix(0, 0),
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
 	})
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
