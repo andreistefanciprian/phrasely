@@ -7,15 +7,13 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"time"
 )
 
 //go:embed templates/* static/*
 var files embed.FS
 
 type application struct {
-	sessions *SessionStore
-	api      *apiClient
+	api *apiClient
 }
 
 func main() {
@@ -24,12 +22,8 @@ func main() {
 		apiURL = "http://localhost:8080"
 	}
 
-	sessions := newSessionStore()
-	sessions.startCleanup(1 * time.Hour)
-
 	app := &application{
-		sessions: sessions,
-		api:      newAPIClient(apiURL),
+		api: newAPIClient(apiURL),
 	}
 
 	mux := http.NewServeMux()
@@ -74,7 +68,7 @@ func main() {
 	mux.HandleFunc("/add", app.requireAuth(app.addPage))
 	mux.HandleFunc("/index", app.requireAuth(app.indexPage))
 
-	// API proxy — session-authenticated, forwards to private API
+	// API proxy — cookie-authenticated, forwards to private API
 	mux.HandleFunc("/fd/", app.requireAuth(app.apiProxy))
 
 	port := os.Getenv("PORT")

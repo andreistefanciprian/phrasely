@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+const authCookieName = "auth_token"
+const authCookieTTL = 30 * 24 * time.Hour
+
 type ctxKey string
 
 const ctxKeyJWT ctxKey = "jwt"
@@ -22,12 +25,12 @@ func jwtFromContext(ctx context.Context) string {
 // requireAuth wraps a handler and redirects unauthenticated requests to /login.
 func (app *application) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session")
+		cookie, err := r.Cookie(authCookieName)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		jwt := app.sessions.Get(cookie.Value)
+		jwt := strings.TrimSpace(cookie.Value)
 		if jwt == "" {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
@@ -50,8 +53,8 @@ func (app *application) homePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Already signed in → go to bubble
-	if cookie, err := r.Cookie("session"); err == nil {
-		if app.sessions.Get(cookie.Value) != "" {
+	if cookie, err := r.Cookie(authCookieName); err == nil {
+		if strings.TrimSpace(cookie.Value) != "" {
 			http.Redirect(w, r, "/bubble", http.StatusSeeOther)
 			return
 		}
@@ -102,17 +105,16 @@ func (app *application) authVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID := app.sessions.Create(jwt)
 	// Secure=true only over HTTPS — false on plain HTTP localhost
 	secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
-		Value:    sessionID,
+		Name:     authCookieName,
+		Value:    jwt,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(sessionTTL.Seconds()),
+		MaxAge:   int(authCookieTTL.Seconds()),
 	})
 	http.Redirect(w, r, "/bubble", http.StatusSeeOther)
 }
@@ -122,13 +124,11 @@ func (app *application) signOut(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if cookie, err := r.Cookie("session"); err == nil {
-		app.sessions.Delete(cookie.Value)
-	}
 	http.SetCookie(w, &http.Cookie{
-		Name:    "session",
+		Name:    authCookieName,
 		Value:   "",
 		Path:    "/",
+		HttpOnly: true,
 		MaxAge:  -1,
 		Expires: time.Unix(0, 0),
 	})
@@ -168,7 +168,7 @@ func (app *application) phrasesPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// apiProxy forwards /fd/* requests to the private API using the session JWT.
+// apiProxy forwards /fd/* requests to the private API using the auth JWT.
 // This keeps the API private while letting browser JS call frontdoor endpoints.
 func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 	jwt := jwtFromContext(r.Context())
