@@ -21,5 +21,5 @@ The goal is simple: turn interesting words and expressions you hear in everyday 
 ## Documentation
 
 - [docs/local-development.md](docs/local-development.md) — local setup and day-to-day commands
-- [docs/frontend-architecture.md](docs/frontend-architecture.md) — frontend/API flow and session model
+- [docs/frontend-architecture.md](docs/frontend-architecture.md) — frontend/API flow and cookie auth model
 - [docs/auth-magic-link.md](docs/auth-magic-link.md) — magic link authentication flow

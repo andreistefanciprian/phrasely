@@ -44,13 +44,11 @@ sequenceDiagram
         API-->>Frontend: { token: "<signed JWT>" }
     end
 
-    Frontend->>Frontend: store JWT server-side (sessions["abc123"] = JWT)
-    Frontend-->>User: Set-Cookie: session=abc123 (HttpOnly, Secure)
+    Frontend-->>User: Set-Cookie: auth_token=<JWT> (HttpOnly, Secure)
 
     Note over Frontend,API: All subsequent requests
 
-    User->>Frontend: GET /bubble (Cookie: session=abc123)
-    Frontend->>Frontend: look up sessions["abc123"] → JWT
+    User->>Frontend: GET /bubble (Cookie: auth_token=<JWT>)
     Frontend->>API: GET /api/v1/phrases (Authorization: Bearer <JWT>)
     API->>API: validate JWT signature + expiry
     API-->>Frontend: phrases for this user
@@ -65,9 +63,19 @@ sequenceDiagram
 | JWT TTL | 30 days |
 | Token reuse | Not allowed — marked used on first click |
 | Token storage | DB (`magic_link_tokens` table) |
-| JWT storage | Frontend server-side only (never in browser) |
-| Session cookie | httpOnly, Secure — session ID only, not the JWT |
+| JWT storage | Browser cookie (`auth_token`, `HttpOnly`, `Secure` in production) |
+| Cookie content | JWT (not a random session ID) |
 | JWT signing | HMAC-SHA256 with `JWT_SECRET` env var |
+
+## Security trade-off
+
+The previous session-ID approach was more secure in theory because the JWT never touched the browser.
+In practice, both approaches rely on the same browser protections that we still enforce now: `HttpOnly`, `Secure` (in production), and `SameSite=Lax`.
+
+The main capability we gave up is immediate server-side revocation. With a session store, deleting the server entry invalidates access instantly. With a signed JWT cookie, revocation is not immediate unless extra infrastructure is added (for example, a denylist or short-lived access tokens plus refresh rotation).
+
+At the current scale (personal app, around 50 users), we are prioritizing a smoother UX that avoids forced re-logins on frontend restarts/redeploys.
+As usage grows or revocation requirements become stricter, we should revisit the session-ID model (or an equivalent revocation-capable design).
 
 ## Local dev
 

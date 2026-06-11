@@ -49,11 +49,10 @@ sequenceDiagram
     Frontend->>API: GET /auth/verify?token=<uuid>
     API-->>Frontend: { token: "<signed JWT>" }
 
-    Note over Frontend: stores JWT in memory<br/>sessions["abc123"] = "<JWT>"
-    Frontend-->>Browser: Set-Cookie: session=abc123 (HttpOnly, Secure)
+    Frontend-->>Browser: Set-Cookie: auth_token=<JWT> (HttpOnly, Secure)
     Browser-->>Browser: redirects to /bubble
 
-    Note over Browser: Browser holds only "abc123"<br/>JWT never leaves the server
+    Note over Browser: Browser sends auth_token cookie automatically<br/>JS cannot read it (HttpOnly)
 ```
 
 ## Page request flow
@@ -66,8 +65,7 @@ sequenceDiagram
     participant API
 
     User->>Browser: navigates to /bubble
-    Browser->>Frontend: GET /bubble (Cookie: session=abc123)
-    Frontend->>Frontend: look up sessions["abc123"] → JWT
+    Browser->>Frontend: GET /bubble (Cookie: auth_token=<JWT>)
     Frontend->>API: GET /api/v1/phrases (Authorization: Bearer <JWT>)
     API-->>Frontend: [ ...phrases... ]
     Frontend-->>Browser: rendered HTML with phrase data embedded
@@ -77,8 +75,8 @@ sequenceDiagram
 ## Interactive actions via /fd/
 
 For actions that need JS interactivity (edit, delete, curate), the browser calls
-`/fd/*` endpoints on the frontend. The frontend looks up the JWT from the session
-and forwards the request to the private API.
+`/fd/*` endpoints on the frontend. The frontend reads the JWT from the
+`auth_token` cookie and forwards the request to the private API.
 
 ```mermaid
 sequenceDiagram
@@ -88,15 +86,14 @@ sequenceDiagram
     participant API
 
     User->>Browser: clicks "Curate with AI"
-    Browser->>Frontend: POST /fd/phrases/curate (Cookie: session=abc123)
+    Browser->>Frontend: POST /fd/phrases/curate (Cookie: auth_token=<JWT>)
     Note over Frontend: no Bearer token in the request —<br/>cookie is enough
-    Frontend->>Frontend: look up sessions["abc123"] → JWT
     Frontend->>API: POST /api/v1/phrases/curate (Authorization: Bearer <JWT>)
     API-->>Frontend: curated phrase
     Frontend-->>Browser: JSON response
 
     User->>Browser: clicks Save
-    Browser->>Frontend: POST /fd/phrases (Cookie: session=abc123)
+    Browser->>Frontend: POST /fd/phrases (Cookie: auth_token=<JWT>)
     Frontend->>API: POST /api/v1/phrases (Authorization: Bearer <JWT>)
     API-->>Frontend: saved phrase
     Frontend-->>Browser: JSON response
@@ -106,9 +103,22 @@ sequenceDiagram
 
 | Property | Value |
 |---|---|
-| Session storage | In-memory map on frontend (resets on restart) |
-| Session TTL | 30 days (matches JWT expiry) |
-| Session ID | 32-char random hex string |
+| Auth storage | Browser cookie (`auth_token`) |
+| Cookie TTL | 30 days (matches JWT expiry) |
+| Cookie content | Signed JWT |
 | Cookie flags | `HttpOnly`, `Secure` (in production), `SameSite=Lax` |
-| `/fd/` routes | Session-authenticated, proxy to private API |
+| `/fd/` routes | Cookie-authenticated, proxy to private API |
 | API exposure | No public URL — only reachable via frontend on `railway.internal` |
+
+## Security trade-off
+
+The old session-ID design was more secure in theory because the JWT stayed server-side.
+The practical XSS protection is still strong in this design because the auth cookie is protected by `HttpOnly`, `Secure` (in production), and `SameSite=Lax`.
+
+The real trade-off is revocation behavior:
+
+- Session store model: immediate server-side invalidation by deleting the session record.
+- JWT cookie model: token remains valid until expiry (30 days) unless explicit revocation infrastructure is added.
+
+At the current product size (personal app, around 50 users), we are prioritizing a smoother experience that avoids forced re-logins on frontend restarts/redeploys.
+As the platform grows, we should revisit a session-ID model (or another revocation-capable approach) to improve immediate invalidation controls.
