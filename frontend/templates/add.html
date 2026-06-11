@@ -191,7 +191,7 @@
       document.getElementById('review').style.display = 'none';
       document.getElementById('input').value = '';
       const successEl = document.getElementById('success-msg');
-      successEl.innerHTML = `Phrase saved. <a href="/index?id=${saved.id}">See it now →</a> or <a href="/add">add another</a>.`;
+      successEl.innerHTML = `Phrase saved. <a href="/index?id=${saved.id}">See it now →</a>`;
       successEl.style.display = 'block';
       curated = null;
     } else {
