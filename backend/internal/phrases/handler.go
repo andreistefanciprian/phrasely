@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
@@ -95,6 +96,10 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		respondErr(w, http.StatusBadRequest, "phrase and at least one headword are required")
 		return
 	}
+	if hasBlankHeadword(req.Headwords) {
+		respondErr(w, http.StatusBadRequest, "headwords cannot be blank")
+		return
+	}
 
 	phrase, err := h.store.CreatePhrase(r.Context(), userID, req)
 	if err != nil {
@@ -138,6 +143,10 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		respondErr(w, http.StatusBadRequest, "headwords cannot be empty")
 		return
 	}
+	if hasBlankHeadword(req.Headwords) {
+		respondErr(w, http.StatusBadRequest, "headwords cannot be blank")
+		return
+	}
 
 	phrase, err := h.store.UpdatePhrase(r.Context(), userID, id, req)
 	if err != nil {
@@ -173,6 +182,16 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// hasBlankHeadword reports whether any headword is empty or whitespace-only.
+func hasBlankHeadword(headwords []string) bool {
+	for _, h := range headwords {
+		if strings.TrimSpace(h) == "" {
+			return true
+		}
+	}
+	return false
 }
 
 // parseID extracts and validates the {id} path variable as a UUID.
