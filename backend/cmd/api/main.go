@@ -81,6 +81,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	magicLinkTTL := durationEnv("MAGIC_LINK_TTL", 15*time.Minute)
+	jwtTTL := durationEnv("JWT_TTL", 30*24*time.Hour)
+
 	r.Use(middleware.Authenticate(jwtSecret))
 
 	var mailer email.Sender
@@ -93,7 +96,7 @@ func main() {
 		mailer = &email.LogSender{}
 		slog.Warn("RESEND_API_KEY or EMAIL_FROM not set — magic links logged to stdout")
 	}
-	auth.NewHandler(store, baseURL, jwtSecret, mailer).RegisterRoutes(r)
+	auth.NewHandler(store, baseURL, jwtSecret, mailer, magicLinkTTL, jwtTTL).RegisterRoutes(r)
 	phrases.NewHandler(store).RegisterRoutes(r)
 
 	// Curate endpoint is optional — only registered when an API key is configured.
@@ -159,4 +162,19 @@ func runMigrations(dsn string) error {
 
 	slog.Info("migrations applied")
 	return nil
+}
+
+// durationEnv reads a duration from the named env var (e.g. "15m", "720h"),
+// falling back to def if unset or invalid.
+func durationEnv(key string, def time.Duration) time.Duration {
+	val := os.Getenv(key)
+	if val == "" {
+		return def
+	}
+	d, err := time.ParseDuration(val)
+	if err != nil {
+		slog.Warn("invalid duration env var, using default", "key", key, "value", val, "default", def)
+		return def
+	}
+	return d
 }

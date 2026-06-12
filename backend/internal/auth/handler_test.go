@@ -78,7 +78,7 @@ func (s *spySender) SendMagicLink(to, _ string) error {
 
 func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()
-	NewHandler(store, "http://localhost:8080", testSecret, &email.LogSender{}).RegisterRoutes(r)
+	NewHandler(store, "http://localhost:8080", testSecret, &email.LogSender{}, 15*time.Minute, 30*24*time.Hour).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 
@@ -258,7 +258,7 @@ func TestVerify_RaceConditionAlreadyConsumed(t *testing.T) {
 
 func newTestServerWithMailer(store db.Store, mailer email.Sender) *httptest.Server {
 	r := mux.NewRouter()
-	NewHandler(store, "http://localhost:8080", testSecret, mailer).RegisterRoutes(r)
+	NewHandler(store, "http://localhost:8080", testSecret, mailer, 15*time.Minute, 30*24*time.Hour).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 
