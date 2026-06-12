@@ -10,7 +10,7 @@ services:
       - api
 
   api:
-    build: .
+    build: ./backend
     # Port only exposed for scripts/api.sh direct access in local dev.
     # In production the API is private — all browser traffic routes through frontend.
     ports:

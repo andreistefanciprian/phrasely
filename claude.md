@@ -14,7 +14,7 @@ A platform for building and sharing English phrase collections, with AI-powered 
 
 ## Conventions
 
-- `db.Store` interface in `internal/db/db.go` — one central interface, all domain methods added here as we build them
+- `db.Store` interface in `backend/internal/db/db.go` — one central interface, all domain methods added here as we build them
 - Concrete implementation: `db.PostgresStore` — holds `*pgxpool.Pool`
 - Dependency injection via constructors (urlshortener pattern)
 - `docker compose up --build` to run everything; no local Go needed
