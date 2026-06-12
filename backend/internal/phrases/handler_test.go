@@ -344,8 +344,6 @@ func TestUpdatePhrase_EmptyFieldValues(t *testing.T) {
 	}{
 		{"empty phrase", `{"phrase":""}`},
 		{"empty headwords", `{"headwords":[]}`},
-		{"blank headword", `{"headwords":[""]}`},
-		{"whitespace headword", `{"headwords":["  "]}`},
 	}
 
 	for _, tc := range tests {
@@ -511,8 +509,6 @@ func TestCreatePhrase_MissingFields(t *testing.T) {
 		{"missing phrase", `{"headwords":["serendipitous"]}`},
 		{"missing headwords", `{"phrase":"It was serendipitous."}`},
 		{"empty body", `{}`},
-		{"blank headword", `{"phrase":"It was serendipitous.","headwords":[""]}`},
-		{"whitespace headword", `{"phrase":"It was serendipitous.","headwords":["  "]}`},
 	}
 
 	for _, tc := range tests {

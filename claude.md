@@ -36,6 +36,7 @@ A platform for building and sharing English phrase collections, with AI-powered 
 ## Open questions
 
 - **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
+- **Empty string headwords** — `{"headwords":[""]}` is currently accepted. Should we validate that each element in the array is non-blank?
 
 ## Release tagging
 

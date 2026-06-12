@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
@@ -74,6 +73,8 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 
 // maxBodyBytes is the maximum request body size we accept (1 KB).
 // A phrase, headword, and note easily fit within this; anything larger is rejected.
+// Note: blank-string headwords (e.g. [""]) are currently accepted; revisit if it
+// causes issues with curation or display.
 const maxBodyBytes = 1024
 
 // create handles POST /api/v1/phrases.
@@ -94,10 +95,6 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	// phrase and at least one headword are required; note is optional
 	if req.Phrase == "" || len(req.Headwords) == 0 {
 		respondErr(w, http.StatusBadRequest, "phrase and at least one headword are required")
-		return
-	}
-	if hasBlankHeadword(req.Headwords) {
-		respondErr(w, http.StatusBadRequest, "headwords cannot be blank")
 		return
 	}
 
@@ -143,10 +140,6 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		respondErr(w, http.StatusBadRequest, "headwords cannot be empty")
 		return
 	}
-	if hasBlankHeadword(req.Headwords) {
-		respondErr(w, http.StatusBadRequest, "headwords cannot be blank")
-		return
-	}
 
 	phrase, err := h.store.UpdatePhrase(r.Context(), userID, id, req)
 	if err != nil {
@@ -182,16 +175,6 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// hasBlankHeadword reports whether any headword is empty or whitespace-only.
-func hasBlankHeadword(headwords []string) bool {
-	for _, h := range headwords {
-		if strings.TrimSpace(h) == "" {
-			return true
-		}
-	}
-	return false
 }
 
 // parseID extracts and validates the {id} path variable as a UUID.
