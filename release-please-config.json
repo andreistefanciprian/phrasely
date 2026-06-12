@@ -2,11 +2,15 @@
   "packages": {
     "frontend": {
       "release-type": "simple",
-      "component": "frontend"
+      "component": "frontend",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
     },
     "backend": {
       "release-type": "simple",
-      "component": "backend"
+      "component": "backend",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
     }
   },
   "separate-pull-requests": true,
