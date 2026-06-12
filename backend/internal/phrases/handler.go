@@ -73,6 +73,8 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 
 // maxBodyBytes is the maximum request body size we accept (1 KB).
 // A phrase, headword, and note easily fit within this; anything larger is rejected.
+// Note: blank-string headwords (e.g. [""]) are currently accepted; revisit if it
+// causes issues with curation or display.
 const maxBodyBytes = 1024
 
 // create handles POST /api/v1/phrases.
