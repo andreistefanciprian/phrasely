@@ -38,6 +38,13 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
 - **Empty string headwords** — `{"headwords":[""]}` is currently accepted. Should we validate that each element in the array is non-blank?
 
+## Release tagging
+
+- [release-please](https://github.com/googleapis/release-please) runs on every push to `main` (`.github/workflows/release-please.yml`), tracking `frontend/` and `backend/` as separate packages (`release-please-config.json` / `.release-please-manifest.json`).
+- It opens/updates a release PR per component; merging that PR tags the release as `frontend-vX.Y.Z` / `backend-vX.Y.Z` and updates that package's `CHANGELOG.md`.
+- **Commit messages and PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/)** (`feat:`, `fix:`, `chore:`, etc.) — this is what release-please uses to decide the version bump and changelog entries. Prefix with the scope when relevant, e.g. `feat(frontend): add shuffle button`.
+- Railway services should have **Watch Paths** set to `frontend/**` and `backend/**` respectively (dashboard config, not in repo) so each service only redeploys when its own folder changes.
+
 ## Git workflow
 
 - Every change goes in a PR — never push directly to `main`
