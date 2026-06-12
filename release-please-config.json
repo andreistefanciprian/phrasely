@@ -10,8 +10,7 @@
       "release-type": "simple",
       "component": "backend",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
-      "release-as": "0.0.1"
+      "bump-patch-for-minor-pre-major": true
     }
   },
   "separate-pull-requests": true,
