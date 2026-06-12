@@ -14,24 +14,23 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const (
-	magicLinkTTL = 15 * time.Minute
-	jwtTTL       = 30 * 24 * time.Hour // 30 days
-)
-
 type Handler struct {
-	store     db.Store
-	baseURL   string       // used to build the magic link; e.g. "http://localhost:3000"
-	jwtSecret []byte       // signs and verifies JWTs
-	mailer    email.Sender // sends magic link emails (ResendSender or LogSender)
+	store        db.Store
+	baseURL      string        // used to build the magic link; e.g. "http://localhost:3000"
+	jwtSecret    []byte        // signs and verifies JWTs
+	mailer       email.Sender  // sends magic link emails (ResendSender or LogSender)
+	magicLinkTTL time.Duration // how long a magic link token is valid for
+	jwtTTL       time.Duration // how long an issued JWT is valid for
 }
 
-func NewHandler(store db.Store, baseURL, jwtSecret string, mailer email.Sender) *Handler {
+func NewHandler(store db.Store, baseURL, jwtSecret string, mailer email.Sender, magicLinkTTL, jwtTTL time.Duration) *Handler {
 	return &Handler{
-		store:     store,
-		baseURL:   baseURL,
-		jwtSecret: []byte(jwtSecret),
-		mailer:    mailer,
+		store:        store,
+		baseURL:      baseURL,
+		jwtSecret:    []byte(jwtSecret),
+		mailer:       mailer,
+		magicLinkTTL: magicLinkTTL,
+		jwtTTL:       jwtTTL,
 	}
 }
 
@@ -71,7 +70,7 @@ func (h *Handler) request(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.store.CreateMagicLinkToken(r.Context(), user.ID, time.Now().Add(magicLinkTTL))
+	token, err := h.store.CreateMagicLinkToken(r.Context(), user.ID, time.Now().Add(h.magicLinkTTL))
 	if err != nil {
 		slog.Error("create magic link token", "error", err)
 		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to process request"})
@@ -144,7 +143,7 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Issue a signed JWT containing the user ID
-	signed, err := SignJWT(record.UserID, string(h.jwtSecret), jwtTTL)
+	signed, err := SignJWT(record.UserID, string(h.jwtSecret), h.jwtTTL)
 	if err != nil {
 		slog.Error("sign jwt", "error", err)
 		respond(w, http.StatusInternalServerError, map[string]string{"error": "failed to issue token"})
