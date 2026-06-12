@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.1...backend-v0.0.2) (2026-06-12)
+
+
+### Features
+
+* **backend:** make magic link and JWT expiry configurable ([e805887](https://github.com/andreistefanciprian/phrasely/commit/e80588786ce9d85c79f09938aa80ebdb31b4d7ec))
+
 ## 0.0.1 (2026-06-12)
 
 
