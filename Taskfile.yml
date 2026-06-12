@@ -16,4 +16,5 @@ tasks:
   test:
     desc: Run all unit tests
     dir: backend
-    cmd: go test ./... -v
+    cmds:
+      - go test ./... -v
