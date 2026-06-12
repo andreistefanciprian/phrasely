@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.1...frontend-v0.0.2) (2026-06-12)
+
+
+### Bug Fixes
+
+* **frontend:** match navbar logo size on story page ([262a526](https://github.com/andreistefanciprian/phrasely/commit/262a52660dafc20d2c1a7f143e38fc5345f8d6b1))
+* **frontend:** match navbar logo size on story page ([44da5b7](https://github.com/andreistefanciprian/phrasely/commit/44da5b7b0f33a0b6a206920cf8ae130dd8677f37))
+
 ## 0.0.1 (2026-06-12)
 
 
