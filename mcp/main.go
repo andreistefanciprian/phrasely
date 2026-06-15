@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func main() {
@@ -18,6 +20,14 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+
+	// MCP Streamable HTTP endpoint. No tools registered yet — wired up here
+	// so the protocol handshake (initialize) can be exercised end-to-end
+	// before any backend-calling logic is added.
+	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.1.0"}, nil)
+	mux.Handle("/mcp", mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+		return server
+	}, nil))
 
 	port := os.Getenv("PORT")
 	if port == "" {
