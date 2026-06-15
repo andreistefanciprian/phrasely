@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.2](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.1...mcp-v0.0.2) (2026-06-15)
+
+
+### Features
+
+* **mcp:** add add_phrase tool ([5fd1796](https://github.com/andreistefanciprian/phrasely/commit/5fd17961ee5678a752f541073eb18e39a3a3177b))
+* **mcp:** add add_phrase tool ([c83c86e](https://github.com/andreistefanciprian/phrasely/commit/c83c86e993e5f01bd8f9eebe5c7294e9a9e20ade))
+
 ## 0.0.1 (2026-06-15)
 
 
