@@ -89,6 +89,8 @@ work, the same pattern as the two tools in Phase 1.
 
 ## Auth flow diagram (Phase 2)
 
+> See [Phase 2 PR breakdown](#phase-2-pr-breakdown) below for which PR implements each step.
+
 ```mermaid
 sequenceDiagram
     participant U as User (browser)
@@ -158,6 +160,53 @@ sequenceDiagram
 
 Both JWTs (browser cookie and ChatGPT access token) are validated by the same
 `middleware.Auth`, but are issued, stored, and revoked independently.
+
+## Phase 2 PR breakdown
+
+| PR | What | Layer | Notes |
+|---|---|---|---|
+| 22 | DB migration: `oauth_clients`, `oauth_authorization_codes`, `oauth_refresh_tokens` + `db.Store` methods | `backend` | Pure schema — the full data model for OAuth state before any HTTP logic |
+| 23 | Dynamic Client Registration handler — internal endpoint `POST /internal/oauth/register` | `backend` | Validates + pins `redirect_uri`, issues `client_id`; testable via curl directly |
+| 24 | Discovery endpoints (`/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource`) + `/register` proxy | `mcp` | Wires `mcp`'s public surface to PR 23 — mostly static JSON + thin proxy |
+| 25 | Authorization code issuance — internal endpoint, stores `code` + PKCE `code_challenge` | `backend` | Backend half of the `/authorize` flow |
+| 26 | `/authorize` consent screen — login check, consent UI, redirect with `code` | `frontend` | User-facing half of the auth flow |
+| 27 | `/token` endpoint — PKCE `code_verifier` check, access token (JWT ~1h) + refresh token minting | `backend` | Core security check: verifies `code_verifier` against stored `code_challenge` |
+| 28 | `/token` proxy | `mcp` | Wires `mcp`'s public `/token` to PR 27 |
+| 29 | Refresh token grant — `/token` with `grant_type=refresh_token`, token rotation | `backend` + `mcp` | Lets ChatGPT get new access tokens without re-prompting the user |
+
+### OAuth 2.1 + PKCE flow (how the PRs connect)
+
+```
+ChatGPT                    mcp (public)           frontend (public)      backend (private)
+   |                           |                        |                      |
+   |-- GET /.well-known --> PR 24                       |                      |
+   |<-- endpoints: authorize(FE), token/register(MCP) --|                      |
+   |                           |                        |                      |
+   |-- POST /register -------> PR 24 proxy ------------|----------> PR 23      |
+   |<-- client_id -------------|-------------------------|-----------client_id  |
+   |                           |                        |                      |
+   |-- open /authorize?client_id&redirect_uri&code_challenge -------> PR 26    |
+   |   (user logs in via magic link if needed, sees consent screen)            |
+   |   PR 26 ----------------------------------------------------------------> PR 25 (store code + challenge)
+   |<-- redirect: redirect_uri?code= -----------------------------------        |
+   |                           |                        |                      |
+   |-- POST /token(code + code_verifier) -> PR 28 -----|-----------> PR 27     |
+   |   PR 27 verifies SHA256(code_verifier) == code_challenge                  |
+   |   PR 27 marks code used, mints access_token (JWT) + refresh_token         |
+   |<-- access_token + refresh_token ---|                                       |
+   |                           |                        |                      |
+   |-- POST /mcp + Bearer access_token -> mcp tools -> backend /api/v1/phrases |
+   |   (middleware.Auth validates JWT exactly as today)                         |
+   |                           |                        |                      |
+   |-- POST /token(refresh_token) ------> PR 28 ------> PR 29 (rotate tokens)  |
+   |<-- new access_token + refresh_token                                        |
+```
+
+**Why PKCE?** ChatGPT can't keep a `client_secret` (it's a public client). Without PKCE,
+anyone who intercepts the `code` in step 3 (e.g. via a malicious redirect) could redeem it.
+PKCE fixes this: the `code_challenge` (a hash) is sent upfront; the `code_verifier` (the
+pre-image) is sent only at token exchange. An intercepted `code` is useless without the
+`code_verifier`, which never leaves ChatGPT's server.
 
 ## Open question
 
