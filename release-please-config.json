@@ -11,6 +11,12 @@
       "component": "backend",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true
+    },
+    "mcp": {
+      "release-type": "simple",
+      "component": "mcp",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
     }
   },
   "separate-pull-requests": true,

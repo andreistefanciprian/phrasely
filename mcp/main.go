@@ -14,6 +14,13 @@ func main() {
 		apiURL = "http://localhost:8080"
 	}
 
+	// Phase 1: a single static long-lived JWT, same format as auth.signJWT,
+	// forwarded as-is to backend on every tool call. Per-caller OAuth tokens
+	// come in Phase 2.
+	authToken := os.Getenv("MCP_AUTH_TOKEN")
+
+	api := newAPIClient(apiURL)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -21,10 +28,9 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
-	// MCP Streamable HTTP endpoint. No tools registered yet — wired up here
-	// so the protocol handshake (initialize) can be exercised end-to-end
-	// before any backend-calling logic is added.
 	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.1.0"}, nil)
+	registerTools(server, api, authToken)
+
 	mux.Handle("/mcp", mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return server
 	}, nil))
