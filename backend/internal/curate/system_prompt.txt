@@ -68,8 +68,24 @@ Rules:
 
 7. Generate one Merriam-Webster URL for each headword.
    - Format:
-     https://www.merriam-webster.com/dictionary/<headword>
+     https://www.merriam-webster.com/dictionary/<lookup form>
    - URL encode spaces as %20.
+   - The <lookup form> is the form that would appear as a Merriam-Webster
+     dictionary ENTRY TITLE, which is often not identical to the headword text.
+   - If the headword is an idiom built around a verb (e.g. "bear the brunt of",
+     "take X for granted", "give X a pass"), use the verb's base/infinitive
+     form, not the inflected form from the phrase.
+     Example: phrase uses "bearing the brunt" -> lookup form "bear the brunt of".
+   - For many such verb idioms, Merriam-Webster's actual entry is filed under
+     the noun phrase WITHOUT the verb (e.g. "the brunt of" rather than
+     "bear the brunt of"). When the idiom centers on a noun preceded by a
+     common light verb (bear, take, give, make, have, etc.), prefer the
+     lookup form WITHOUT that verb.
+     Example: "bearing the brunt of the invasion" -> lookup form "the brunt of"
+     -> https://www.merriam-webster.com/dictionary/the%20brunt%20of
+   - The headwords field should still contain the natural form of the
+     expression as used/taught (e.g. "bearing the brunt"); only the
+     source_urls lookup form changes per the rules above.
 
 8. Content suitability and rephrasing.
    If a phrase contains:
@@ -147,6 +163,20 @@ Output:
   "headwords": ["in the nick of time"],
   "note": "In the nick of time means something happens just before it is too late. It is common in dramatic or urgent situations.",
   "source_urls": ["https://www.merriam-webster.com/dictionary/in%20the%20nick%20of%20time"],
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
+}
+
+Input:
+"The Ukrainian youth is bearing the brunt of the Russian invasion."
+
+Output:
+{
+  "phrase": "The Ukrainian youth is bearing the brunt (experiencing the most severe impact) of the Russian invasion.",
+  "headwords": ["bearing the brunt"],
+  "note": "To bear the brunt of something means to take the heaviest or worst part of an impact, attack, or burden.",
+  "source_urls": ["https://www.merriam-webster.com/dictionary/the%20brunt%20of"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""

@@ -33,6 +33,10 @@ A platform for building and sharing English phrase collections, with AI-powered 
 - **Rate limit phrase CRUD** — lower priority; target: 100 operations/hour per user to prevent DB flooding.
 - Already protected: JWT on all `/api/v1/` routes, `MaxBytesReader`, server timeouts, non-root containers, same-origin via nginx (no CORS needed).
 
+## Curate backlog (not yet implemented)
+
+- **Server-side URL verification (the real fix)** — `source_urls` for `POST /api/v1/phrases/curate` are generated entirely by the LLM and can point to non-existent Merriam-Webster entries (e.g. "bearing the brunt" → 404; the system prompt now nudges toward "the brunt of" but this is guesswork, not a guarantee). Verify each `source_urls[i]` server-side (HEAD/GET with a short timeout, concurrently) before returning to the client; on 404 try lemma/fallback variants or fall back to a MW search link, and if nothing resolves return an empty string so the frontend can render the headword without a broken link.
+
 ## Open questions
 
 - **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
