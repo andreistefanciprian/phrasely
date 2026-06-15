@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -30,6 +31,45 @@ type Phrase struct {
 	Headwords  []string `json:"headwords"`
 	Note       string   `json:"note"`
 	SourceURLs []string `json:"source_urls"`
+}
+
+// AddPhraseRequest holds the fields needed to create a new phrase, mirroring
+// backend/internal/db.CreatePhraseRequest.
+type AddPhraseRequest struct {
+	Phrase     string   `json:"phrase"`
+	Headwords  []string `json:"headwords"`
+	Note       string   `json:"note,omitempty"`
+	SourceURLs []string `json:"source_urls,omitempty"`
+}
+
+// AddPhrase creates a new phrase for the authenticated user.
+func (c *apiClient) AddPhrase(jwt string, in AddPhraseRequest) (Phrase, error) {
+	body, err := json.Marshal(in)
+	if err != nil {
+		return Phrase{}, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/v1/phrases", bytes.NewReader(body))
+	if err != nil {
+		return Phrase{}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return Phrase{}, fmt.Errorf("add phrase: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		return Phrase{}, fmt.Errorf("API returned %d", resp.StatusCode)
+	}
+
+	var phrase Phrase
+	if err := json.NewDecoder(resp.Body).Decode(&phrase); err != nil {
+		return Phrase{}, fmt.Errorf("decode phrase: %w", err)
+	}
+	return phrase, nil
 }
 
 // ListPhrases fetches the authenticated user's phrases, optionally filtered by headword.
