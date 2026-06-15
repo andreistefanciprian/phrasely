@@ -1,0 +1,13 @@
+# Changelog
+
+## 0.0.1 (2026-06-15)
+
+
+### Features
+
+* **mcp:** add apiClient and list_phrases tool ([d89c376](https://github.com/andreistefanciprian/phrasely/commit/d89c3761a4366758cb286756b9eb66f66d1da66a))
+* **mcp:** add apiClient and list_phrases tool ([748c6ee](https://github.com/andreistefanciprian/phrasely/commit/748c6ee0f7555a8ab3da4a8dbcce19a8f3c180bb))
+* **mcp:** scaffold mcp server module ([e3abe9a](https://github.com/andreistefanciprian/phrasely/commit/e3abe9a1543ae955f8b9233b0ecb7d66be68a5f6))
+* **mcp:** scaffold mcp server module ([f420ac6](https://github.com/andreistefanciprian/phrasely/commit/f420ac60d5e48b5334fe17b3d4af6ff187ecc42f))
+* **mcp:** wire up MCP Streamable HTTP protocol ([6569434](https://github.com/andreistefanciprian/phrasely/commit/65694341e74c2a292fe5aef4efa0684ececec222))
+* **mcp:** wire up MCP Streamable HTTP protocol ([228f465](https://github.com/andreistefanciprian/phrasely/commit/228f46593917adae492e214198e4024350ee5d36))
