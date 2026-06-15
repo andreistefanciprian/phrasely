@@ -13,6 +13,7 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/auth"
 	"github.com/andreistefanciprian/phrasely/internal/curate"
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/dictionary"
 	"github.com/andreistefanciprian/phrasely/internal/email"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
@@ -101,7 +102,15 @@ func main() {
 
 	// Curate endpoint is optional — only registered when an API key is configured.
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
-		curator, err := curate.NewCurator(apiKey)
+		var dict *dictionary.Client
+		if mwAPIKey := os.Getenv("MW_DICTIONARY_API_KEY"); mwAPIKey != "" {
+			dict = dictionary.NewClient(mwAPIKey)
+			slog.Info("dictionary link verification enabled")
+		} else {
+			slog.Warn("MW_DICTIONARY_API_KEY not set — curate links will not be verified")
+		}
+
+		curator, err := curate.NewCurator(apiKey, dict)
 		if err != nil {
 			slog.Warn("failed to initialize curator — curate endpoint disabled", "error", err)
 		} else {
