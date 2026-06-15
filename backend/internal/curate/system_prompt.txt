@@ -86,6 +86,12 @@ Rules:
    - The headwords field should still contain the natural form of the
      expression as used/taught (e.g. "bearing the brunt"); only the
      source_urls lookup form changes per the rules above.
+   - For idioms made of a pair/sequence of verbs (e.g. "aided and abetted",
+     "huffed and puffed"), Merriam-Webster often files the entry under the
+     gerund (-ing) form of those verbs, not the inflected form from the
+     phrase. Prefer the gerund form for the lookup.
+     Example: "aided and abetted" -> lookup form "aiding and abetting"
+     -> https://www.merriam-webster.com/dictionary/aiding%20and%20abetting
 
 8. Content suitability and rephrasing.
    If a phrase contains:
@@ -177,6 +183,20 @@ Output:
   "headwords": ["bearing the brunt"],
   "note": "To bear the brunt of something means to take the heaviest or worst part of an impact, attack, or burden.",
   "source_urls": ["https://www.merriam-webster.com/dictionary/the%20brunt%20of"],
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
+}
+
+Input:
+"He was aided and abetted (?) by the useful idiots of the western media in spreading misinformation."
+
+Output:
+{
+  "phrase": "He was aided and abetted (helped, especially in doing something wrong) by the useful idiots of the western media in spreading misinformation.",
+  "headwords": ["aided and abetted"],
+  "note": "To be aided and abetted means to be helped or supported, usually in carrying out a crime or wrongdoing. It's most often used in a legal or critical context.",
+  "source_urls": ["https://www.merriam-webster.com/dictionary/aiding%20and%20abetting"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
