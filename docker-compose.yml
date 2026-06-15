@@ -16,6 +16,7 @@ services:
     environment:
       PORT: "8081"
       API_HOST: http://api:8080
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN}
     depends_on:
       - api
 
