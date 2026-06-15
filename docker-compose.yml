@@ -9,6 +9,16 @@ services:
     depends_on:
       - api
 
+  mcp:
+    build: ./mcp
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: "8081"
+      API_HOST: http://api:8080
+    depends_on:
+      - api
+
   api:
     build: ./backend
     # Port only exposed for scripts/api.sh direct access in local dev.
