@@ -65,7 +65,10 @@ func isUnprotected(path string) bool {
 		path == "/internal/oauth/register" ||
 		// /internal/oauth/clients/{id} — client lookup, called by the frontend to validate
 		// client_id + redirect_uri before showing the consent screen (no user JWT involved).
-		strings.HasPrefix(path, "/internal/oauth/clients/")
+		strings.HasPrefix(path, "/internal/oauth/clients/") ||
+		// /internal/oauth/token — called by mcp to exchange an auth code for tokens.
+		// The PKCE code_verifier is the credential here, not a user JWT.
+		path == "/internal/oauth/token"
 }
 
 func respondUnauthorized(w http.ResponseWriter) {

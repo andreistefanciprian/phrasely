@@ -102,7 +102,7 @@ func main() {
 
 	// Internal OAuth 2.1 endpoints — only reachable by mcp and frontend over the
 	// private network. Not exposed to the internet.
-	oauth.NewHandler(store).RegisterRoutes(r)
+	oauth.NewHandler(store, jwtSecret).RegisterRoutes(r)
 
 	// Curate endpoint is optional — only registered when an API key is configured.
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {

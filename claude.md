@@ -35,6 +35,9 @@ A platform for building and sharing English phrase collections, with AI-powered 
 
 ## OAuth backlog (not yet implemented)
 
+- **Token endpoint: consume code after PKCE validation** — `POST /internal/oauth/token` currently calls `ConsumeAuthorizationCode` (marks code used) before verifying the PKCE `code_verifier` and `redirect_uri`. An attacker who intercepts the auth code can POST with a garbage verifier, causing the code to be consumed and the legitimate client's exchange to fail with `invalid_grant`. Fix: add a read-only `GetAuthorizationCode` Store method, validate PKCE + `redirect_uri` first, then call `ConsumeAuthorizationCode` to atomically mark it used. The atomic UPDATE still handles races correctly — if two valid requests race, only one wins.
+
+
 - **Resume /authorize after magic-link login** — if an unauthenticated user hits `GET /authorize`, they are redirected to `/login` and the OAuth params are lost. After the magic-link flow completes, they land on `/bubble` and must retry the OAuth flow from ChatGPT. The fix is to store the original `/authorize` URL in a short-lived cookie when the user submits their email, then read it in `/auth-verify` and redirect there instead of `/bubble`. This requires threading `next` through the login form → magic link request → verify handler. Not a security issue; just an extra click for first-time users.
 
 ## Curate backlog (not yet implemented)

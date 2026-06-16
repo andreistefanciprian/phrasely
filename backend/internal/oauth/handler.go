@@ -5,6 +5,9 @@
 package oauth
 
 import (
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -14,23 +17,26 @@ import (
 	"strings"
 	"time"
 
+	"github.com/andreistefanciprian/phrasely/internal/auth"
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-	store db.Store
+	store     db.Store
+	jwtSecret string
 }
 
-func NewHandler(store db.Store) *Handler {
-	return &Handler{store: store}
+func NewHandler(store db.Store, jwtSecret string) *Handler {
+	return &Handler{store: store, jwtSecret: jwtSecret}
 }
 
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/internal/oauth/register", h.register).Methods(http.MethodPost)
 	r.HandleFunc("/internal/oauth/authorize", h.authorize).Methods(http.MethodPost)
 	r.HandleFunc("/internal/oauth/clients/{id}", h.getClient).Methods(http.MethodGet)
+	r.HandleFunc("/internal/oauth/token", h.token).Methods(http.MethodPost)
 }
 
 // registerRequest is the body of POST /internal/oauth/register.
@@ -238,6 +244,118 @@ func redirectURIAllowed(uri string, allowed []string) bool {
 		}
 	}
 	return false
+}
+
+// accessTokenTTL is how long an OAuth access token is valid.
+// Shorter than the magic-link JWT (30 days) because the client can refresh silently.
+const accessTokenTTL = time.Hour
+
+// token handles POST /internal/oauth/token — the code→token exchange.
+// Called by mcp (which proxies the public /token endpoint on itself).
+// This is where PKCE is verified: the client proves it holds the code_verifier
+// that was used to generate the code_challenge stored when the code was issued.
+//
+// Request body is application/x-www-form-urlencoded (OAuth 2.1 §3.2):
+//
+//	grant_type=authorization_code
+//	&code=<auth-code>
+//	&code_verifier=<pkce-verifier>
+//	&client_id=<uuid>
+//	&redirect_uri=<must-match-registered-value>
+func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 4*1024)
+	if err := r.ParseForm(); err != nil {
+		respondErr(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if r.PostForm.Get("grant_type") != "authorization_code" {
+		respondErr(w, http.StatusBadRequest, "unsupported_grant_type")
+		return
+	}
+
+	code := r.PostForm.Get("code")
+	codeVerifier := r.PostForm.Get("code_verifier")
+	clientID := r.PostForm.Get("client_id")
+	redirectURI := r.PostForm.Get("redirect_uri")
+
+	if code == "" || codeVerifier == "" || clientID == "" || redirectURI == "" {
+		respondErr(w, http.StatusBadRequest, "code, code_verifier, client_id, and redirect_uri are required")
+		return
+	}
+
+	// Atomically consume the code: marks it used and returns its record.
+	// Returns ErrNotFound for any failure (expired, already used, wrong client)
+	// — deliberately indistinct to avoid leaking state to attackers.
+	authCode, err := h.store.ConsumeAuthorizationCode(r.Context(), code, clientID)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respondErr(w, http.StatusBadRequest, "invalid_grant")
+			return
+		}
+		slog.Error("consume authorization code", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	// PKCE S256 verification (RFC 7636 §4.6):
+	// Compute BASE64URL(SHA256(code_verifier)) and compare to the stored challenge.
+	//
+	// Why this matters: the code travels in a browser redirect URL where it could
+	// be logged or intercepted. The code_verifier never leaves the client, so even
+	// with the code an attacker cannot complete the exchange without it.
+	if !verifyPKCES256(codeVerifier, authCode.CodeChallenge) {
+		respondErr(w, http.StatusBadRequest, "invalid_grant")
+		return
+	}
+
+	// redirect_uri must exactly match the value used when the code was issued
+	// (RFC 6749 §4.1.3). Prevents a client from using a code with a different URI.
+	if redirectURI != authCode.RedirectURI {
+		respondErr(w, http.StatusBadRequest, "invalid_grant")
+		return
+	}
+
+	// Issue a short-lived JWT access token scoped to the authenticated user.
+	// Same format as magic-link JWTs so the backend phrase endpoints accept it unchanged.
+	accessToken, err := auth.SignJWT(authCode.UserID, h.jwtSecret, accessTokenTTL)
+	if err != nil {
+		slog.Error("sign access token", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	// Issue a refresh token stored in the DB. The client uses it to get new access
+	// tokens when this one expires, without re-prompting the user. Rotation in PR 29.
+	refreshToken, err := h.store.CreateRefreshToken(r.Context(), db.CreateRefreshTokenRequest{
+		ClientID: authCode.ClientID,
+		UserID:   authCode.UserID,
+	})
+	if err != nil {
+		slog.Error("create refresh token", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	// RFC 6749 §5.1: token responses must not be cached.
+	// Pragma: no-cache is included for HTTP/1.0 proxy compatibility.
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	respond(w, http.StatusOK, map[string]any{
+		"access_token":  accessToken,
+		"token_type":    "Bearer",
+		"expires_in":    int(accessTokenTTL.Seconds()),
+		"refresh_token": refreshToken.Token,
+	})
+}
+
+// verifyPKCES256 returns true if BASE64URL(SHA256(verifier)) == challenge.
+// Uses subtle.ConstantTimeCompare to avoid leaking information about the
+// challenge via response-time differences (timing attack defence).
+func verifyPKCES256(codeVerifier, codeChallenge string) bool {
+	h := sha256.Sum256([]byte(codeVerifier))
+	computed := base64.RawURLEncoding.EncodeToString(h[:])
+	return subtle.ConstantTimeCompare([]byte(computed), []byte(codeChallenge)) == 1
 }
 
 // validateRedirectURI checks that a redirect_uri is a well-formed http/https URL.
