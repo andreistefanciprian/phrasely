@@ -11,17 +11,28 @@ import (
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/gorilla/mux"
 )
 
 // mockStore satisfies db.Store for oauth handler tests.
+// Only the fields used by the endpoint under test need to be set;
+// all other methods panic to catch unexpected calls.
 type mockStore struct {
-	createOAuthClient func(ctx context.Context, redirectURIs []string) (*db.OAuthClient, error)
+	createOAuthClient       func(ctx context.Context, redirectURIs []string) (*db.OAuthClient, error)
+	getOAuthClient          func(ctx context.Context, clientID string) (*db.OAuthClient, error)
+	createAuthorizationCode func(ctx context.Context, req db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error)
 }
 
 func (m *mockStore) Close() {}
 func (m *mockStore) CreateOAuthClient(ctx context.Context, redirectURIs []string) (*db.OAuthClient, error) {
 	return m.createOAuthClient(ctx, redirectURIs)
+}
+func (m *mockStore) GetOAuthClient(ctx context.Context, clientID string) (*db.OAuthClient, error) {
+	return m.getOAuthClient(ctx, clientID)
+}
+func (m *mockStore) CreateAuthorizationCode(ctx context.Context, req db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error) {
+	return m.createAuthorizationCode(ctx, req)
 }
 func (m *mockStore) CreatePhrase(_ context.Context, _ string, _ db.CreatePhraseRequest) (*db.Phrase, error) {
 	panic("not expected")
@@ -32,7 +43,7 @@ func (m *mockStore) ListPhrases(_ context.Context, _ string, _ string) ([]db.Phr
 func (m *mockStore) GetPhrase(_ context.Context, _ string, _ string) (*db.Phrase, error) {
 	panic("not expected")
 }
-func (m *mockStore) DeletePhrase(_ context.Context, _ string, _ string) error       { panic("not expected") }
+func (m *mockStore) DeletePhrase(_ context.Context, _ string, _ string) error { panic("not expected") }
 func (m *mockStore) UpdatePhrase(_ context.Context, _ string, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
 	panic("not expected")
 }
@@ -44,12 +55,6 @@ func (m *mockStore) GetMagicLinkToken(_ context.Context, _ string) (*db.MagicLin
 	panic("not expected")
 }
 func (m *mockStore) MarkTokenUsed(_ context.Context, _ string) error { panic("not expected") }
-func (m *mockStore) GetOAuthClient(_ context.Context, _ string) (*db.OAuthClient, error) {
-	panic("not expected")
-}
-func (m *mockStore) CreateAuthorizationCode(_ context.Context, _ db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error) {
-	panic("not expected")
-}
 func (m *mockStore) ConsumeAuthorizationCode(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
 	panic("not expected")
 }
@@ -64,6 +69,22 @@ func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()
 	NewHandler(store).RegisterRoutes(r)
 	return httptest.NewServer(r)
+}
+
+// callAuthorize sends a POST /internal/oauth/authorize request directly through
+// the router (no HTTP round-trip) with userID pre-injected into context —
+// the same value the JWT middleware would set for a logged-in user.
+func callAuthorize(store db.Store, userID, body string) *httptest.ResponseRecorder {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/internal/oauth/authorize", strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	if userID != "" {
+		r = r.WithContext(context.WithValue(r.Context(), middleware.UserIDKey, userID))
+	}
+	router := mux.NewRouter()
+	NewHandler(store).RegisterRoutes(router)
+	router.ServeHTTP(w, r)
+	return w
 }
 
 func TestRegister(t *testing.T) {
@@ -141,6 +162,107 @@ func TestRegister(t *testing.T) {
 				}
 				if body["client_id"] == "" {
 					t.Error("expected client_id in response")
+				}
+			}
+		})
+	}
+}
+
+func TestAuthorize(t *testing.T) {
+	// A valid base64url-encoded SHA256 hash is always exactly 43 chars.
+	const validChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+	const validClientID = "client-abc"
+	const validRedirectURI = "https://chatgpt.com/callback"
+
+	// okStore returns a registered client and successfully creates an auth code.
+	okStore := &mockStore{
+		getOAuthClient: func(_ context.Context, _ string) (*db.OAuthClient, error) {
+			return &db.OAuthClient{
+				ID:           validClientID,
+				RedirectURIs: []string{validRedirectURI},
+			}, nil
+		},
+		createAuthorizationCode: func(_ context.Context, _ db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error) {
+			return &db.OAuthAuthorizationCode{Code: "code-xyz"}, nil
+		},
+	}
+
+	validBody := `{"client_id":"` + validClientID + `","redirect_uri":"` + validRedirectURI + `","code_challenge":"` + validChallenge + `"}`
+
+	tests := []struct {
+		name       string
+		userID     string
+		body       string
+		store      *mockStore
+		wantStatus int
+	}{
+		{
+			name:       "valid request returns 200 with code",
+			userID:     "user-123",
+			body:       validBody,
+			store:      okStore,
+			wantStatus: http.StatusOK,
+		},
+		{
+			// /authorize requires a logged-in user — no JWT context means no user_id.
+			name:       "missing user returns 401",
+			userID:     "",
+			body:       validBody,
+			store:      okStore,
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			// client_id not in DB — return 400 (not 404) to avoid leaking client existence.
+			name:   "unknown client_id returns 400",
+			userID: "user-123",
+			body:   validBody,
+			store: &mockStore{
+				getOAuthClient: func(_ context.Context, _ string) (*db.OAuthClient, error) {
+					return nil, db.ErrNotFound
+				},
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			// redirect_uri must exactly match a registered URI — prevents open redirect.
+			name:   "unregistered redirect_uri returns 400",
+			userID: "user-123",
+			body:   `{"client_id":"` + validClientID + `","redirect_uri":"https://evil.com/steal","code_challenge":"` + validChallenge + `"}`,
+			store: &mockStore{
+				getOAuthClient: func(_ context.Context, _ string) (*db.OAuthClient, error) {
+					return &db.OAuthClient{
+						ID:           validClientID,
+						RedirectURIs: []string{validRedirectURI},
+					}, nil
+				},
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			// code_challenge must be base64url SHA256 — 43 chars, no padding.
+			name:       "invalid code_challenge returns 400",
+			userID:     "user-123",
+			body:       `{"client_id":"` + validClientID + `","redirect_uri":"` + validRedirectURI + `","code_challenge":"not-a-valid-challenge"}`,
+			store:      okStore,
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := callAuthorize(tt.store, tt.userID, tt.body)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantStatus)
+			}
+
+			if tt.wantStatus == http.StatusOK {
+				var resp map[string]any
+				if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+					t.Fatalf("decode response: %v", err)
+				}
+				if resp["code"] == "" {
+					t.Error("expected code in response")
 				}
 			}
 		})
