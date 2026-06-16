@@ -307,6 +307,16 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Require login before processing Allow or Deny — consent decisions must be
+	// authenticated. Without this check an unauthenticated POST with action=deny
+	// could cancel another user's in-flight OAuth flow.
+	cookie, err := r.Cookie(authCookieName)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	jwt := strings.TrimSpace(cookie.Value)
+
 	// Build the base redirect URI; state is always appended regardless of Allow/Deny.
 	redirectBase, err := url.Parse(params.RedirectURI)
 	if err != nil {
@@ -323,14 +333,6 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, redirectBase.String(), http.StatusSeeOther)
 		return
 	}
-
-	// Allow: require the user is still logged in (cookie may have expired).
-	cookie, err := r.Cookie(authCookieName)
-	if err != nil || strings.TrimSpace(cookie.Value) == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	jwt := strings.TrimSpace(cookie.Value)
 
 	// Call backend to issue the authorization code. The backend validates
 	// client_id and redirect_uri against the registered values and stores
