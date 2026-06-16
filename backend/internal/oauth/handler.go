@@ -6,6 +6,7 @@ package oauth
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -345,10 +346,12 @@ func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
 }
 
 // verifyPKCES256 returns true if BASE64URL(SHA256(verifier)) == challenge.
+// Uses subtle.ConstantTimeCompare to avoid leaking information about the
+// challenge via response-time differences (timing attack defence).
 func verifyPKCES256(codeVerifier, codeChallenge string) bool {
 	h := sha256.Sum256([]byte(codeVerifier))
 	computed := base64.RawURLEncoding.EncodeToString(h[:])
-	return computed == codeChallenge
+	return subtle.ConstantTimeCompare([]byte(computed), []byte(codeChallenge)) == 1
 }
 
 // validateRedirectURI checks that a redirect_uri is a well-formed http/https URL.
