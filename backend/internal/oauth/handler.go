@@ -337,6 +337,10 @@ func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// RFC 6749 §5.1: token responses must not be cached.
+	// Pragma: no-cache is included for HTTP/1.0 proxy compatibility.
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
 	respond(w, http.StatusOK, map[string]any{
 		"access_token":  accessToken,
 		"token_type":    "Bearer",
