@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.6](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.5...mcp-v0.0.6) (2026-06-16)
+
+
+### Features
+
+* **mcp:** add configurable log level via LOG_LEVEL env var ([#75](https://github.com/andreistefanciprian/phrasely/issues/75)) ([30280cc](https://github.com/andreistefanciprian/phrasely/commit/30280cc381626f2810f79ffa57b84b93b7da0469))
+
 ## [0.0.5](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.4...mcp-v0.0.5) (2026-06-16)
 
 
