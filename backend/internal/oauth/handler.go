@@ -99,6 +99,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("oauth client registered", "client_id", client.ID)
 	respond(w, http.StatusCreated, registerResponse{
 		ClientID:     client.ID,
 		RedirectURIs: client.RedirectURIs,
@@ -232,6 +233,7 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("authorization code issued", "client_id", req.ClientID, "user_id", userID)
 	respond(w, http.StatusOK, authorizeResponse{Code: code.Code})
 }
 
@@ -380,6 +382,7 @@ func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken
 		return
 	}
 
+	slog.Debug("token issued", "user_id", userID)
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 	respond(w, http.StatusOK, map[string]any{

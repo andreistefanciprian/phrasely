@@ -45,6 +45,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("list phrases", "count", len(phrases), "headword", headword)
 	respond(w, http.StatusOK, phrases)
 }
 
@@ -68,6 +69,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("get phrase", "id", id)
 	respond(w, http.StatusOK, phrase)
 }
 
@@ -105,6 +107,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("create phrase", "id", phrase.ID, "headwords", phrase.Headwords)
 	respond(w, http.StatusCreated, phrase)
 }
 
@@ -152,6 +155,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("update phrase", "id", id)
 	respond(w, http.StatusOK, phrase)
 }
 
@@ -174,6 +178,7 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("delete phrase", "id", id)
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/auth"
@@ -27,6 +28,12 @@ import (
 func main() {
 	// Load .env when running locally. In production, env vars are injected by the platform.
 	_ = godotenv.Load()
+
+	// Configure structured JSON logging first so every subsequent log line
+	// is parseable by Railway's log viewer. Level defaults to INFO.
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: parseLogLevel(os.Getenv("LOG_LEVEL")),
+	})))
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
@@ -167,6 +174,21 @@ func runMigrations(dsn string) error {
 
 	slog.Info("migrations applied")
 	return nil
+}
+
+// parseLogLevel maps a LOG_LEVEL string to a slog.Level.
+// Defaults to INFO for empty or unrecognised values.
+func parseLogLevel(s string) slog.Level {
+	switch strings.ToUpper(s) {
+	case "DEBUG":
+		return slog.LevelDebug
+	case "WARN", "WARNING":
+		return slog.LevelWarn
+	case "ERROR":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
 
 // durationEnv reads a duration from the named env var (e.g. "15m", "720h"),
