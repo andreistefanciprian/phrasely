@@ -15,6 +15,7 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/email"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
+	"github.com/andreistefanciprian/phrasely/internal/oauth"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
 	"github.com/andreistefanciprian/phrasely/migrations"
 	"github.com/gorilla/mux"
@@ -98,6 +99,10 @@ func main() {
 	}
 	auth.NewHandler(store, baseURL, jwtSecret, mailer, magicLinkTTL, jwtTTL).RegisterRoutes(r)
 	phrases.NewHandler(store).RegisterRoutes(r)
+
+	// Internal OAuth 2.1 endpoints — only reachable by mcp and frontend over the
+	// private network. Not exposed to the internet.
+	oauth.NewHandler(store).RegisterRoutes(r)
 
 	// Curate endpoint is optional — only registered when an API key is configured.
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
