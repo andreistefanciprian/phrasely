@@ -8,6 +8,50 @@ import (
 	"testing"
 )
 
+// TestRequireBearer checks that /mcp rejects requests without a Bearer token.
+func TestRequireBearer(t *testing.T) {
+	// A no-op handler standing in for the real MCP handler.
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	protected := requireBearer(inner)
+
+	t.Run("no Authorization header returns 401", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+		protected.ServeHTTP(w, r)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("status = %d, want 401", w.Code)
+		}
+		if www := w.Header().Get("WWW-Authenticate"); !strings.HasPrefix(www, "Bearer") {
+			t.Errorf("WWW-Authenticate = %q, want Bearer realm", www)
+		}
+	})
+
+	t.Run("non-Bearer scheme returns 401", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+		r.Header.Set("Authorization", "Basic dXNlcjpwYXNz")
+		protected.ServeHTTP(w, r)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("status = %d, want 401", w.Code)
+		}
+	})
+
+	t.Run("valid Bearer token passes through", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+		r.Header.Set("Authorization", "Bearer some-jwt-here")
+		protected.ServeHTTP(w, r)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("status = %d, want 200", w.Code)
+		}
+	})
+}
+
 // newTestMux builds a plain http.ServeMux wired with the OAuth routes only,
 // matching the structure in main.go. We don't spin up the MCP server here —
 // just the OAuth endpoints under test.
