@@ -1,0 +1,138 @@
+{{define "title"}}Authorize — Phrasely{{end}}
+
+{{define "head"}}
+<style>
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .logo { margin-bottom: 2rem; }
+  .logo img { width: 80px; height: 68px; }
+
+  h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
+
+  .permissions {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    margin-bottom: 2rem;
+  }
+
+  .permissions p {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+
+  .permissions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .permissions li {
+    font-size: 0.9rem;
+    color: var(--navy);
+    padding: 0.3rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .permissions li::before {
+    content: "✓";
+    color: var(--teal);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .actions form { flex: 1; }
+  .actions button { width: 100%; }
+
+  .note {
+    margin-top: 1.25rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+</style>
+{{end}}
+
+{{define "content"}}
+<div class="card">
+  <div class="logo">
+    <a href="/"><img src="/static/icon-128px.png" alt="Phrasely"></a>
+  </div>
+
+  <h1>ChatGPT wants access</h1>
+  <p class="subtitle">to your Phrasely phrase collection</p>
+
+  <div class="permissions">
+    <p>This will allow ChatGPT to:</p>
+    <ul>
+      <li>Read your phrases and headwords</li>
+      <li>Add new phrases to your collection</li>
+    </ul>
+  </div>
+
+  <div class="actions">
+    {{/* Deny: POST with action=deny — redirects to redirect_uri?error=access_denied */}}
+    <form method="POST" action="/authorize">
+      <input type="hidden" name="client_id"             value="{{.ClientID}}">
+      <input type="hidden" name="redirect_uri"          value="{{.RedirectURI}}">
+      <input type="hidden" name="code_challenge"        value="{{.CodeChallenge}}">
+      <input type="hidden" name="code_challenge_method" value="{{.CodeChallengeMethod}}">
+      <input type="hidden" name="state"                 value="{{.State}}">
+      <input type="hidden" name="response_type"         value="{{.ResponseType}}">
+      <input type="hidden" name="action"                value="deny">
+      <button class="btn-secondary w-full" type="submit">Deny</button>
+    </form>
+
+    {{/* Allow: POST with action=allow (default) — calls backend, redirects with code */}}
+    <form method="POST" action="/authorize">
+      <input type="hidden" name="client_id"             value="{{.ClientID}}">
+      <input type="hidden" name="redirect_uri"          value="{{.RedirectURI}}">
+      <input type="hidden" name="code_challenge"        value="{{.CodeChallenge}}">
+      <input type="hidden" name="code_challenge_method" value="{{.CodeChallengeMethod}}">
+      <input type="hidden" name="state"                 value="{{.State}}">
+      <input type="hidden" name="response_type"         value="{{.ResponseType}}">
+      <button class="btn-primary w-full" type="submit">Allow</button>
+    </form>
+  </div>
+
+  <p class="note">
+    You can revoke access at any time from your account settings.
+  </p>
+</div>
+{{end}}

@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"html/template"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -194,6 +197,176 @@ func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 // addPage is a placeholder — full implementation in next step.
 func (app *application) addPage(w http.ResponseWriter, r *http.Request) {
 	app.renderAuth(w, "add.html", map[string]any{"Page": "add"})
+}
+
+// ── OAuth 2.1 consent screen ──────────────────────────────────────────────────
+
+// oauthParams holds the query/form values that travel with the OAuth flow.
+// They arrive as query params on GET /authorize and are echoed as hidden form
+// fields so POST /authorize can re-read them without server-side session state.
+type oauthParams struct {
+	ClientID            string
+	RedirectURI         string
+	CodeChallenge       string
+	CodeChallengeMethod string
+	State               string
+	ResponseType        string
+}
+
+// base64urlRE matches a base64url-encoded SHA256 hash: exactly 43 chars,
+// no padding. Mirrors the same check in the backend oauth handler.
+var base64urlRE = regexp.MustCompile(`^[A-Za-z0-9_-]{43}$`)
+
+// validateOAuthParams checks that all required OAuth 2.1 params are present and
+// that the values we actually enforce (response_type, code_challenge_method) are
+// correct. We do NOT validate client_id or redirect_uri here — that's the
+// backend's job at /internal/oauth/authorize where the DB check happens.
+func validateOAuthParams(p oauthParams) error {
+	if p.ClientID == "" || p.RedirectURI == "" || p.CodeChallenge == "" || p.State == "" {
+		return errors.New("client_id, redirect_uri, code_challenge, and state are required")
+	}
+	if p.ResponseType != "code" {
+		return errors.New("response_type must be 'code'")
+	}
+	// OAuth 2.1 mandates S256 — reject "plain" and anything else.
+	if p.CodeChallengeMethod != "S256" {
+		return errors.New("code_challenge_method must be S256")
+	}
+	// Validate format early so a bad challenge returns a clear 400 here rather
+	// than a generic 500 when the backend rejects it after the user clicks Allow.
+	if !base64urlRE.MatchString(p.CodeChallenge) {
+		return errors.New("code_challenge must be base64url-encoded SHA256 (43 chars, no padding)")
+	}
+	return nil
+}
+
+// authorizePage handles GET and POST /authorize — the OAuth 2.1 consent screen.
+//
+// GET: If the user isn't logged in, redirect to /login first (they must authenticate
+// before they can grant access). If logged in, render the consent form.
+//
+// POST: The user submitted the consent form.
+//   - "Allow" → call backend to issue an auth code, redirect to redirect_uri?code=...&state=...
+//   - "Deny"  → redirect to redirect_uri?error=access_denied&state=...
+//
+// The state param is always echoed back in the redirect. This is the client's
+// anti-CSRF nonce — ChatGPT generates it before the redirect and verifies it
+// on the way back to ensure this response is for its own request.
+func (app *application) authorizePage(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		app.authorizeGet(w, r)
+	case http.MethodPost:
+		app.authorizePost(w, r)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (app *application) authorizeGet(w http.ResponseWriter, r *http.Request) {
+	// Require login before showing the consent screen.
+	// We handle this inline (not via requireAuth) so we can show a proper 400
+	// for bad OAuth params rather than silently redirecting.
+	cookie, err := r.Cookie(authCookieName)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	q := r.URL.Query()
+	params := oauthParams{
+		ClientID:            q.Get("client_id"),
+		RedirectURI:         q.Get("redirect_uri"),
+		CodeChallenge:       q.Get("code_challenge"),
+		CodeChallengeMethod: q.Get("code_challenge_method"),
+		State:               q.Get("state"),
+		ResponseType:        q.Get("response_type"),
+	}
+
+	// Validate well-formedness of params before touching the backend.
+	// Per RFC 6749 §4.1.2.1 we must NOT redirect on invalid redirect_uri —
+	// show a plain error page instead.
+	if err := validateOAuthParams(params); err != nil {
+		http.Error(w, "Invalid authorization request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate client_id + redirect_uri with the backend before rendering the
+	// consent form. This ensures that both the Allow and Deny paths can safely
+	// redirect to redirect_uri — it's already been verified as registered.
+	if err := app.api.ValidateOAuthClient(params.ClientID, params.RedirectURI); err != nil {
+		slog.Warn("oauth client validation failed", "error", err)
+		http.Error(w, "Invalid authorization request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	app.render(w, "authorize.html", params)
+}
+
+func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 4*1024)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
+
+	// Re-read all OAuth params from hidden form fields.
+	// We re-validate on every POST — no server-side session state needed.
+	params := oauthParams{
+		ClientID:            r.PostForm.Get("client_id"),
+		RedirectURI:         r.PostForm.Get("redirect_uri"),
+		CodeChallenge:       r.PostForm.Get("code_challenge"),
+		CodeChallengeMethod: r.PostForm.Get("code_challenge_method"),
+		State:               r.PostForm.Get("state"),
+		ResponseType:        r.PostForm.Get("response_type"),
+	}
+	if err := validateOAuthParams(params); err != nil {
+		http.Error(w, "Invalid authorization request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Require login before processing Allow or Deny — consent decisions must be
+	// authenticated. Without this check an unauthenticated POST with action=deny
+	// could cancel another user's in-flight OAuth flow.
+	cookie, err := r.Cookie(authCookieName)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	jwt := strings.TrimSpace(cookie.Value)
+
+	// Build the base redirect URI; state is always appended regardless of Allow/Deny.
+	redirectBase, err := url.Parse(params.RedirectURI)
+	if err != nil {
+		http.Error(w, "Invalid redirect_uri", http.StatusBadRequest)
+		return
+	}
+	redirectQuery := redirectBase.Query()
+	redirectQuery.Set("state", params.State)
+
+	// Deny: redirect with error=access_denied (RFC 6749 §4.1.2.1).
+	if r.PostForm.Get("action") == "deny" {
+		redirectQuery.Set("error", "access_denied")
+		redirectBase.RawQuery = redirectQuery.Encode()
+		http.Redirect(w, r, redirectBase.String(), http.StatusSeeOther)
+		return
+	}
+
+	// Call backend to issue the authorization code. The backend validates
+	// client_id and redirect_uri against the registered values and stores
+	// the code_challenge for PKCE verification at /token time.
+	code, err := app.api.IssueAuthCode(jwt, params.ClientID, params.RedirectURI, params.CodeChallenge)
+	if err != nil {
+		slog.Error("issue auth code", "error", err)
+		http.Error(w, "Failed to issue authorization code. Please try again.", http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect back to the client with code + state.
+	// The client (ChatGPT) will immediately POST code + code_verifier to /token.
+	redirectQuery.Set("code", code)
+	redirectBase.RawQuery = redirectQuery.Encode()
+	http.Redirect(w, r, redirectBase.String(), http.StatusSeeOther)
 }
 
 func (app *application) indexPage(w http.ResponseWriter, r *http.Request) {

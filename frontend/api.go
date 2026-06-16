@@ -79,6 +79,70 @@ func (c *apiClient) ListPhrases(jwt string) ([]map[string]any, error) {
 	return phrases, nil
 }
 
+// ValidateOAuthClient checks with the backend that redirect_uri is registered
+// for the given client_id. Returns an error if either is unknown or mismatched.
+// Called on GET /authorize so we can show an error page (not a redirect) for
+// bad params — per RFC 6749 §4.1.2.1 we must never redirect to an invalid URI.
+func (c *apiClient) ValidateOAuthClient(clientID, redirectURI string) error {
+	resp, err := c.http.Get(c.baseURL + "/internal/oauth/clients/" + url.PathEscape(clientID))
+	if err != nil {
+		return fmt.Errorf("validate client: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("unknown client_id")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("backend returned %d", resp.StatusCode)
+	}
+	var client struct {
+		RedirectURIs []string `json:"redirect_uris"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&client); err != nil {
+		return fmt.Errorf("decode response: %w", err)
+	}
+	for _, u := range client.RedirectURIs {
+		if u == redirectURI {
+			return nil
+		}
+	}
+	return fmt.Errorf("redirect_uri not registered for this client")
+}
+
+// IssueAuthCode calls the internal backend endpoint to create an OAuth 2.1
+// authorization code. The backend validates client_id, redirect_uri, and
+// code_challenge, then stores a short-lived code and returns it.
+// The user's JWT must be valid — the backend uses it to bind the code to the user.
+func (c *apiClient) IssueAuthCode(jwt, clientID, redirectURI, codeChallenge string) (string, error) {
+	body := fmt.Sprintf(`{"client_id":%q,"redirect_uri":%q,"code_challenge":%q}`,
+		clientID, redirectURI, codeChallenge)
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/internal/oauth/authorize",
+		strings.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("issue auth code: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("backend returned %d", resp.StatusCode)
+	}
+	var result struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode response: %w", err)
+	}
+	if result.Code == "" {
+		return "", fmt.Errorf("empty code in response")
+	}
+	return result.Code, nil
+}
+
 // VerifyToken exchanges a magic link token for a JWT.
 func (c *apiClient) VerifyToken(token string) (string, error) {
 	resp, err := c.http.Get(c.baseURL + "/auth/verify?token=" + url.QueryEscape(token))
