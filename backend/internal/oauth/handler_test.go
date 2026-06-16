@@ -24,7 +24,7 @@ type mockStore struct {
 	createAuthorizationCode  func(ctx context.Context, req db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error)
 	consumeAuthorizationCode func(ctx context.Context, code, clientID string) (*db.OAuthAuthorizationCode, error)
 	createRefreshToken       func(ctx context.Context, req db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error)
-	consumeRefreshToken      func(ctx context.Context, token string) (*db.OAuthRefreshToken, error)
+	consumeRefreshToken      func(ctx context.Context, token, clientID string) (*db.OAuthRefreshToken, error)
 }
 
 func (m *mockStore) Close() {}
@@ -70,9 +70,9 @@ func (m *mockStore) CreateRefreshToken(ctx context.Context, req db.CreateRefresh
 	}
 	panic("not expected")
 }
-func (m *mockStore) ConsumeRefreshToken(ctx context.Context, token string) (*db.OAuthRefreshToken, error) {
+func (m *mockStore) ConsumeRefreshToken(ctx context.Context, token, clientID string) (*db.OAuthRefreshToken, error) {
 	if m.consumeRefreshToken != nil {
-		return m.consumeRefreshToken(ctx, token)
+		return m.consumeRefreshToken(ctx, token, clientID)
 	}
 	panic("not expected")
 }
@@ -471,7 +471,7 @@ func TestRefreshToken(t *testing.T) {
 
 	okStore := &mockStore{
 		// ConsumeRefreshToken atomically revokes the old token and returns its record.
-		consumeRefreshToken: func(_ context.Context, token string) (*db.OAuthRefreshToken, error) {
+		consumeRefreshToken: func(_ context.Context, token, _ string) (*db.OAuthRefreshToken, error) {
 			return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID}, nil
 		},
 		// CreateRefreshToken issues the new rotated token.
@@ -490,6 +490,8 @@ func TestRefreshToken(t *testing.T) {
 		return w
 	}
 
+	validBody := "grant_type=refresh_token&refresh_token=old-refresh-token&client_id=" + clientID
+
 	tests := []struct {
 		name       string
 		body       string
@@ -498,33 +500,55 @@ func TestRefreshToken(t *testing.T) {
 	}{
 		{
 			name:       "valid refresh returns new access_token and refresh_token",
-			body:       "grant_type=refresh_token&refresh_token=old-refresh-token",
+			body:       validBody,
 			store:      okStore,
 			wantStatus: http.StatusOK,
 		},
 		{
 			// A replayed or unknown token — ConsumeRefreshToken returns ErrNotFound.
-			// This also fires when an attacker replays a previously rotated token.
+			// This also fires when an attacker replays a previously rotated token,
+			// and when client_id doesn't match the token's owner (DB enforces it).
 			name: "revoked or unknown token returns 400",
-			body: "grant_type=refresh_token&refresh_token=stolen-token",
+			body: validBody,
 			store: &mockStore{
-				consumeRefreshToken: func(_ context.Context, _ string) (*db.OAuthRefreshToken, error) {
+				consumeRefreshToken: func(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
 					return nil, db.ErrNotFound
 				},
 			},
 			wantStatus: http.StatusBadRequest,
 		},
 		{
+			// Both fields are required — missing either returns 400 before hitting the DB.
 			name:       "missing refresh_token field returns 400",
-			body:       "grant_type=refresh_token",
+			body:       "grant_type=refresh_token&client_id=" + clientID,
+			store:      okStore,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "missing client_id field returns 400",
+			body:       "grant_type=refresh_token&refresh_token=old-refresh-token",
 			store:      okStore,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name: "store error on consume returns 500",
-			body: "grant_type=refresh_token&refresh_token=some-token",
+			body: validBody,
 			store: &mockStore{
-				consumeRefreshToken: func(_ context.Context, _ string) (*db.OAuthRefreshToken, error) {
+				consumeRefreshToken: func(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
+					return nil, errors.New("db unavailable")
+				},
+			},
+			wantStatus: http.StatusInternalServerError,
+		},
+		{
+			// Copilot: cover the path where consume succeeds but CreateRefreshToken fails.
+			name: "store error on create returns 500",
+			body: validBody,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, token, _ string) (*db.OAuthRefreshToken, error) {
+					return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID}, nil
+				},
+				createRefreshToken: func(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
 					return nil, errors.New("db unavailable")
 				},
 			},

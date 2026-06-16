@@ -337,14 +337,16 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 // replay should also revoke ALL tokens for the client (RFC 6819 §5.2.2.3).
 func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 	tokenStr := r.PostForm.Get("refresh_token")
-	if tokenStr == "" {
-		respondErr(w, http.StatusBadRequest, "refresh_token is required")
+	clientID := r.PostForm.Get("client_id")
+	if tokenStr == "" || clientID == "" {
+		respondErr(w, http.StatusBadRequest, "refresh_token and client_id are required")
 		return
 	}
 
 	// Atomically revoke the old token and return its record.
-	// Returns ErrNotFound if it doesn't exist or was already revoked.
-	old, err := h.store.ConsumeRefreshToken(r.Context(), tokenStr)
+	// clientID is enforced in the WHERE clause — a client cannot consume another's token.
+	// Returns ErrNotFound if the token doesn't exist, is revoked, or clientID mismatches.
+	old, err := h.store.ConsumeRefreshToken(r.Context(), tokenStr, clientID)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
 			respondErr(w, http.StatusBadRequest, "invalid_grant")
