@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.8](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.7...backend-v0.0.8) (2026-06-16)
+
+
+### Features
+
+* **backend:** add refresh_token grant with rotation ([#71](https://github.com/andreistefanciprian/phrasely/issues/71)) ([24f9f93](https://github.com/andreistefanciprian/phrasely/commit/24f9f93fdfc81465d55445d33bf57a8767b59917))
+* **mcp:** thread per-request OAuth JWT into MCP tools ([#73](https://github.com/andreistefanciprian/phrasely/issues/73)) ([6cc03ab](https://github.com/andreistefanciprian/phrasely/commit/6cc03ab83833b0b9a84231bdeb00b381416c0f02))
+
 ## [0.0.7](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.6...backend-v0.0.7) (2026-06-16)
 
 
