@@ -144,8 +144,9 @@ type Store interface {
 	// Refresh tokens (PR 29: token rotation)
 	CreateRefreshToken(ctx context.Context, req CreateRefreshTokenRequest) (*OAuthRefreshToken, error)
 	// ConsumeRefreshToken atomically revokes the token and returns it.
-	// Returns ErrNotFound if the token doesn't exist or is already revoked.
-	ConsumeRefreshToken(ctx context.Context, token string) (*OAuthRefreshToken, error)
+	// clientID must match the token's owner — prevents one client consuming another's token.
+	// Returns ErrNotFound if the token doesn't exist, is already revoked, or clientID mismatches.
+	ConsumeRefreshToken(ctx context.Context, token, clientID string) (*OAuthRefreshToken, error)
 }
 
 type PostgresStore struct {
@@ -427,18 +428,20 @@ func (s *PostgresStore) CreateRefreshToken(ctx context.Context, req CreateRefres
 }
 
 // ConsumeRefreshToken atomically revokes a refresh token and returns it.
+// Requires clientID to match — prevents a client from consuming a token it did not receive.
 // The WHERE clause (revoked_at IS NULL) ensures each token can only be rotated once.
 // If the same token arrives twice (replay), ErrNotFound is returned — the caller
 // should treat this as a potential token theft and revoke all tokens for that client.
-func (s *PostgresStore) ConsumeRefreshToken(ctx context.Context, token string) (*OAuthRefreshToken, error) {
+func (s *PostgresStore) ConsumeRefreshToken(ctx context.Context, token, clientID string) (*OAuthRefreshToken, error) {
 	var t OAuthRefreshToken
 	err := s.Pool.QueryRow(ctx,
 		`UPDATE oauth_refresh_tokens
 		 SET revoked_at = NOW()
 		 WHERE token = $1
+		   AND client_id = $2
 		   AND revoked_at IS NULL
 		 RETURNING id, token, client_id, user_id, revoked_at, created_at`,
-		token,
+		token, clientID,
 	).Scan(&t.ID, &t.Token, &t.ClientID, &t.UserID, &t.RevokedAt, &t.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound

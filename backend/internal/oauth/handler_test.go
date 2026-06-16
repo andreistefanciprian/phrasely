@@ -19,11 +19,12 @@ import (
 // Only the fields used by the endpoint under test need to be set;
 // all other methods panic to catch unexpected calls.
 type mockStore struct {
-	createOAuthClient       func(ctx context.Context, redirectURIs []string) (*db.OAuthClient, error)
-	getOAuthClient          func(ctx context.Context, clientID string) (*db.OAuthClient, error)
-	createAuthorizationCode func(ctx context.Context, req db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error)
+	createOAuthClient        func(ctx context.Context, redirectURIs []string) (*db.OAuthClient, error)
+	getOAuthClient           func(ctx context.Context, clientID string) (*db.OAuthClient, error)
+	createAuthorizationCode  func(ctx context.Context, req db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error)
 	consumeAuthorizationCode func(ctx context.Context, code, clientID string) (*db.OAuthAuthorizationCode, error)
-	createRefreshToken      func(ctx context.Context, req db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error)
+	createRefreshToken       func(ctx context.Context, req db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error)
+	consumeRefreshToken      func(ctx context.Context, token, clientID string) (*db.OAuthRefreshToken, error)
 }
 
 func (m *mockStore) Close() {}
@@ -69,7 +70,10 @@ func (m *mockStore) CreateRefreshToken(ctx context.Context, req db.CreateRefresh
 	}
 	panic("not expected")
 }
-func (m *mockStore) ConsumeRefreshToken(_ context.Context, _ string) (*db.OAuthRefreshToken, error) {
+func (m *mockStore) ConsumeRefreshToken(ctx context.Context, token, clientID string) (*db.OAuthRefreshToken, error) {
+	if m.consumeRefreshToken != nil {
+		return m.consumeRefreshToken(ctx, token, clientID)
+	}
 	panic("not expected")
 }
 
@@ -455,6 +459,127 @@ func TestToken(t *testing.T) {
 				}
 				if typ, ok := resp["token_type"].(string); !ok || typ != "Bearer" {
 					t.Errorf("token_type = %v, want Bearer", resp["token_type"])
+				}
+			}
+		})
+	}
+}
+
+func TestRefreshToken(t *testing.T) {
+	const clientID = "client-abc"
+	const userID = "user-123"
+
+	okStore := &mockStore{
+		// ConsumeRefreshToken atomically revokes the old token and returns its record.
+		consumeRefreshToken: func(_ context.Context, token, _ string) (*db.OAuthRefreshToken, error) {
+			return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID}, nil
+		},
+		// CreateRefreshToken issues the new rotated token.
+		createRefreshToken: func(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+			return &db.OAuthRefreshToken{Token: "new-refresh-token"}, nil
+		},
+	}
+
+	callRefresh := func(store *mockStore, body string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/internal/oauth/token", strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		router := mux.NewRouter()
+		NewHandler(store, testJWTSecret).RegisterRoutes(router)
+		router.ServeHTTP(w, r)
+		return w
+	}
+
+	validBody := "grant_type=refresh_token&refresh_token=old-refresh-token&client_id=" + clientID
+
+	tests := []struct {
+		name       string
+		body       string
+		store      *mockStore
+		wantStatus int
+	}{
+		{
+			name:       "valid refresh returns new access_token and refresh_token",
+			body:       validBody,
+			store:      okStore,
+			wantStatus: http.StatusOK,
+		},
+		{
+			// A replayed or unknown token — ConsumeRefreshToken returns ErrNotFound.
+			// This also fires when an attacker replays a previously rotated token,
+			// and when client_id doesn't match the token's owner (DB enforces it).
+			name: "revoked or unknown token returns 400",
+			body: validBody,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
+					return nil, db.ErrNotFound
+				},
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			// Both fields are required — missing either returns 400 before hitting the DB.
+			name:       "missing refresh_token field returns 400",
+			body:       "grant_type=refresh_token&client_id=" + clientID,
+			store:      okStore,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "missing client_id field returns 400",
+			body:       "grant_type=refresh_token&refresh_token=old-refresh-token",
+			store:      okStore,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name: "store error on consume returns 500",
+			body: validBody,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
+					return nil, errors.New("db unavailable")
+				},
+			},
+			wantStatus: http.StatusInternalServerError,
+		},
+		{
+			// Copilot: cover the path where consume succeeds but CreateRefreshToken fails.
+			name: "store error on create returns 500",
+			body: validBody,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, token, _ string) (*db.OAuthRefreshToken, error) {
+					return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID}, nil
+				},
+				createRefreshToken: func(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+					return nil, errors.New("db unavailable")
+				},
+			},
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := callRefresh(tt.store, tt.body)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantStatus)
+			}
+
+			if tt.wantStatus == http.StatusOK {
+				var resp map[string]any
+				if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+					t.Fatalf("decode response: %v", err)
+				}
+				if tok, ok := resp["access_token"].(string); !ok || tok == "" {
+					t.Error("expected non-empty access_token in response")
+				}
+				// Rotation: the new refresh token must differ from the one we sent.
+				if tok, ok := resp["refresh_token"].(string); !ok || tok == "" {
+					t.Error("expected non-empty refresh_token in response")
+				} else if tok == "old-refresh-token" {
+					t.Error("refresh_token was not rotated — same token returned")
+				}
+				if w.Header().Get("Cache-Control") != "no-store" {
+					t.Error("expected Cache-Control: no-store on token response")
 				}
 			}
 		})
