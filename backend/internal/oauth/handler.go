@@ -250,18 +250,9 @@ func redirectURIAllowed(uri string, allowed []string) bool {
 // Shorter than the magic-link JWT (30 days) because the client can refresh silently.
 const accessTokenTTL = time.Hour
 
-// token handles POST /internal/oauth/token — the code→token exchange.
-// Called by mcp (which proxies the public /token endpoint on itself).
-// This is where PKCE is verified: the client proves it holds the code_verifier
-// that was used to generate the code_challenge stored when the code was issued.
-//
-// Request body is application/x-www-form-urlencoded (OAuth 2.1 §3.2):
-//
-//	grant_type=authorization_code
-//	&code=<auth-code>
-//	&code_verifier=<pkce-verifier>
-//	&client_id=<uuid>
-//	&redirect_uri=<must-match-registered-value>
+// token handles POST /internal/oauth/token.
+// Routes to the correct grant handler based on grant_type.
+// Request body is application/x-www-form-urlencoded (OAuth 2.1 §3.2).
 func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 4*1024)
 	if err := r.ParseForm(); err != nil {
@@ -269,11 +260,20 @@ func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.PostForm.Get("grant_type") != "authorization_code" {
+	switch r.PostForm.Get("grant_type") {
+	case "authorization_code":
+		h.authCodeGrant(w, r)
+	case "refresh_token":
+		h.refreshTokenGrant(w, r)
+	default:
 		respondErr(w, http.StatusBadRequest, "unsupported_grant_type")
-		return
 	}
+}
 
+// authCodeGrant handles grant_type=authorization_code.
+// This is where PKCE is verified: the client proves it holds the code_verifier
+// that was used to generate the code_challenge stored when the code was issued.
+func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 	code := r.PostForm.Get("code")
 	codeVerifier := r.PostForm.Get("code_verifier")
 	clientID := r.PostForm.Get("client_id")
@@ -316,17 +316,6 @@ func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Issue a short-lived JWT access token scoped to the authenticated user.
-	// Same format as magic-link JWTs so the backend phrase endpoints accept it unchanged.
-	accessToken, err := auth.SignJWT(authCode.UserID, h.jwtSecret, accessTokenTTL)
-	if err != nil {
-		slog.Error("sign access token", "error", err)
-		respondErr(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	// Issue a refresh token stored in the DB. The client uses it to get new access
-	// tokens when this one expires, without re-prompting the user. Rotation in PR 29.
 	refreshToken, err := h.store.CreateRefreshToken(r.Context(), db.CreateRefreshTokenRequest{
 		ClientID: authCode.ClientID,
 		UserID:   authCode.UserID,
@@ -337,15 +326,65 @@ func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// RFC 6749 §5.1: token responses must not be cached.
-	// Pragma: no-cache is included for HTTP/1.0 proxy compatibility.
+	h.writeTokenResponse(w, authCode.UserID, refreshToken.Token)
+}
+
+// refreshTokenGrant handles grant_type=refresh_token.
+//
+// Rotation: the old refresh token is atomically revoked and a new one is issued.
+// If the old token arrives again (replay attack), ConsumeRefreshToken returns
+// ErrNotFound — the client must re-authorise. In a hardened implementation, a
+// replay should also revoke ALL tokens for the client (RFC 6819 §5.2.2.3).
+func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
+	tokenStr := r.PostForm.Get("refresh_token")
+	if tokenStr == "" {
+		respondErr(w, http.StatusBadRequest, "refresh_token is required")
+		return
+	}
+
+	// Atomically revoke the old token and return its record.
+	// Returns ErrNotFound if it doesn't exist or was already revoked.
+	old, err := h.store.ConsumeRefreshToken(r.Context(), tokenStr)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respondErr(w, http.StatusBadRequest, "invalid_grant")
+			return
+		}
+		slog.Error("consume refresh token", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	newRefreshToken, err := h.store.CreateRefreshToken(r.Context(), db.CreateRefreshTokenRequest{
+		ClientID: old.ClientID,
+		UserID:   old.UserID,
+	})
+	if err != nil {
+		slog.Error("create refresh token", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	h.writeTokenResponse(w, old.UserID, newRefreshToken.Token)
+}
+
+// writeTokenResponse signs a JWT access token and writes the standard token
+// response body with no-store cache headers (RFC 6749 §5.1).
+func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken string) {
+	accessToken, err := auth.SignJWT(userID, h.jwtSecret, accessTokenTTL)
+	if err != nil {
+		slog.Error("sign access token", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 	respond(w, http.StatusOK, map[string]any{
 		"access_token":  accessToken,
 		"token_type":    "Bearer",
 		"expires_in":    int(accessTokenTTL.Seconds()),
-		"refresh_token": refreshToken.Token,
+		"refresh_token": refreshToken,
 	})
 }
 
