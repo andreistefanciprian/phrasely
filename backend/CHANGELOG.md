@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.7](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.6...backend-v0.0.7) (2026-06-16)
+
+
+### Features
+
+* **backend:** add OAuth 2.1 token endpoint with PKCE verification ([#67](https://github.com/andreistefanciprian/phrasely/issues/67)) ([4f9cf54](https://github.com/andreistefanciprian/phrasely/commit/4f9cf540a91177867aeb9f512f1508cb2d2a0d12))
+
 ## [0.0.6](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.5...backend-v0.0.6) (2026-06-16)
 
 
