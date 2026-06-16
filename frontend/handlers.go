@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -212,6 +213,10 @@ type oauthParams struct {
 	ResponseType        string
 }
 
+// base64urlRE matches a base64url-encoded SHA256 hash: exactly 43 chars,
+// no padding. Mirrors the same check in the backend oauth handler.
+var base64urlRE = regexp.MustCompile(`^[A-Za-z0-9_-]{43}$`)
+
 // validateOAuthParams checks that all required OAuth 2.1 params are present and
 // that the values we actually enforce (response_type, code_challenge_method) are
 // correct. We do NOT validate client_id or redirect_uri here — that's the
@@ -226,6 +231,11 @@ func validateOAuthParams(p oauthParams) error {
 	// OAuth 2.1 mandates S256 — reject "plain" and anything else.
 	if p.CodeChallengeMethod != "S256" {
 		return errors.New("code_challenge_method must be S256")
+	}
+	// Validate format early so a bad challenge returns a clear 400 here rather
+	// than a generic 500 when the backend rejects it after the user clicks Allow.
+	if !base64urlRE.MatchString(p.CodeChallenge) {
+		return errors.New("code_challenge must be base64url-encoded SHA256 (43 chars, no padding)")
 	}
 	return nil
 }
