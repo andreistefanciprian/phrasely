@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.4](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.3...mcp-v0.0.4) (2026-06-16)
+
+
+### Features
+
+* **mcp:** add /token proxy and fix Content-Type forwarding ([#69](https://github.com/andreistefanciprian/phrasely/issues/69)) ([611a009](https://github.com/andreistefanciprian/phrasely/commit/611a00960bd591128d050607480c792cf45d2ca9))
+
 ## [0.0.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.2...mcp-v0.0.3) (2026-06-16)
 
 
