@@ -168,6 +168,63 @@ func TestRegister(t *testing.T) {
 	}
 }
 
+func TestGetClient(t *testing.T) {
+	tests := []struct {
+		name       string
+		clientID   string
+		store      *mockStore
+		wantStatus int
+	}{
+		{
+			name:     "known client returns 200 with redirect_uris",
+			clientID: "client-abc",
+			store: &mockStore{
+				getOAuthClient: func(_ context.Context, id string) (*db.OAuthClient, error) {
+					return &db.OAuthClient{ID: id, RedirectURIs: []string{"https://chatgpt.com/cb"}}, nil
+				},
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:     "unknown client returns 404",
+			clientID: "no-such-client",
+			store: &mockStore{
+				getOAuthClient: func(_ context.Context, _ string) (*db.OAuthClient, error) {
+					return nil, db.ErrNotFound
+				},
+			},
+			wantStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := newTestServer(tt.store)
+			defer srv.Close()
+
+			resp, err := http.Get(srv.URL + "/internal/oauth/clients/" + tt.clientID)
+			if err != nil {
+				t.Fatalf("request failed: %v", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tt.wantStatus {
+				t.Errorf("status = %d, want %d", resp.StatusCode, tt.wantStatus)
+			}
+
+			if tt.wantStatus == http.StatusOK {
+				var body clientResponse
+				if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+					t.Fatalf("decode response: %v", err)
+				}
+				if len(body.RedirectURIs) == 0 {
+					t.Error("expected redirect_uris in response")
+				}
+			}
+		})
+	}
+}
+
 func TestAuthorize(t *testing.T) {
 	// A valid base64url-encoded SHA256 hash is always exactly 43 chars.
 	const validChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"

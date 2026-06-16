@@ -60,11 +60,12 @@ func UserIDFromContext(ctx context.Context) string {
 func isUnprotected(path string) bool {
 	return path == "/health" ||
 		strings.HasPrefix(path, "/auth/") ||
-		// /internal/oauth/register is called by the mcp server (no user session exists yet —
-		// this is Dynamic Client Registration before any user is involved). Network isolation
-		// is the access control. Other /internal/oauth/ routes are added explicitly as needed
-		// so we don't accidentally exempt endpoints that require a user JWT (e.g. /authorize).
-		path == "/internal/oauth/register"
+		// /internal/oauth/register — Dynamic Client Registration, called by mcp before
+		// any user session exists. Network isolation is the access control.
+		path == "/internal/oauth/register" ||
+		// /internal/oauth/clients/{id} — client lookup, called by the frontend to validate
+		// client_id + redirect_uri before showing the consent screen (no user JWT involved).
+		strings.HasPrefix(path, "/internal/oauth/clients/")
 }
 
 func respondUnauthorized(w http.ResponseWriter) {

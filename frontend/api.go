@@ -79,6 +79,36 @@ func (c *apiClient) ListPhrases(jwt string) ([]map[string]any, error) {
 	return phrases, nil
 }
 
+// ValidateOAuthClient checks with the backend that redirect_uri is registered
+// for the given client_id. Returns an error if either is unknown or mismatched.
+// Called on GET /authorize so we can show an error page (not a redirect) for
+// bad params — per RFC 6749 §4.1.2.1 we must never redirect to an invalid URI.
+func (c *apiClient) ValidateOAuthClient(clientID, redirectURI string) error {
+	resp, err := c.http.Get(c.baseURL + "/internal/oauth/clients/" + url.PathEscape(clientID))
+	if err != nil {
+		return fmt.Errorf("validate client: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("unknown client_id")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("backend returned %d", resp.StatusCode)
+	}
+	var client struct {
+		RedirectURIs []string `json:"redirect_uris"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&client); err != nil {
+		return fmt.Errorf("decode response: %w", err)
+	}
+	for _, u := range client.RedirectURIs {
+		if u == redirectURI {
+			return nil
+		}
+	}
+	return fmt.Errorf("redirect_uri not registered for this client")
+}
+
 // IssueAuthCode calls the internal backend endpoint to create an OAuth 2.1
 // authorization code. The backend validates client_id, redirect_uri, and
 // code_challenge, then stores a short-lived code and returns it.

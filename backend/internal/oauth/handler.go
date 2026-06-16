@@ -30,6 +30,7 @@ func NewHandler(store db.Store) *Handler {
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/internal/oauth/register", h.register).Methods(http.MethodPost)
 	r.HandleFunc("/internal/oauth/authorize", h.authorize).Methods(http.MethodPost)
+	r.HandleFunc("/internal/oauth/clients/{id}", h.getClient).Methods(http.MethodGet)
 }
 
 // registerRequest is the body of POST /internal/oauth/register.
@@ -93,6 +94,34 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, http.StatusCreated, registerResponse{
+		ClientID:     client.ID,
+		RedirectURIs: client.RedirectURIs,
+	})
+}
+
+// clientResponse is the body returned by GET /internal/oauth/clients/{id}.
+type clientResponse struct {
+	ClientID     string   `json:"client_id"`
+	RedirectURIs []string `json:"redirect_uris"`
+}
+
+// getClient handles GET /internal/oauth/clients/{id}.
+// Called by the frontend on GET /authorize to validate client_id + redirect_uri
+// before rendering the consent form. Per RFC 6749 §4.1.2.1 the frontend must
+// NOT redirect on an invalid redirect_uri — it shows an error page instead.
+func (h *Handler) getClient(w http.ResponseWriter, r *http.Request) {
+	clientID := mux.Vars(r)["id"]
+	client, err := h.store.GetOAuthClient(r.Context(), clientID)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			respondErr(w, http.StatusNotFound, "client not found")
+			return
+		}
+		slog.Error("get oauth client", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	respond(w, http.StatusOK, clientResponse{
 		ClientID:     client.ID,
 		RedirectURIs: client.RedirectURIs,
 	})

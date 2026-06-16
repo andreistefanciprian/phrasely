@@ -273,11 +273,19 @@ func (app *application) authorizeGet(w http.ResponseWriter, r *http.Request) {
 		ResponseType:        q.Get("response_type"),
 	}
 
-	// Validate params before rendering — a broken request should not show the
-	// consent UI since the user has nothing valid to approve.
-	// Note: per RFC 6749 §4.1.2.1 we must NOT redirect on invalid redirect_uri;
+	// Validate well-formedness of params before touching the backend.
+	// Per RFC 6749 §4.1.2.1 we must NOT redirect on invalid redirect_uri —
 	// show a plain error page instead.
 	if err := validateOAuthParams(params); err != nil {
+		http.Error(w, "Invalid authorization request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate client_id + redirect_uri with the backend before rendering the
+	// consent form. This ensures that both the Allow and Deny paths can safely
+	// redirect to redirect_uri — it's already been verified as registered.
+	if err := app.api.ValidateOAuthClient(params.ClientID, params.RedirectURI); err != nil {
+		slog.Warn("oauth client validation failed", "error", err)
 		http.Error(w, "Invalid authorization request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
