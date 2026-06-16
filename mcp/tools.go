@@ -59,7 +59,7 @@ type AddPhraseOutput struct {
 
 func addPhraseHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[AddPhraseInput, AddPhraseOutput] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in AddPhraseInput) (*mcp.CallToolResult, AddPhraseOutput, error) {
-		slog.Debug("tool: add_phrase", "headwords", in.Headwords)
+		slog.Debug("tool: add_phrase", "headword_count", len(in.Headwords))
 		phrase, err := api.AddPhrase(jwt, AddPhraseRequest{
 			Phrase:     in.Phrase,
 			Headwords:  in.Headwords,

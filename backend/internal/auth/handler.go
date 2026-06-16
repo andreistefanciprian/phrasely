@@ -88,6 +88,7 @@ func (h *Handler) request(w http.ResponseWriter, r *http.Request) {
 		slog.Error("send magic link", "error", err, "email", body.Email)
 	}
 
+	slog.Debug("magic link sent", "email", body.Email)
 	respond(w, http.StatusOK, map[string]string{"message": "magic link sent"})
 }
 
@@ -150,6 +151,7 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("jwt issued", "user_id", record.UserID)
 	respond(w, http.StatusOK, map[string]string{"token": signed})
 }
 
