@@ -45,7 +45,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("list phrases", "count", len(phrases), "headword", headword)
+	slog.Debug("list phrases", "count", len(phrases), "filtered", headword != "")
 	respond(w, http.StatusOK, phrases)
 }
 
@@ -107,7 +107,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("create phrase", "id", phrase.ID, "headwords", phrase.Headwords)
+	slog.Debug("create phrase", "id", phrase.ID, "headword_count", len(phrase.Headwords))
 	respond(w, http.StatusCreated, phrase)
 }
 
