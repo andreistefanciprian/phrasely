@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.5](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.4...backend-v0.0.5) (2026-06-16)
+
+
+### Features
+
+* **backend:** add internal OAuth authorize endpoint ([a42cdd1](https://github.com/andreistefanciprian/phrasely/commit/a42cdd1695af0f5b6b28f7d8f8358e89a103ee49))
+* **mcp:** add OAuth 2.1 discovery and dynamic client registration proxy ([e62f196](https://github.com/andreistefanciprian/phrasely/commit/e62f196304af50c54b6a785c39cbd022c086ca46))
+
 ## [0.0.4](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.3...backend-v0.0.4) (2026-06-16)
 
 
