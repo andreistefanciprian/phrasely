@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.2...frontend-v0.0.3) (2026-06-16)
+
+
+### Features
+
+* **frontend:** add OAuth 2.1 consent screen at /authorize ([#64](https://github.com/andreistefanciprian/phrasely/issues/64)) ([456c3c3](https://github.com/andreistefanciprian/phrasely/commit/456c3c3a5abe430662db504734b6e1ac91ec8141))
+
 ## [0.0.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.1...frontend-v0.0.2) (2026-06-12)
 
 
