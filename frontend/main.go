@@ -62,6 +62,10 @@ func main() {
 	mux.HandleFunc("/auth-verify", app.authVerify) // magic link landing (what the API emails)
 	mux.HandleFunc("/sign-out", app.signOut)
 
+	// OAuth 2.1 consent screen — auth check is handled inside the handler so
+	// we can show proper errors for bad params before redirecting to login.
+	mux.HandleFunc("/authorize", app.authorizePage)
+
 	// Protected pages
 	mux.HandleFunc("/bubble", app.requireAuth(app.bubblePage))
 	mux.HandleFunc("/phrases", app.requireAuth(app.phrasesPage))
