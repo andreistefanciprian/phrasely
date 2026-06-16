@@ -6,9 +6,11 @@ package oauth
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/gorilla/mux"
@@ -94,18 +96,20 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 
 // validateRedirectURI checks that a redirect_uri is a well-formed http/https URL.
 // We deliberately do not allow:
-//   - fragment components (#...) — RFC 6749 §3.1.2 forbids them
+//   - fragment components (#...) — RFC 6749 §3.1.2 forbids them. Note: we check
+//     the raw string for '#' because url.ParseRequestURI silently strips fragments,
+//     so u.Fragment would always appear empty even when a fragment is present.
 //   - non-http(s) schemes — limits attack surface (no javascript:, data:, etc.)
 func validateRedirectURI(raw string) error {
+	if strings.Contains(raw, "#") {
+		return errors.New("fragments not allowed in redirect_uri (RFC 6749 §3.1.2)")
+	}
 	u, err := url.ParseRequestURI(raw)
 	if err != nil {
 		return err
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return &url.Error{Op: "parse", URL: raw, Err: url.InvalidHostError("scheme must be http or https")}
-	}
-	if u.Fragment != "" {
-		return &url.Error{Op: "parse", URL: raw, Err: url.InvalidHostError("fragments not allowed in redirect_uri")}
+		return errors.New("scheme must be http or https")
 	}
 	return nil
 }
