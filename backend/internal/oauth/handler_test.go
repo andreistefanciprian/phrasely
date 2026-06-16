@@ -447,13 +447,13 @@ func TestToken(t *testing.T) {
 				if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
 					t.Fatalf("decode response: %v", err)
 				}
-				if resp["access_token"] == "" {
-					t.Error("expected access_token in response")
+				if tok, ok := resp["access_token"].(string); !ok || tok == "" {
+					t.Error("expected non-empty access_token string in response")
 				}
-				if resp["refresh_token"] == "" {
-					t.Error("expected refresh_token in response")
+				if tok, ok := resp["refresh_token"].(string); !ok || tok == "" {
+					t.Error("expected non-empty refresh_token string in response")
 				}
-				if resp["token_type"] != "Bearer" {
+				if typ, ok := resp["token_type"].(string); !ok || typ != "Bearer" {
 					t.Errorf("token_type = %v, want Bearer", resp["token_type"])
 				}
 			}
