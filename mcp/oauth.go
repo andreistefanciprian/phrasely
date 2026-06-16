@@ -126,12 +126,15 @@ func proxyToBackend(w http.ResponseWriter, r *http.Request, api *apiClient, back
 	}
 	defer resp.Body.Close()
 
-	// Copy all backend response headers (Content-Type, Cache-Control, Pragma, etc.)
-	// so directives like "Cache-Control: no-store" on the token response reach the client.
+	// Copy backend response headers (Content-Type, Cache-Control, Pragma, etc.)
+	// while stripping hop-by-hop headers that proxies must not forward (RFC 7230 §6.1).
 	for k, vals := range resp.Header {
-		for _, v := range vals {
-			w.Header().Add(k, v)
+		switch http.CanonicalHeaderKey(k) {
+		case "Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization",
+			"Te", "Trailer", "Transfer-Encoding", "Upgrade":
+			continue
 		}
+		w.Header()[k] = append([]string(nil), vals...)
 	}
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
