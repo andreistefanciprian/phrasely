@@ -172,3 +172,46 @@ func TestRegisterProxy(t *testing.T) {
 		}
 	})
 }
+
+func TestTokenProxy(t *testing.T) {
+	t.Run("proxies form body and forwards cache headers", func(t *testing.T) {
+		backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Verify the backend received form-encoded content type, not JSON.
+			if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
+				t.Errorf("backend Content-Type = %q, want application/x-www-form-urlencoded", ct)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", "no-store")
+			w.Header().Set("Pragma", "no-cache")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"access_token":"tok","token_type":"Bearer","expires_in":3600}`))
+		}))
+		defer backend.Close()
+
+		mux := newTestMux(oauthConfig{}, backend.URL)
+		w := httptest.NewRecorder()
+		body := "grant_type=authorization_code&code=abc&code_verifier=xyz&client_id=cid&redirect_uri=https://example.com"
+		r := httptest.NewRequest(http.MethodPost, "/token", strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		mux.ServeHTTP(w, r)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", w.Code)
+		}
+		// Cache-Control: no-store must reach the client (RFC 6749 §5.1).
+		if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
+			t.Errorf("Cache-Control = %q, want no-store", cc)
+		}
+	})
+
+	t.Run("non-POST rejected", func(t *testing.T) {
+		mux := newTestMux(oauthConfig{}, "http://unused")
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/token", nil)
+		mux.ServeHTTP(w, r)
+
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Errorf("status = %d, want 405", w.Code)
+		}
+	})
+}
