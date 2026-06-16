@@ -11,6 +11,7 @@ COPY internal/db ./internal/db
 COPY internal/email ./internal/email
 COPY internal/middleware ./internal/middleware
 COPY internal/phrases ./internal/phrases
+COPY internal/oauth ./internal/oauth
 COPY internal/curate/*.go ./internal/curate/
 COPY migrations ./migrations
 # CGO_ENABLED=0  — static binary, no C runtime dependency
