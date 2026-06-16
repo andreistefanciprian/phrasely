@@ -1,65 +1,70 @@
 # Phrasely MCP Server
 
 Exposes `list_phrases` and `add_phrase` over MCP (Streamable HTTP), backed by the
-private `backend` API. See [docs/mcp-server.md](../docs/mcp-server.md) for the
-full plan.
+private `backend` API.
 
-## Phase 1: static token auth
+## Auth
 
-For now, `mcp` authenticates to `backend` using a single static long-lived JWT
-read from `MCP_AUTH_TOKEN` — the same JWT format issued by the magic-link login
-flow. Every tool call is scoped to whichever user that JWT belongs to.
+`/mcp` requires `Authorization: Bearer <access_token>`. The access token is a
+short-lived JWT issued by the OAuth 2.1 + PKCE flow:
+
+1. Client fetches `/.well-known/oauth-authorization-server` to discover endpoints.
+2. Client registers via `POST /register` (Dynamic Client Registration, RFC 7591).
+3. User logs in and consents at `GET /authorize` on the frontend.
+4. Client exchanges the auth code for tokens at `POST /token` (PKCE S256).
+5. Client calls `/mcp` with the access token as a Bearer header.
+
+`MCP_AUTH_TOKEN` no longer exists — all auth goes through the OAuth flow.
 
 ## Local testing
 
-1. **Get a JWT** via the existing magic-link flow:
+Start the full stack (frontend, api, mcp, db are all needed for the consent screen):
 
-   ```bash
-   ./scripts/api.sh auth-request you@example.com
-   # check your email (or `docker compose logs api | grep -i 'magic link'`) for the link/token
-   ./scripts/api.sh auth-verify <token-from-link>
-   ```
+```bash
+docker compose up --build
+```
 
-   This prints a JWT — export it for the next step.
+`mcp` listens on `http://localhost:8081`.
 
-2. **Set `MCP_AUTH_TOKEN`** in `.env`:
+### Quick test with a magic-link JWT
 
-   ```
-   MCP_AUTH_TOKEN=<jwt-from-step-1>
-   ```
+For ad-hoc testing you can skip the OAuth flow and use a magic-link JWT directly
+as the Bearer token — the backend accepts both:
 
-3. **Start the stack**, including `mcp`:
+```bash
+./scripts/api.sh auth-request you@example.com
+# grab the token from stdout (dev mode logs it)
+./scripts/api.sh auth-verify <token>
+# prints a JWT — use it below
 
-   ```bash
-   docker compose up --build mcp
-   ```
+curl -s http://localhost:8081/mcp \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq
+```
 
-   `mcp` listens on `http://localhost:8081`, with the MCP endpoint at
-   `http://localhost:8081/mcp`.
-
-## Connecting a client
-
-### MCP Inspector
+### MCP Inspector (full OAuth flow)
 
 ```bash
 npx @modelcontextprotocol/inspector
 ```
 
-Open the printed URL, choose transport "Streamable HTTP", and set the server
-URL to `http://localhost:8081/mcp`. You should see `list_phrases` and
-`add_phrase` under Tools.
+Open the printed URL, choose transport **Streamable HTTP**, set the server URL to
+`http://localhost:8081/mcp`, and follow the OAuth prompts. Inspector handles
+client registration, the consent redirect, and token exchange automatically.
 
-Or, non-interactively from the CLI:
+Or non-interactively with a pre-obtained JWT:
 
 ```bash
-npx @modelcontextprotocol/inspector --cli http://localhost:8081/mcp --transport http --method tools/list
-npx @modelcontextprotocol/inspector --cli http://localhost:8081/mcp --transport http \
-  --method tools/call --tool-name list_phrases --tool-arg headword=unfettered
+npx @modelcontextprotocol/inspector --cli http://localhost:8081/mcp \
+  --transport http \
+  --header "Authorization: Bearer <jwt>" \
+  --method tools/list
 ```
 
 ### Claude Desktop
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -71,5 +76,5 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-Restart Claude Desktop and the `list_phrases`/`add_phrase` tools should appear
-for the `phrasely` server.
+Restart Claude Desktop. It will trigger the OAuth flow on first use and cache
+the tokens for subsequent calls.

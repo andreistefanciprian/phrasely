@@ -77,7 +77,7 @@ func (m *mockStore) ConsumeAuthorizationCode(_ context.Context, _, _ string) (*d
 func (m *mockStore) CreateRefreshToken(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
 	panic("not expected in auth tests")
 }
-func (m *mockStore) ConsumeRefreshToken(_ context.Context, _ string) (*db.OAuthRefreshToken, error) {
+func (m *mockStore) ConsumeRefreshToken(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
 	panic("not expected in auth tests")
 }
 
