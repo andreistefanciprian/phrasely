@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.4](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.3...backend-v0.0.4) (2026-06-16)
+
+
+### Features
+
+* **backend:** add Dynamic Client Registration internal endpoint ([e8022c3](https://github.com/andreistefanciprian/phrasely/commit/e8022c39b01983bd4e5e5a047747aa33763ce2df))
+
+
+### Bug Fixes
+
+* **backend:** narrow internal route exemption to /internal/oauth/ ([09a1119](https://github.com/andreistefanciprian/phrasely/commit/09a1119ab8a33b93fe1f3515acd9a3840186a2d2))
+
 ## [0.0.3](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.2...backend-v0.0.3) (2026-06-15)
 
 
