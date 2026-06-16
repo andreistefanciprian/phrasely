@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.2...mcp-v0.0.3) (2026-06-16)
+
+
+### Features
+
+* **mcp:** add OAuth 2.1 discovery and dynamic client registration proxy ([e62f196](https://github.com/andreistefanciprian/phrasely/commit/e62f196304af50c54b6a785c39cbd022c086ca46))
+
+
+### Bug Fixes
+
+* **mcp:** return 413 instead of silently truncating oversized proxy bodies ([65b28a9](https://github.com/andreistefanciprian/phrasely/commit/65b28a9cd95daf69d83f8754c0d463e7e9f5d3a7))
+
 ## [0.0.2](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.1...mcp-v0.0.2) (2026-06-15)
 
 
