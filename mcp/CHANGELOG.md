@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.5](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.4...mcp-v0.0.5) (2026-06-16)
+
+
+### Features
+
+* **mcp:** thread per-request OAuth JWT into MCP tools ([#73](https://github.com/andreistefanciprian/phrasely/issues/73)) ([6cc03ab](https://github.com/andreistefanciprian/phrasely/commit/6cc03ab83833b0b9a84231bdeb00b381416c0f02))
+
 ## [0.0.4](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.3...mcp-v0.0.4) (2026-06-16)
 
 
