@@ -74,6 +74,18 @@ func registerOAuthProxy(mux *http.ServeMux, api *apiClient) {
 		}
 		proxyToBackend(w, r, api, "/internal/oauth/register")
 	})
+
+	// POST /token — authorization code → access token exchange (RFC 6749 §4.1.3).
+	// ChatGPT posts the code + code_verifier (application/x-www-form-urlencoded);
+	// mcp forwards to backend's /internal/oauth/token which does the PKCE check
+	// and issues a JWT access token + refresh token.
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		proxyToBackend(w, r, api, "/internal/oauth/token")
+	})
 }
 
 const proxyMaxBodyBytes = 4 * 1024
@@ -101,7 +113,11 @@ func proxyToBackend(w http.ResponseWriter, r *http.Request, api *apiClient, back
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	req.Header.Set("Content-Type", "application/json")
+	// Forward the original Content-Type — /register sends application/json,
+	// /token sends application/x-www-form-urlencoded (OAuth 2.1 §3.2).
+	if ct := r.Header.Get("Content-Type"); ct != "" {
+		req.Header.Set("Content-Type", ct)
+	}
 
 	resp, err := api.http.Do(req)
 	if err != nil {
@@ -110,7 +126,13 @@ func proxyToBackend(w http.ResponseWriter, r *http.Request, api *apiClient, back
 	}
 	defer resp.Body.Close()
 
-	w.Header().Set("Content-Type", "application/json")
+	// Copy all backend response headers (Content-Type, Cache-Control, Pragma, etc.)
+	// so directives like "Cache-Control: no-store" on the token response reach the client.
+	for k, vals := range resp.Header {
+		for _, v := range vals {
+			w.Header().Add(k, v)
+		}
+	}
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
 }
