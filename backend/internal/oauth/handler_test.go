@@ -22,6 +22,8 @@ type mockStore struct {
 	createOAuthClient       func(ctx context.Context, redirectURIs []string) (*db.OAuthClient, error)
 	getOAuthClient          func(ctx context.Context, clientID string) (*db.OAuthClient, error)
 	createAuthorizationCode func(ctx context.Context, req db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error)
+	consumeAuthorizationCode func(ctx context.Context, code, clientID string) (*db.OAuthAuthorizationCode, error)
+	createRefreshToken      func(ctx context.Context, req db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error)
 }
 
 func (m *mockStore) Close() {}
@@ -55,19 +57,27 @@ func (m *mockStore) GetMagicLinkToken(_ context.Context, _ string) (*db.MagicLin
 	panic("not expected")
 }
 func (m *mockStore) MarkTokenUsed(_ context.Context, _ string) error { panic("not expected") }
-func (m *mockStore) ConsumeAuthorizationCode(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
+func (m *mockStore) ConsumeAuthorizationCode(ctx context.Context, code, clientID string) (*db.OAuthAuthorizationCode, error) {
+	if m.consumeAuthorizationCode != nil {
+		return m.consumeAuthorizationCode(ctx, code, clientID)
+	}
 	panic("not expected")
 }
-func (m *mockStore) CreateRefreshToken(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+func (m *mockStore) CreateRefreshToken(ctx context.Context, req db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+	if m.createRefreshToken != nil {
+		return m.createRefreshToken(ctx, req)
+	}
 	panic("not expected")
 }
 func (m *mockStore) ConsumeRefreshToken(_ context.Context, _ string) (*db.OAuthRefreshToken, error) {
 	panic("not expected")
 }
 
+const testJWTSecret = "test-jwt-secret"
+
 func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()
-	NewHandler(store).RegisterRoutes(r)
+	NewHandler(store, testJWTSecret).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 
@@ -82,7 +92,7 @@ func callAuthorize(store db.Store, userID, body string) *httptest.ResponseRecord
 		r = r.WithContext(context.WithValue(r.Context(), middleware.UserIDKey, userID))
 	}
 	router := mux.NewRouter()
-	NewHandler(store).RegisterRoutes(router)
+	NewHandler(store, testJWTSecret).RegisterRoutes(router)
 	router.ServeHTTP(w, r)
 	return w
 }
@@ -320,6 +330,131 @@ func TestAuthorize(t *testing.T) {
 				}
 				if resp["code"] == "" {
 					t.Error("expected code in response")
+				}
+			}
+		})
+	}
+}
+
+func TestToken(t *testing.T) {
+	// A real PKCE pair: verifier → SHA256 → base64url → challenge.
+	// verifyPKCES256(verifier, challenge) == true
+	const verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+	const challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+	const clientID = "client-abc"
+	const redirectURI = "https://chatgpt.com/callback"
+	const userID = "user-123"
+
+	okStore := &mockStore{
+		consumeAuthorizationCode: func(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
+			return &db.OAuthAuthorizationCode{
+				Code:          "the-code",
+				ClientID:      clientID,
+				UserID:        userID,
+				RedirectURI:   redirectURI,
+				CodeChallenge: challenge,
+			}, nil
+		},
+		createRefreshToken: func(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+			return &db.OAuthRefreshToken{Token: "refresh-xyz"}, nil
+		},
+	}
+
+	validForm := "grant_type=authorization_code&code=the-code&code_verifier=" + verifier +
+		"&client_id=" + clientID + "&redirect_uri=" + redirectURI
+
+	callToken := func(store *mockStore, body string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/internal/oauth/token", strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		router := mux.NewRouter()
+		NewHandler(store, testJWTSecret).RegisterRoutes(router)
+		router.ServeHTTP(w, r)
+		return w
+	}
+
+	tests := []struct {
+		name       string
+		body       string
+		store      *mockStore
+		wantStatus int
+	}{
+		{
+			name:       "valid exchange returns access_token and refresh_token",
+			body:       validForm,
+			store:      okStore,
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "wrong grant_type returns 400",
+			body:       "grant_type=client_credentials&code=x&code_verifier=x&client_id=x&redirect_uri=x",
+			store:      okStore,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			// ConsumeAuthorizationCode returns ErrNotFound for expired/used/wrong-client codes.
+			name: "invalid or expired code returns 400",
+			body: validForm,
+			store: &mockStore{
+				consumeAuthorizationCode: func(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
+					return nil, db.ErrNotFound
+				},
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			// Wrong verifier → SHA256 hash doesn't match stored challenge.
+			name: "wrong code_verifier returns 400",
+			body: "grant_type=authorization_code&code=the-code&code_verifier=wrongverifier1234567890123456789012345678" +
+				"&client_id=" + clientID + "&redirect_uri=" + redirectURI,
+			store: &mockStore{
+				consumeAuthorizationCode: func(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
+					return &db.OAuthAuthorizationCode{
+						ClientID: clientID, UserID: userID,
+						RedirectURI: redirectURI, CodeChallenge: challenge,
+					}, nil
+				},
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			// redirect_uri in the request must match the one pinned on the code.
+			name: "redirect_uri mismatch returns 400",
+			body: "grant_type=authorization_code&code=the-code&code_verifier=" + verifier +
+				"&client_id=" + clientID + "&redirect_uri=https://other.com/cb",
+			store: &mockStore{
+				consumeAuthorizationCode: func(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
+					return &db.OAuthAuthorizationCode{
+						ClientID: clientID, UserID: userID,
+						RedirectURI: redirectURI, CodeChallenge: challenge,
+					}, nil
+				},
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := callToken(tt.store, tt.body)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantStatus)
+			}
+
+			if tt.wantStatus == http.StatusOK {
+				var resp map[string]any
+				if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+					t.Fatalf("decode response: %v", err)
+				}
+				if resp["access_token"] == "" {
+					t.Error("expected access_token in response")
+				}
+				if resp["refresh_token"] == "" {
+					t.Error("expected refresh_token in response")
+				}
+				if resp["token_type"] != "Bearer" {
+					t.Errorf("token_type = %v, want Bearer", resp["token_type"])
 				}
 			}
 		})
