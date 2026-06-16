@@ -62,6 +62,24 @@ func (m *mockStore) DeletePhrase(_ context.Context, _ string, _ string) error {
 func (m *mockStore) UpdatePhrase(_ context.Context, _ string, _ string, _ db.UpdatePhraseRequest) (*db.Phrase, error) {
 	panic("not expected in auth tests")
 }
+func (m *mockStore) CreateOAuthClient(_ context.Context, _ []string) (*db.OAuthClient, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) GetOAuthClient(_ context.Context, _ string) (*db.OAuthClient, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) CreateAuthorizationCode(_ context.Context, _ db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) ConsumeAuthorizationCode(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) CreateRefreshToken(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) ConsumeRefreshToken(_ context.Context, _ string) (*db.OAuthRefreshToken, error) {
+	panic("not expected in auth tests")
+}
 
 // spySender records calls to SendMagicLink for assertions.
 type spySender struct {
