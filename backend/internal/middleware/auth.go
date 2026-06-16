@@ -60,12 +60,11 @@ func UserIDFromContext(ctx context.Context) string {
 func isUnprotected(path string) bool {
 	return path == "/health" ||
 		strings.HasPrefix(path, "/auth/") ||
-		// /internal/oauth/ routes are called service-to-service (mcp → backend, frontend → backend)
-		// over the private network. The API is never directly exposed to the internet, so
-		// network isolation is the access control — no user JWT is possible or needed here.
-		// Scoped to /internal/oauth/ rather than /internal/ to avoid accidentally exempting
-		// future internal endpoints that may need their own auth model.
-		strings.HasPrefix(path, "/internal/oauth/")
+		// /internal/oauth/register is called by the mcp server (no user session exists yet —
+		// this is Dynamic Client Registration before any user is involved). Network isolation
+		// is the access control. Other /internal/oauth/ routes are added explicitly as needed
+		// so we don't accidentally exempt endpoints that require a user JWT (e.g. /authorize).
+		path == "/internal/oauth/register"
 }
 
 func respondUnauthorized(w http.ResponseWriter) {
