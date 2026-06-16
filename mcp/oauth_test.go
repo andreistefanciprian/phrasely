@@ -2,11 +2,34 @@ package main
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
+
+// TestParseLogLevel checks that LOG_LEVEL strings map to the correct slog levels.
+func TestParseLogLevel(t *testing.T) {
+	tests := []struct {
+		input string
+		want  slog.Level
+	}{
+		{"DEBUG", slog.LevelDebug},
+		{"debug", slog.LevelDebug},
+		{"INFO", slog.LevelInfo},
+		{"WARN", slog.LevelWarn},
+		{"WARNING", slog.LevelWarn},
+		{"ERROR", slog.LevelError},
+		{"", slog.LevelInfo},        // unset → INFO
+		{"VERBOSE", slog.LevelInfo}, // unrecognised → INFO
+	}
+	for _, tt := range tests {
+		if got := parseLogLevel(tt.input); got != tt.want {
+			t.Errorf("parseLogLevel(%q) = %v, want %v", tt.input, got, tt.want)
+		}
+	}
+}
 
 // TestRequireBearer checks that /mcp rejects requests without a valid Bearer token
 // and that the header is normalised before passing downstream.

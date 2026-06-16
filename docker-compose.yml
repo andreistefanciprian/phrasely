@@ -16,6 +16,7 @@ services:
     environment:
       PORT: "8081"
       API_HOST: http://api:8080
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # Public URLs used in OAuth discovery documents.
       # MCP_BASE_URL: the URL ChatGPT uses to reach this server (issuer, token endpoint, register endpoint).
       # FRONTEND_BASE_URL: the URL of the consent screen (/authorize lives on the frontend).
