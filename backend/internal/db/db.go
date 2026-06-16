@@ -58,6 +58,58 @@ type UpdatePhraseRequest struct {
 	SourceURLs []string `json:"source_urls"` // nil = leave unchanged; [] = clear all URLs
 }
 
+// OAuthClient is a registered third-party app (e.g. ChatGPT) that has been
+// granted access via Dynamic Client Registration (RFC 7591).
+// No client_secret: this is a public client — authentication is via PKCE only.
+type OAuthClient struct {
+	ID           string    `json:"id"`
+	RedirectURIs []string  `json:"redirect_uris"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// OAuthAuthorizationCode is a short-lived (~60s), single-use code issued after
+// the user approves consent on the /authorize screen. The client exchanges it
+// for an access token at POST /token, proving it holds the code_verifier that
+// matches the code_challenge stored here (PKCE S256 method).
+type OAuthAuthorizationCode struct {
+	ID            string     `json:"id"`
+	Code          string     `json:"code"`           // opaque value sent in redirect URL
+	ClientID      string     `json:"client_id"`
+	UserID        string     `json:"user_id"`
+	RedirectURI   string     `json:"redirect_uri"`   // pinned; re-validated at /token
+	CodeChallenge string     `json:"code_challenge"` // SHA256(code_verifier), base64url
+	ExpiresAt     time.Time  `json:"expires_at"`
+	UsedAt        *time.Time `json:"used_at"`        // nil = unused; set atomically on consume
+	CreatedAt     time.Time  `json:"created_at"`
+}
+
+// OAuthRefreshToken is a long-lived token that lets the client obtain new access
+// tokens without re-prompting the user. Rotated on every use: old token is
+// revoked, new one issued. Stored in DB so it can be revoked (unlike JWTs).
+type OAuthRefreshToken struct {
+	ID        string     `json:"id"`
+	Token     string     `json:"token"`      // opaque value sent to client
+	ClientID  string     `json:"client_id"`
+	UserID    string     `json:"user_id"`
+	RevokedAt *time.Time `json:"revoked_at"` // nil = active; set on rotation or revocation
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+// CreateAuthCodeRequest holds the fields needed to issue an authorization code.
+type CreateAuthCodeRequest struct {
+	ClientID      string
+	UserID        string
+	RedirectURI   string
+	CodeChallenge string
+	ExpiresAt     time.Time
+}
+
+// CreateRefreshTokenRequest holds the fields needed to issue a refresh token.
+type CreateRefreshTokenRequest struct {
+	ClientID string
+	UserID   string
+}
+
 // Store is the interface all database implementations must satisfy.
 // Methods for each domain (phrases, collections, etc.) will be added here as we build them.
 type Store interface {
@@ -70,11 +122,30 @@ type Store interface {
 	DeletePhrase(ctx context.Context, userID string, id string) error
 	UpdatePhrase(ctx context.Context, userID string, id string, req UpdatePhraseRequest) (*Phrase, error)
 
-	// Auth methods
+	// Magic-link auth methods
 	UpsertUser(ctx context.Context, email string) (*User, error)
 	CreateMagicLinkToken(ctx context.Context, userID string, expiresAt time.Time) (*MagicLinkToken, error)
 	GetMagicLinkToken(ctx context.Context, token string) (*MagicLinkToken, error)
 	MarkTokenUsed(ctx context.Context, tokenID string) error
+
+	// OAuth 2.1 methods
+	//
+	// Client registration (PR 23: /internal/oauth/register)
+	CreateOAuthClient(ctx context.Context, redirectURIs []string) (*OAuthClient, error)
+	GetOAuthClient(ctx context.Context, clientID string) (*OAuthClient, error)
+	//
+	// Authorization codes (PR 25: /internal/oauth/authorize)
+	CreateAuthorizationCode(ctx context.Context, req CreateAuthCodeRequest) (*OAuthAuthorizationCode, error)
+	// ConsumeAuthorizationCode atomically marks the code used and returns it.
+	// Returns ErrNotFound if the code doesn't exist, is already used, has expired,
+	// or belongs to a different client — deliberately indistinct to avoid leaking state.
+	ConsumeAuthorizationCode(ctx context.Context, code, clientID string) (*OAuthAuthorizationCode, error)
+	//
+	// Refresh tokens (PR 29: token rotation)
+	CreateRefreshToken(ctx context.Context, req CreateRefreshTokenRequest) (*OAuthRefreshToken, error)
+	// ConsumeRefreshToken atomically revokes the token and returns it.
+	// Returns ErrNotFound if the token doesn't exist or is already revoked.
+	ConsumeRefreshToken(ctx context.Context, token string) (*OAuthRefreshToken, error)
 }
 
 type PostgresStore struct {
@@ -262,6 +333,123 @@ func (s *PostgresStore) GetMagicLinkToken(ctx context.Context, token string) (*M
 	}
 	return &t, nil
 }
+
+// ── OAuth store methods ───────────────────────────────────────────────────────
+
+// CreateOAuthClient inserts a new public OAuth client with the given redirect URIs.
+func (s *PostgresStore) CreateOAuthClient(ctx context.Context, redirectURIs []string) (*OAuthClient, error) {
+	var c OAuthClient
+	err := s.Pool.QueryRow(ctx,
+		`INSERT INTO oauth_clients (redirect_uris)
+		 VALUES ($1)
+		 RETURNING id, redirect_uris, created_at`,
+		redirectURIs,
+	).Scan(&c.ID, &c.RedirectURIs, &c.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("create oauth client: %w", err)
+	}
+	return &c, nil
+}
+
+// GetOAuthClient fetches a client by ID. Returns ErrNotFound if no match.
+func (s *PostgresStore) GetOAuthClient(ctx context.Context, clientID string) (*OAuthClient, error) {
+	var c OAuthClient
+	err := s.Pool.QueryRow(ctx,
+		`SELECT id, redirect_uris, created_at FROM oauth_clients WHERE id = $1`, clientID,
+	).Scan(&c.ID, &c.RedirectURIs, &c.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get oauth client: %w", err)
+	}
+	return &c, nil
+}
+
+// CreateAuthorizationCode inserts a new single-use PKCE authorization code.
+func (s *PostgresStore) CreateAuthorizationCode(ctx context.Context, req CreateAuthCodeRequest) (*OAuthAuthorizationCode, error) {
+	var a OAuthAuthorizationCode
+	err := s.Pool.QueryRow(ctx,
+		`INSERT INTO oauth_authorization_codes
+		     (client_id, user_id, redirect_uri, code_challenge, expires_at)
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, code, client_id, user_id, redirect_uri, code_challenge, expires_at, used_at, created_at`,
+		req.ClientID, req.UserID, req.RedirectURI, req.CodeChallenge, req.ExpiresAt,
+	).Scan(&a.ID, &a.Code, &a.ClientID, &a.UserID, &a.RedirectURI, &a.CodeChallenge, &a.ExpiresAt, &a.UsedAt, &a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("create authorization code: %w", err)
+	}
+	return &a, nil
+}
+
+// ConsumeAuthorizationCode atomically marks a code used and returns it.
+// The single UPDATE guards against:
+//   - replay attacks (used_at IS NULL)
+//   - expired codes (expires_at > NOW())
+//   - client confusion (client_id = $2), preventing one client redeeming another's code
+//
+// All failure cases return ErrNotFound — deliberately indistinct to avoid leaking
+// whether the code existed, was already used, or just expired.
+func (s *PostgresStore) ConsumeAuthorizationCode(ctx context.Context, code, clientID string) (*OAuthAuthorizationCode, error) {
+	var a OAuthAuthorizationCode
+	err := s.Pool.QueryRow(ctx,
+		`UPDATE oauth_authorization_codes
+		 SET used_at = NOW()
+		 WHERE code = $1
+		   AND client_id = $2
+		   AND used_at IS NULL
+		   AND expires_at > NOW()
+		 RETURNING id, code, client_id, user_id, redirect_uri, code_challenge, expires_at, used_at, created_at`,
+		code, clientID,
+	).Scan(&a.ID, &a.Code, &a.ClientID, &a.UserID, &a.RedirectURI, &a.CodeChallenge, &a.ExpiresAt, &a.UsedAt, &a.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("consume authorization code: %w", err)
+	}
+	return &a, nil
+}
+
+// CreateRefreshToken inserts a new active refresh token for the given client + user.
+func (s *PostgresStore) CreateRefreshToken(ctx context.Context, req CreateRefreshTokenRequest) (*OAuthRefreshToken, error) {
+	var t OAuthRefreshToken
+	err := s.Pool.QueryRow(ctx,
+		`INSERT INTO oauth_refresh_tokens (client_id, user_id)
+		 VALUES ($1, $2)
+		 RETURNING id, token, client_id, user_id, revoked_at, created_at`,
+		req.ClientID, req.UserID,
+	).Scan(&t.ID, &t.Token, &t.ClientID, &t.UserID, &t.RevokedAt, &t.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("create refresh token: %w", err)
+	}
+	return &t, nil
+}
+
+// ConsumeRefreshToken atomically revokes a refresh token and returns it.
+// The WHERE clause (revoked_at IS NULL) ensures each token can only be rotated once.
+// If the same token arrives twice (replay), ErrNotFound is returned — the caller
+// should treat this as a potential token theft and revoke all tokens for that client.
+func (s *PostgresStore) ConsumeRefreshToken(ctx context.Context, token string) (*OAuthRefreshToken, error) {
+	var t OAuthRefreshToken
+	err := s.Pool.QueryRow(ctx,
+		`UPDATE oauth_refresh_tokens
+		 SET revoked_at = NOW()
+		 WHERE token = $1
+		   AND revoked_at IS NULL
+		 RETURNING id, token, client_id, user_id, revoked_at, created_at`,
+		token,
+	).Scan(&t.ID, &t.Token, &t.ClientID, &t.UserID, &t.RevokedAt, &t.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("consume refresh token: %w", err)
+	}
+	return &t, nil
+}
+
+// ── Magic-link token methods ──────────────────────────────────────────────────
 
 // MarkTokenUsed atomically consumes the token in a single UPDATE.
 // The WHERE clause guards against race conditions: only succeeds if the token

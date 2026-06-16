@@ -58,6 +58,24 @@ func (m *mockStore) GetMagicLinkToken(_ context.Context, _ string) (*db.MagicLin
 func (m *mockStore) MarkTokenUsed(_ context.Context, _ string) error {
 	panic("MarkTokenUsed not expected in phrase tests")
 }
+func (m *mockStore) CreateOAuthClient(_ context.Context, _ []string) (*db.OAuthClient, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) GetOAuthClient(_ context.Context, _ string) (*db.OAuthClient, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) CreateAuthorizationCode(_ context.Context, _ db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) ConsumeAuthorizationCode(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) CreateRefreshToken(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) ConsumeRefreshToken(_ context.Context, _ string) (*db.OAuthRefreshToken, error) {
+	panic("not expected in phrase tests")
+}
 
 // newTestServer wires a Handler with the given store and returns a test HTTP server.
 // It injects testUserID into every request context so UserIDFromContext returns a
