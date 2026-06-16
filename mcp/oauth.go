@@ -76,13 +76,22 @@ func registerOAuthProxy(mux *http.ServeMux, api *apiClient) {
 	})
 }
 
+const proxyMaxBodyBytes = 4 * 1024
+
 // proxyToBackend forwards the incoming request body to the given backend path
 // and writes the backend's status code and body back to the client unchanged.
 // mcp never inspects or modifies the payload — it's a transparent proxy.
 func proxyToBackend(w http.ResponseWriter, r *http.Request, api *apiClient, backendPath string) {
-	body, err := io.ReadAll(io.LimitReader(r.Body, 4*1024))
+	// Read one byte beyond the limit. If we get that extra byte, the body is too
+	// large and we reject with 413 rather than silently truncating and forwarding
+	// a partial payload to the backend.
+	body, err := io.ReadAll(io.LimitReader(r.Body, proxyMaxBodyBytes+1))
 	if err != nil {
 		http.Error(w, "failed to read request", http.StatusBadRequest)
+		return
+	}
+	if int64(len(body)) > proxyMaxBodyBytes {
+		http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
 		return
 	}
 

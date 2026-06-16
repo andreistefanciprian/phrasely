@@ -148,6 +148,18 @@ func TestRegisterProxy(t *testing.T) {
 		}
 	})
 
+	t.Run("oversized body returns 413", func(t *testing.T) {
+		mux := newTestMux(oauthConfig{}, "http://unused")
+		w := httptest.NewRecorder()
+		// One byte over the 4KB limit.
+		r := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(strings.Repeat("x", proxyMaxBodyBytes+1)))
+		mux.ServeHTTP(w, r)
+
+		if w.Code != http.StatusRequestEntityTooLarge {
+			t.Errorf("status = %d, want 413", w.Code)
+		}
+	})
+
 	t.Run("backend unavailable returns 502", func(t *testing.T) {
 		// Point at a port with nothing listening.
 		mux := newTestMux(oauthConfig{}, "http://127.0.0.1:1")
