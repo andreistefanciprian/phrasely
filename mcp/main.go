@@ -10,6 +10,12 @@ import (
 )
 
 func main() {
+	// Configure structured JSON logging first so every subsequent log line
+	// is parseable by Railway's log viewer. Level defaults to INFO.
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: parseLogLevel(os.Getenv("LOG_LEVEL")),
+	})))
+
 	apiURL := os.Getenv("API_HOST")
 	if apiURL == "" {
 		apiURL = "http://localhost:8080"
@@ -68,6 +74,21 @@ func main() {
 	}
 }
 
+// parseLogLevel maps a LOG_LEVEL string to a slog.Level.
+// Defaults to INFO for empty or unrecognised values.
+func parseLogLevel(s string) slog.Level {
+	switch strings.ToUpper(s) {
+	case "DEBUG":
+		return slog.LevelDebug
+	case "WARN", "WARNING":
+		return slog.LevelWarn
+	case "ERROR":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
 // requireBearer rejects requests without a valid Authorization: Bearer <token> header.
 // ChatGPT sends the OAuth access token here after completing the flow.
 // RFC 6750 §3: 401 responses must include WWW-Authenticate so clients know
@@ -78,6 +99,7 @@ func requireBearer(next http.Handler) http.Handler {
 		// Require exactly two fields: scheme + non-empty token.
 		// strings.Fields handles multiple spaces and normalises case-insensitive "bearer".
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
+			slog.Debug("requireBearer: rejected request", "remote_addr", r.RemoteAddr, "reason", "missing or invalid Bearer token")
 			w.Header().Set("WWW-Authenticate", `Bearer realm="mcp"`)
 			http.Error(w, "authorization required", http.StatusUnauthorized)
 			return
