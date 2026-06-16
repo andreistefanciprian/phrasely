@@ -59,7 +59,11 @@ func UserIDFromContext(ctx context.Context) string {
 // isUnprotected returns true for routes that do not require authentication.
 func isUnprotected(path string) bool {
 	return path == "/health" ||
-		strings.HasPrefix(path, "/auth/")
+		strings.HasPrefix(path, "/auth/") ||
+		// /internal/ routes are called service-to-service (mcp → backend, frontend → backend)
+		// over the private network. The API is never directly exposed to the internet, so
+		// network isolation is the access control — no user JWT is possible or needed here.
+		strings.HasPrefix(path, "/internal/")
 }
 
 func respondUnauthorized(w http.ResponseWriter) {
