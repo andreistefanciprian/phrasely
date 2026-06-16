@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.9](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.8...backend-v0.0.9) (2026-06-16)
+
+
+### Features
+
+* **backend:** add configurable log level via LOG_LEVEL env var ([#77](https://github.com/andreistefanciprian/phrasely/issues/77)) ([e3d05ff](https://github.com/andreistefanciprian/phrasely/commit/e3d05ff638ac44acf42fb2b7a2e7f1a854d9e888))
+
 ## [0.0.8](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.7...backend-v0.0.8) (2026-06-16)
 
 
