@@ -8,19 +8,30 @@ import (
 	"testing"
 )
 
-// TestRequireBearer checks that /mcp rejects requests without a Bearer token.
+// TestRequireBearer checks that /mcp rejects requests without a valid Bearer token
+// and that the header is normalised before passing downstream.
 func TestRequireBearer(t *testing.T) {
-	// A no-op handler standing in for the real MCP handler.
+	// Record the Authorization header as seen by the inner handler.
+	var capturedAuth string
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedAuth = r.Header.Get("Authorization")
 		w.WriteHeader(http.StatusOK)
 	})
 	protected := requireBearer(inner)
 
-	t.Run("no Authorization header returns 401", func(t *testing.T) {
+	send := func(auth string) *httptest.ResponseRecorder {
+		capturedAuth = ""
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+		if auth != "" {
+			r.Header.Set("Authorization", auth)
+		}
 		protected.ServeHTTP(w, r)
+		return w
+	}
 
+	t.Run("no Authorization header returns 401", func(t *testing.T) {
+		w := send("")
 		if w.Code != http.StatusUnauthorized {
 			t.Errorf("status = %d, want 401", w.Code)
 		}
@@ -30,24 +41,38 @@ func TestRequireBearer(t *testing.T) {
 	})
 
 	t.Run("non-Bearer scheme returns 401", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodPost, "/mcp", nil)
-		r.Header.Set("Authorization", "Basic dXNlcjpwYXNz")
-		protected.ServeHTTP(w, r)
-
-		if w.Code != http.StatusUnauthorized {
+		if w := send("Basic dXNlcjpwYXNz"); w.Code != http.StatusUnauthorized {
 			t.Errorf("status = %d, want 401", w.Code)
 		}
 	})
 
-	t.Run("valid Bearer token passes through", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodPost, "/mcp", nil)
-		r.Header.Set("Authorization", "Bearer some-jwt-here")
-		protected.ServeHTTP(w, r)
+	t.Run("Bearer with empty token returns 401", func(t *testing.T) {
+		if w := send("Bearer "); w.Code != http.StatusUnauthorized {
+			t.Errorf("status = %d, want 401", w.Code)
+		}
+	})
 
+	t.Run("valid Bearer passes through", func(t *testing.T) {
+		w := send("Bearer some-jwt-here")
 		if w.Code != http.StatusOK {
 			t.Errorf("status = %d, want 200", w.Code)
+		}
+	})
+
+	t.Run("lowercase bearer scheme accepted", func(t *testing.T) {
+		if w := send("bearer some-jwt-here"); w.Code != http.StatusOK {
+			t.Errorf("status = %d, want 200", w.Code)
+		}
+	})
+
+	t.Run("extra whitespace normalised before passing downstream", func(t *testing.T) {
+		w := send("Bearer  some-jwt-here") // two spaces
+		if w.Code != http.StatusOK {
+			t.Errorf("status = %d, want 200", w.Code)
+		}
+		// Inner handler must see canonical single-space form.
+		if capturedAuth != "Bearer some-jwt-here" {
+			t.Errorf("downstream Authorization = %q, want %q", capturedAuth, "Bearer some-jwt-here")
 		}
 	})
 }

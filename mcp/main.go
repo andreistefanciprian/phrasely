@@ -68,17 +68,23 @@ func main() {
 	}
 }
 
-// requireBearer rejects requests without an Authorization: Bearer <token> header.
+// requireBearer rejects requests without a valid Authorization: Bearer <token> header.
 // ChatGPT sends the OAuth access token here after completing the flow.
 // RFC 6750 §3: 401 responses must include WWW-Authenticate so clients know
 // which auth scheme is expected.
 func requireBearer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+		parts := strings.Fields(r.Header.Get("Authorization"))
+		// Require exactly two fields: scheme + non-empty token.
+		// strings.Fields handles multiple spaces and normalises case-insensitive "bearer".
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
 			w.Header().Set("WWW-Authenticate", `Bearer realm="mcp"`)
 			http.Error(w, "authorization required", http.StatusUnauthorized)
 			return
 		}
+		// Normalise to canonical form so downstream (factory + tools) can rely on
+		// a simple strings.TrimPrefix("Bearer ") without worrying about whitespace.
+		r.Header.Set("Authorization", "Bearer "+parts[1])
 		next.ServeHTTP(w, r)
 	})
 }
