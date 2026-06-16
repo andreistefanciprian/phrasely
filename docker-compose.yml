@@ -17,6 +17,12 @@ services:
       PORT: "8081"
       API_HOST: http://api:8080
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN}
+      # Public URLs used in OAuth discovery documents.
+      # MCP_BASE_URL: the URL ChatGPT uses to reach this server (issuer, token endpoint, register endpoint).
+      # FRONTEND_BASE_URL: the URL of the consent screen (/authorize lives on the frontend).
+      # Override these in prod with the real public HTTPS URLs.
+      MCP_BASE_URL: http://localhost:8081
+      FRONTEND_BASE_URL: http://localhost:3000
     depends_on:
       - api
 
