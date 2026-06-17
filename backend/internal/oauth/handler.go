@@ -38,6 +38,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/internal/oauth/clients/{id}", h.getClient).Methods(http.MethodGet)
 	r.HandleFunc("/internal/oauth/token", h.token).Methods(http.MethodPost)
 	r.HandleFunc("/internal/oauth/tokens", h.revokeTokens).Methods(http.MethodDelete)
+	r.HandleFunc("/internal/oauth/revoke", h.revoke).Methods(http.MethodPost)
 }
 
 // registerRequest is the body of POST /internal/oauth/register.
@@ -261,6 +262,67 @@ func (h *Handler) revokeTokens(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("oauth: refresh tokens revoked on deny", "client_id", clientID, "user_id", userID)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// revoke handles POST /internal/oauth/revoke.
+//
+// This is the server-side half of RFC 7009 token revocation. ChatGPT calls the
+// public /revoke endpoint on the MCP server, which proxies here over the private
+// network. It fires when the user clicks "Disconnect" in the ChatGPT connector UI.
+//
+// Key RFC 7009 §2.2 rule: the server MUST return 200 OK even when the token is
+// unknown, already revoked, or belongs to a different client. The caller has no
+// actionable response to a revocation failure — the token is either gone or useless.
+//
+// Access tokens are stateless JWTs; we cannot revoke them server-side. We skip
+// them silently and let them expire naturally (1-hour TTL). Only refresh tokens
+// are stored in the DB and can be revoked by setting revoked_at.
+func (h *Handler) revoke(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 4*1024)
+	if err := r.ParseForm(); err != nil {
+		// Malformed body — still 200 per RFC 7009; nothing to revoke.
+		slog.Warn("oauth: revoke: failed to parse form body", "error", err)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	token := r.PostForm.Get("token")
+	clientID := r.PostForm.Get("client_id")
+	hint := r.PostForm.Get("token_type_hint")
+
+	slog.Debug("oauth: revoke request received", "client_id", clientID, "token_type_hint", hint)
+
+	// Access tokens are self-contained JWTs with a 1-hour TTL — skip silently.
+	if hint == "access_token" {
+		slog.Debug("oauth: revoke: skipping access token (stateless JWT, cannot revoke server-side)", "client_id", clientID)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if token == "" || clientID == "" {
+		// Nothing actionable — RFC 7009 still mandates 200.
+		slog.Warn("oauth: revoke: missing token or client_id, nothing to revoke", "client_id", clientID)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// ConsumeRefreshToken atomically sets revoked_at on the matching row.
+	// We reuse the rotation helper here — the difference is we don't issue a
+	// new token. ErrNotFound covers: already revoked, unknown token, wrong client.
+	if _, err := h.store.ConsumeRefreshToken(r.Context(), token, clientID); err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			// Token unknown or already revoked — harmless; client just wants it gone.
+			slog.Debug("oauth: revoke: token not found or already revoked", "client_id", clientID)
+		} else {
+			// Unexpected DB error — log it, but still return 200 per RFC 7009.
+			slog.Error("oauth: revoke: store error", "client_id", clientID, "error", err)
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	slog.Info("oauth: refresh token revoked via disconnect", "client_id", clientID)
+	w.WriteHeader(http.StatusOK)
 }
 
 // redirectURIAllowed reports whether uri exactly matches one of the allowed URIs.
