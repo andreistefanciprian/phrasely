@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.8](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.7...mcp-v0.0.8) (2026-06-17)
+
+
+### Features
+
+* **mcp:** implement RFC 7009 token revocation endpoint ([c585c2b](https://github.com/andreistefanciprian/phrasely/commit/c585c2b7a4f2757735ccc7472d747e2ef8948689))
+
 ## [0.0.7](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.6...mcp-v0.0.7) (2026-06-16)
 
 
