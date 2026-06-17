@@ -555,6 +555,92 @@ func TestRevokeTokens(t *testing.T) {
 	}
 }
 
+func TestRevoke(t *testing.T) {
+	const clientID = "client-abc"
+
+	callRevoke := func(store *mockStore, body string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/internal/oauth/revoke", strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		router := mux.NewRouter()
+		NewHandler(store, testJWTSecret).RegisterRoutes(router)
+		router.ServeHTTP(w, r)
+		return w
+	}
+
+	tests := []struct {
+		name       string
+		body       string
+		store      *mockStore
+		wantStatus int
+	}{
+		{
+			// Happy path: ChatGPT sends the refresh token it holds; we revoke it.
+			name: "valid refresh token is revoked, returns 200",
+			body: "token=some-refresh-token&client_id=" + clientID,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, token, cid string) (*db.OAuthRefreshToken, error) {
+					if token != "some-refresh-token" || cid != clientID {
+						return nil, errors.New("unexpected args")
+					}
+					return &db.OAuthRefreshToken{Token: token, ClientID: cid}, nil
+				},
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			// RFC 7009 §2.2: already-revoked token must still return 200.
+			// ConsumeRefreshToken returns ErrNotFound for a row where revoked_at IS NOT NULL.
+			name: "already-revoked token still returns 200",
+			body: "token=already-revoked&client_id=" + clientID,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
+					return nil, db.ErrNotFound
+				},
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			// RFC 7009 §2.2: completely unknown token must still return 200.
+			name: "unknown token still returns 200",
+			body: "token=no-such-token&client_id=" + clientID,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
+					return nil, db.ErrNotFound
+				},
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			// Access tokens are stateless JWTs — revocation is a no-op; return 200.
+			name:       "access_token hint skips store call, returns 200",
+			body:       "token=some.jwt.here&client_id=" + clientID + "&token_type_hint=access_token",
+			store:      &mockStore{}, // consumeRefreshToken not set — panics if called
+			wantStatus: http.StatusOK,
+		},
+		{
+			// Unexpected DB error — log it but still return 200 per RFC 7009.
+			name: "store error still returns 200",
+			body: "token=some-token&client_id=" + clientID,
+			store: &mockStore{
+				consumeRefreshToken: func(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
+					return nil, errors.New("db unavailable")
+				},
+			},
+			wantStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := callRevoke(tt.store, tt.body)
+			if w.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantStatus)
+			}
+		})
+	}
+}
+
 func TestRefreshToken(t *testing.T) {
 	const clientID = "client-abc"
 	const userID = "user-123"

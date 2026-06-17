@@ -39,6 +39,10 @@ func registerOAuthDiscovery(mux *http.ServeMux, cfg oauthConfig) {
 			"authorization_endpoint": cfg.frontendBaseURL + "/authorize",
 			"token_endpoint":         cfg.mcpBaseURL + "/token",
 			"registration_endpoint":  cfg.mcpBaseURL + "/register",
+			// revocation_endpoint advertises RFC 7009 support so ChatGPT (and other
+			// clients) know where to POST when the user clicks Disconnect. Without
+			// this field, clients that honour the spec won't attempt revocation at all.
+			"revocation_endpoint": cfg.mcpBaseURL + "/revoke",
 			// "code" is the only response type for the Authorization Code flow.
 			"response_types_supported": []string{"code"},
 			// refresh_token allows the client to get new access tokens without
@@ -86,6 +90,19 @@ func registerOAuthProxy(mux *http.ServeMux, api *apiClient) {
 			return
 		}
 		proxyToBackend(w, r, api, "/internal/oauth/token")
+	})
+
+	// POST /revoke — RFC 7009 token revocation.
+	// ChatGPT calls this when the user clicks Disconnect in the connector UI.
+	// Body is application/x-www-form-urlencoded: token=<value>&client_id=<id>
+	// The backend always returns 200 (RFC 7009 §2.2), so mcp just passes it through.
+	mux.HandleFunc("/revoke", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		slog.Debug("oauth: proxying revocation request to backend")
+		proxyToBackend(w, r, api, "/internal/oauth/revoke")
 	})
 }
 
