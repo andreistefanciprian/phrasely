@@ -29,7 +29,7 @@ func jwtFromContext(ctx context.Context) string {
 // It must start with "/" but not "//" (which would be protocol-relative and
 // could redirect to an attacker-controlled host).
 func isSafeLocalRedirect(next string) bool {
-	return len(next) > 1 && next[0] == '/' && next[1] != '/'
+	return strings.HasPrefix(next, "/") && !strings.HasPrefix(next, "//")
 }
 
 // requireAuth wraps a handler and redirects unauthenticated requests to /login.
