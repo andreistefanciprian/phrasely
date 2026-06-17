@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.9](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.8...mcp-v0.0.9) (2026-06-17)
+
+
+### Bug Fixes
+
+* **mcp:** expand add_phrase description with curation instructions ([#100](https://github.com/andreistefanciprian/phrasely/issues/100)) ([8db6d0f](https://github.com/andreistefanciprian/phrasely/commit/8db6d0fc1c4a12ef58a2b6b5a3c716df2dce4768))
+
 ## [0.0.8](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.7...mcp-v0.0.8) (2026-06-17)
 
 
