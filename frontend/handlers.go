@@ -80,8 +80,9 @@ func (app *application) loginPage(w http.ResponseWriter, r *http.Request) {
 		// Preserve the post-login destination across the magic-link round-trip.
 		// The authorize handler sets ?next=/authorize?... when it redirects here.
 		// We store it in a short-lived cookie so it survives the email detour.
-		if next := r.URL.Query().Get("next"); isSafeLocalRedirect(next) {
-			secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+		next := r.URL.Query().Get("next")
+		secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+		if isSafeLocalRedirect(next) {
 			http.SetCookie(w, &http.Cookie{
 				Name:     "oauth_next",
 				Value:    next,
@@ -90,6 +91,19 @@ func (app *application) loginPage(w http.ResponseWriter, r *http.Request) {
 				Secure:   secure,
 				SameSite: http.SameSiteLaxMode,
 				MaxAge:   900, // 15 minutes — enough time to click the email link
+			})
+		} else {
+			// Clear any stale oauth_next from a previous OAuth flow so a regular
+			// login doesn't unexpectedly redirect the user to /authorize.
+			http.SetCookie(w, &http.Cookie{
+				Name:     "oauth_next",
+				Value:    "",
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   secure,
+				SameSite: http.SameSiteLaxMode,
+				MaxAge:   -1,
+				Expires:  time.Unix(0, 0),
 			})
 		}
 		app.render(w, "login.html", map[string]any{"Sent": false})
