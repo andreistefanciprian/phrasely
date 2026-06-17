@@ -2,66 +2,100 @@
 
 Production: [getphrasely.com](https://getphrasely.com)
 
-A platform for building and sharing English phrase collections, with AI-powered learning via MCP.
-
 ## Stack
 
-- **API**: Go + gorilla/mux, slog, pgx/v5
-- **Frontend**: Go SSR server (html/template + plain CSS), serves pages and proxies API calls via /fd/
-- **MCP Server**: Go Streamable HTTP (not started)
+- **API** (`backend/`): Go + gorilla/mux, slog, pgx/v5
+- **Frontend** (`frontend/`): Go SSR server (html/template + plain CSS), port 3000
+- **MCP Server** (`mcp/`): Go Streamable HTTP (`github.com/modelcontextprotocol/go-sdk`), OAuth 2.1 proxy + `/mcp` endpoint, port 8081
 - **DB**: PostgreSQL 17
-- **Infra**: Docker Compose (local), cloud-agnostic container deployment
+- **Infra**: Docker Compose (local), Railway (prod); DNS managed via Cloudflare
+
+## Key files
+
+```
+backend/cmd/api/main.go                 — route registration, env wiring, migrations on startup
+backend/internal/db/db.go               — Store interface + all PostgresStore SQL implementations
+backend/internal/phrases/handler.go     — phrase CRUD handlers
+backend/internal/oauth/handler.go       — OAuth 2.1 handlers (register, authorize, token)
+backend/internal/auth/handler.go        — magic link + JWT verify handlers
+backend/internal/middleware/auth.go     — JWT middleware (injects user_id into context)
+backend/migrations/                     — goose SQL files (embedded into binary via embed.go)
+mcp/main.go                             — MCP server wiring, requireBearer middleware
+mcp/oauth.go                            — OAuth discovery + proxy routes
+mcp/tools.go                            — MCP tool definitions (list_phrases, add_phrase)
+mcp/api.go                              — typed API client used by tools
+frontend/main.go                        — route registration, render helpers, security headers
+frontend/handlers.go                    — all page handlers + apiProxy
+frontend/templates/                     — html/template files (base.html, base-auth.html, navbar.html, ...)
+```
 
 ## Conventions
 
-- `db.Store` interface in `backend/internal/db/db.go` — one central interface, all domain methods added here as we build them
-- Concrete implementation: `db.PostgresStore` — holds `*pgxpool.Pool`
-- Dependency injection via constructors (urlshortener pattern)
+- `db.Store` interface in `backend/internal/db/db.go` — one central interface; add all new DB methods here
+- Concrete implementation: `db.PostgresStore` — holds `*pgxpool.Pool`; SQL lives in the same file
+- Handler pattern: `NewHandler(store db.Store) *Handler` with `RegisterRoutes(r *mux.Router)` — register in `backend/cmd/api/main.go`
+- Dependency injection via constructors; no globals
 - `docker compose up --build` to run everything; no local Go needed
+- **Structured logging**: all three services use `slog.NewJSONHandler` writing JSON to stdout; set `LOG_LEVEL=debug` for request-level detail, defaults to `INFO`
 
 ## Deployment architecture
 
-- **Frontend (nginx)** — public, exposed via load balancer / ingress
-- **API (Go)** — private, only reachable from within the internal network; never directly exposed to the internet
-- nginx reverse-proxies `/api/` and `/auth/` to the API using `API_HOST` env var (`http://api:8080` locally, `http://api.railway.internal:8080` on Railway)
+- **Frontend** (Go SSR, port 3000) — public, exposed directly via Railway ingress; no nginx
+- **API** (Go, port 8080) — private, only reachable from within the internal network
+- **MCP** (Go, port 8081) — public, exposed via Railway ingress
+- Frontend proxies browser API calls: `/fd/*` → strips `/fd`, prepends `/api/v1`, forwards to private API with JWT from cookie
+- Internal API address configured via `API_HOST` env var — not hardcoded
 - All frontend HTML uses relative paths — no hardcoded API URL; CORS not needed (same-origin)
 
-## Security backlog (not yet implemented)
+## How to extend
 
-- **Rate limit curate endpoint** — highest priority; each call costs OpenAI tokens. Target: 20 curations/hour per user using `golang.org/x/time/rate` (in-memory token bucket, no Redis needed).
-- **Rate limit `POST /auth/request`** — public endpoint, no JWT. Target: 5 requests/hour per IP + 2-minute cooldown per email to prevent inbox flooding.
-- **Rate limit phrase CRUD** — lower priority; target: 100 operations/hour per user to prevent DB flooding.
-- Already protected: JWT on all `/api/v1/` routes, `MaxBytesReader`, server timeouts, non-root containers, same-origin via nginx (no CORS needed).
+**New API endpoint:**
+1. Add method to `Store` interface in `backend/internal/db/db.go`
+2. Implement on `PostgresStore` in the same file (SQL inline)
+3. Add handler method in the relevant `internal/<domain>/handler.go`
+4. Register route in `RegisterRoutes`
+5. Add test in `internal/<domain>/handler_test.go` using `mockStore`
 
-## OAuth backlog (not yet implemented)
+**New DB migration:**
+Add `backend/migrations/000NN_description.sql` — goose runs automatically on startup, SQL files are embedded into the binary via `migrations/embed.go`. No separate migration step needed.
 
-- **Token endpoint: consume code after PKCE validation** — `POST /internal/oauth/token` currently calls `ConsumeAuthorizationCode` (marks code used) before verifying the PKCE `code_verifier` and `redirect_uri`. An attacker who intercepts the auth code can POST with a garbage verifier, causing the code to be consumed and the legitimate client's exchange to fail with `invalid_grant`. Fix: add a read-only `GetAuthorizationCode` Store method, validate PKCE + `redirect_uri` first, then call `ConsumeAuthorizationCode` to atomically mark it used. The atomic UPDATE still handles races correctly — if two valid requests race, only one wins.
+**New MCP tool:**
+1. Define `Input` and `Output` structs in `mcp/tools.go`
+2. Write a handler func returning `mcp.ToolHandlerFor[Input, Output]`
+3. Call `mcp.AddTool(server, &mcp.Tool{Name: ..., Description: ...}, handler)` in `registerTools`
+4. Add any required API client method in `mcp/api.go`
 
+**New frontend page:**
+1. Add handler in `frontend/handlers.go`
+2. Register route in `frontend/main.go`
+3. Use `app.render(w, "page.html", data)` for public pages or `app.renderAuth(...)` for authenticated ones
+4. Add `frontend/templates/page.html` — templates are parsed with `base.html` + `navbar.html`
+5. Protect with `app.requireAuth(handler)` if login is required
 
-- **Resume /authorize after magic-link login** — if an unauthenticated user hits `GET /authorize`, they are redirected to `/login` and the OAuth params are lost. After the magic-link flow completes, they land on `/bubble` and must retry the OAuth flow from ChatGPT. The fix is to store the original `/authorize` URL in a short-lived cookie when the user submits their email, then read it in `/auth-verify` and redirect there instead of `/bubble`. This requires threading `next` through the login form → magic link request → verify handler. Not a security issue; just an extra click for first-time users.
+## Tests
 
-## Curate backlog (not yet implemented)
+- **Run**: `task test` or `cd backend && go test ./... -v`
+- **No real DB needed**: handlers use a `mockStore` struct that satisfies `db.Store`; set only the fields the test exercises
+- `testUserID` is injected into request context to simulate an authenticated user
+- Tests live alongside handlers: `internal/<domain>/handler_test.go`
 
-- **Server-side URL verification (the real fix)** — `source_urls` for `POST /api/v1/phrases/curate` are generated entirely by the LLM and can point to non-existent Merriam-Webster entries (e.g. "bearing the brunt" → 404; the system prompt now nudges toward "the brunt of" but this is guesswork, not a guarantee). Verify each `source_urls[i]` server-side (HEAD/GET with a short timeout, concurrently) before returning to the client; on 404 try lemma/fallback variants or fall back to a MW search link, and if nothing resolves return an empty string so the frontend can render the headword without a broken link.
+## Environment variables
 
-## Open questions
-
-- **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
-- **Empty string headwords** — `{"headwords":[""]}` is currently accepted. Should we validate that each element in the array is non-blank?
-
-## Release tagging
-
-- [release-please](https://github.com/googleapis/release-please) runs on every push to `main` (`.github/workflows/release-please.yml`), tracking `frontend/`, `backend/`, and `mcp/` as separate packages (`release-please-config.json` / `.release-please-manifest.json`).
-- It opens/updates a release PR per component; merging that PR tags the release as `frontend-vX.Y.Z` / `backend-vX.Y.Z` / `mcp-vX.Y.Z` and updates that package's `CHANGELOG.md`.
-- **Commit messages and PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/)** (`feat:`, `fix:`, `chore:`, etc.) — this is what release-please uses to decide the version bump and changelog entries. Prefix with the scope when relevant, e.g. `feat(frontend): add shuffle button`.
-- Railway services should have **Watch Paths** set to `frontend/**`, `backend/**`, and `mcp/**` respectively (dashboard config, not in repo) so each service only redeploys when its own folder changes.
-
-## Git workflow
-
-- Every change goes in a PR — never push directly to `main`
-- **Always ask for review before pushing — no exceptions**
-- **Never push without explicit approval from the user**
-- Branch naming: `pr/<number>-<short-description>`
+| Variable | Service | Default | Notes |
+|---|---|---|---|
+| `DATABASE_URL` | backend | — | Required |
+| `JWT_SECRET` | backend | — | Required |
+| `PORT` | all | 8080/3000/8081 | Per service |
+| `BASE_URL` | backend | `http://localhost:3000` | Frontend origin for magic links |
+| `API_HOST` | frontend, mcp | `http://localhost:8080` | Private API address (overridden in prod) |
+| `OPENAI_API_KEY` | backend | — | Optional; curate endpoint disabled if unset |
+| `RESEND_API_KEY` | backend | — | Optional; magic links logged to stdout if unset |
+| `EMAIL_FROM` | backend | — | Required when `RESEND_API_KEY` is set |
+| `MCP_BASE_URL` | mcp | `http://localhost:8081` | Public MCP URL for OAuth discovery |
+| `FRONTEND_BASE_URL` | mcp | `http://localhost:3000` | Public frontend URL for OAuth discovery |
+| `LOG_LEVEL` | all | `INFO` | `DEBUG`, `INFO`, `WARN`, `ERROR` |
+| `MAGIC_LINK_TTL` | backend | `15m` | Go duration format |
+| `JWT_TTL` | backend | `720h` | Go duration format |
 
 ## API endpoints
 
@@ -77,43 +111,48 @@ A platform for building and sharing English phrase collections, with AI-powered 
 | DELETE | `/api/v1/phrases/{id}` | JWT | Delete a phrase |
 | POST | `/api/v1/phrases/curate` | JWT | Curate a raw phrase via OpenAI |
 
+## OAuth 2.1 (complete)
+
+MCP server is the public OAuth face; backend handles the real work over the private network.
+
+- **Discovery**: `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource` on MCP
+- **Dynamic client registration**: `POST /register` (MCP) → proxies to `POST /internal/oauth/register` (backend)
+- **Authorization**: `POST /internal/oauth/authorize` (backend, JWT-protected) — called by frontend after user approves consent; issues a 60s PKCE auth code
+- **Token exchange**: `POST /token` (MCP) → `POST /internal/oauth/token` (backend); supports `authorization_code` and `refresh_token` grants
+- **PKCE**: S256 only (`plain` deliberately omitted); `code_challenge` stored at authorize time, verified at token time before consuming the code
+- **Refresh token rotation**: old token atomically revoked, new one issued on every `refresh_token` grant
+- **Access token TTL**: 1 hour (JWT); refresh tokens are DB-persisted so they can be revoked
+- **`/mcp`**: requires `Authorization: Bearer <access_token>`; per-request server factory scopes each caller's JWT to their own tool invocations
+
 ## Auth (magic link — complete)
 
-- JWT expiry: 30 days; token expiry: 15 min; tokens are single-use
-- In dev: magic link logged to stdout; in prod: email via Resend (not yet wired)
-- Phrases scoped to `user_id` from JWT context on all endpoints
+- JWT expiry: 30 days (configurable via `JWT_TTL`); token expiry: 15 min (configurable via `MAGIC_LINK_TTL`); tokens are single-use
+- In dev: magic link logged to stdout; in prod: email via Resend
+- `user_id` extracted from JWT by middleware and injected into request context; all phrase endpoints scope queries to it
 
-## Frontend plan (not started)
-
-- **Stack**: Next.js + TailwindCSS + shadcn/ui, deployed on Railway
-- **Home (`/bubble`)**: headword cloud — bubble size driven by `localStorage` view counts (no DB writes on click)
-- **Detail (`/phrases?headword=`)**: phrase cards filtered by headword; keyboard navigation (space/arrow to shuffle)
-- **Compound headwords**: `headwords` array stores multiple entries e.g. `["unfettered","inalienable"]`; UI joins with " vs " and renders individual Merriam-Webster links
-- **Reference**: PhraseFlow (`/Users/stefanandrei/Documents/Projects/PhraseFlow/`) has working bubble implementation — port the placement algorithm into a React component
-
-## Data model decisions
+## Data model
 
 - `headwords TEXT[]` — array of dictionary headwords or fixed expressions; aligned by index with `source_urls`
 - `source_urls TEXT[]` — one Merriam-Webster URL per headword; AI generates these; empty array for phrases without links
 - `view_count` — tracked in `localStorage` on the frontend only; no DB column needed
 
-## PR log
+## Git workflow
 
-- **PR 1** — project skeleton: module, Docker Compose, Postgres connection, `db.Store` interface, `/health` endpoint
-- **PR 2** — rename project to phrasely across repo, Go module, Postgres credentials
-- **PR 3** — goose migrations wired into startup; `phrases` table; SQL files embedded into binary via `migrations/embed.go`
-- **PR 4** — `POST /api/v1/phrases` with input validation, unit tests, Taskfile
-- **PR 5** — `GET /api/v1/phrases` with headword filter
-- **PR 6** — `GET /api/v1/phrases/{id}` with UUID validation
-- **PR 7** — `DELETE /api/v1/phrases/{id}`
-- **PR 8** — `PATCH /api/v1/phrases/{id}` with partial update via COALESCE
-- **PR 9** — `headwords TEXT[]` replacing `keyword TEXT`; trigram index for substring search
-- **PR 10** — fix trigram index (IMMUTABLE wrapper function)
-- **PR 11** — `POST /api/v1/phrases/curate` powered by OpenAI gpt-4o-mini
-- **PR 12** — `users` table + `user_id` nullable FK on `phrases`
-- **PR 13** — `magic_link_tokens` table + `POST /auth/request` (logs link to stdout in dev)
-- **PR 14** — `GET /auth/verify?token=` → signed JWT; `signJWT`/`parseJWT` helpers; auth tests
-- **PR 15** — JWT middleware scoping all routes; `WWW-Authenticate` header; middleware tests; `scripts/api.sh` full auth flow
-- **PR 16** — all phrase endpoints scoped to authenticated user (`user_id` injected from JWT context)
+- Every change goes in a PR — never push directly to `main`
+- **Before pushing: show the full diff and ask the user to review — no exceptions**
+- **Never push without explicit approval from the user**
+- Branch naming: `pr/<number>-<short-description>`
+- Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.) with scope when relevant, e.g. `feat(frontend): add shuffle button`
 
-## Data Model
+## Release process (release-please)
+
+release-please runs on every push to `main` and tracks `frontend/`, `backend/`, and `mcp/` as separate packages. It reads commit messages to determine the version bump and generate changelogs.
+
+- `fix:` → patch bump; `feat:` → minor bump; `feat!:` or `BREAKING CHANGE:` footer → major bump
+- **Before creating a PR, ask the user whether the change is a patch, minor, or major release** so the correct commit type is used
+- Merging the release-please PR tags the release as `frontend-vX.Y.Z` / `backend-vX.Y.Z` / `mcp-vX.Y.Z` and updates `CHANGELOG.md`
+
+## Open questions
+
+- **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
+- **Empty string headwords** — `{"headwords":[""]}` is currently accepted. Should we validate that each element in the array is non-blank?
