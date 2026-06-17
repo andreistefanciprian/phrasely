@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -82,6 +83,22 @@ func (m *mockStore) RevokeRefreshTokens(ctx context.Context, userID, clientID st
 		return m.revokeRefreshTokens(ctx, userID, clientID)
 	}
 	panic("not expected")
+}
+
+func callRevokeTokens(store db.Store, userID, clientID string) *httptest.ResponseRecorder {
+	w := httptest.NewRecorder()
+	path := "/internal/oauth/tokens"
+	if clientID != "" {
+		path += "?client_id=" + clientID
+	}
+	r := httptest.NewRequest(http.MethodDelete, path, nil)
+	if userID != "" {
+		r = r.WithContext(context.WithValue(r.Context(), middleware.UserIDKey, userID))
+	}
+	router := mux.NewRouter()
+	NewHandler(store, testJWTSecret).RegisterRoutes(router)
+	router.ServeHTTP(w, r)
+	return w
 }
 
 const testJWTSecret = "test-jwt-secret"
@@ -467,6 +484,72 @@ func TestToken(t *testing.T) {
 				if typ, ok := resp["token_type"].(string); !ok || typ != "Bearer" {
 					t.Errorf("token_type = %v, want Bearer", resp["token_type"])
 				}
+			}
+		})
+	}
+}
+
+func TestRevokeTokens(t *testing.T) {
+	const clientID = "client-abc"
+	const userID = "user-123"
+
+	tests := []struct {
+		name       string
+		userID     string
+		clientID   string
+		store      *mockStore
+		wantStatus int
+	}{
+		{
+			name:     "valid request revokes tokens and returns 204",
+			userID:   userID,
+			clientID: clientID,
+			store: &mockStore{
+				revokeRefreshTokens: func(_ context.Context, gotUser, gotClient string) error {
+					if gotUser != userID {
+						return fmt.Errorf("unexpected userID %q", gotUser)
+					}
+					if gotClient != clientID {
+						return fmt.Errorf("unexpected clientID %q", gotClient)
+					}
+					return nil
+				},
+			},
+			wantStatus: http.StatusNoContent,
+		},
+		{
+			// JWT middleware sets no userID when unauthenticated — handler must reject.
+			name:       "missing user returns 401",
+			userID:     "",
+			clientID:   clientID,
+			store:      &mockStore{},
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			name:       "missing client_id returns 400",
+			userID:     userID,
+			clientID:   "",
+			store:      &mockStore{},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:     "store error returns 500",
+			userID:   userID,
+			clientID: clientID,
+			store: &mockStore{
+				revokeRefreshTokens: func(_ context.Context, _, _ string) error {
+					return errors.New("db unavailable")
+				},
+			},
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := callRevokeTokens(tt.store, tt.userID, tt.clientID)
+			if w.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantStatus)
 			}
 		})
 	}
