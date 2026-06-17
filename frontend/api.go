@@ -143,6 +143,28 @@ func (c *apiClient) IssueAuthCode(jwt, clientID, redirectURI, codeChallenge stri
 	return result.Code, nil
 }
 
+// RevokeOAuthTokens revokes all active refresh tokens for the given client on behalf
+// of the authenticated user. Called when the user denies an OAuth consent request so
+// the client loses access even if it already holds tokens from a prior authorization.
+// Errors are non-fatal — the caller should log and still redirect with error=access_denied.
+func (c *apiClient) RevokeOAuthTokens(jwt, clientID string) error {
+	req, err := http.NewRequest(http.MethodDelete,
+		c.baseURL+"/internal/oauth/tokens?client_id="+url.QueryEscape(clientID), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("revoke oauth tokens: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("backend returned %d", resp.StatusCode)
+	}
+	return nil
+}
+
 // VerifyToken exchanges a magic link token for a JWT.
 func (c *apiClient) VerifyToken(token string) (string, error) {
 	resp, err := c.http.Get(c.baseURL + "/auth/verify?token=" + url.QueryEscape(token))

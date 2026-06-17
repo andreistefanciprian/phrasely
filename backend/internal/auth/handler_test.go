@@ -80,6 +80,9 @@ func (m *mockStore) CreateRefreshToken(_ context.Context, _ db.CreateRefreshToke
 func (m *mockStore) ConsumeRefreshToken(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
 	panic("not expected in auth tests")
 }
+func (m *mockStore) RevokeRefreshTokens(_ context.Context, _, _ string) error {
+	panic("not expected in auth tests")
+}
 
 // spySender records calls to SendMagicLink for assertions.
 type spySender struct {

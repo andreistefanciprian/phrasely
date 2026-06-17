@@ -25,6 +25,7 @@ type mockStore struct {
 	consumeAuthorizationCode func(ctx context.Context, code, clientID string) (*db.OAuthAuthorizationCode, error)
 	createRefreshToken       func(ctx context.Context, req db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error)
 	consumeRefreshToken      func(ctx context.Context, token, clientID string) (*db.OAuthRefreshToken, error)
+	revokeRefreshTokens      func(ctx context.Context, userID, clientID string) error
 }
 
 func (m *mockStore) Close() {}
@@ -73,6 +74,12 @@ func (m *mockStore) CreateRefreshToken(ctx context.Context, req db.CreateRefresh
 func (m *mockStore) ConsumeRefreshToken(ctx context.Context, token, clientID string) (*db.OAuthRefreshToken, error) {
 	if m.consumeRefreshToken != nil {
 		return m.consumeRefreshToken(ctx, token, clientID)
+	}
+	panic("not expected")
+}
+func (m *mockStore) RevokeRefreshTokens(ctx context.Context, userID, clientID string) error {
+	if m.revokeRefreshTokens != nil {
+		return m.revokeRefreshTokens(ctx, userID, clientID)
 	}
 	panic("not expected")
 }

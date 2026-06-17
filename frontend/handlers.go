@@ -408,9 +408,15 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 	redirectQuery := redirectBase.Query()
 	redirectQuery.Set("state", params.State)
 
-	// Deny: redirect with error=access_denied (RFC 6749 §4.1.2.1).
+	// Deny: revoke any existing tokens then redirect with error=access_denied
+	// (RFC 6749 §4.1.2.1). Revocation ensures the client loses access immediately
+	// even if it already holds tokens from a prior authorization — without this the
+	// client can simply use its existing refresh token and stay connected.
 	if r.PostForm.Get("action") == "deny" {
-		slog.Info("oauth: user denied consent", "client_id", params.ClientID)
+		if err := app.api.RevokeOAuthTokens(jwt, params.ClientID); err != nil {
+			slog.Warn("revoke oauth tokens on deny", "client_id", params.ClientID, "error", err)
+		}
+		slog.Info("oauth: user denied consent, tokens revoked", "client_id", params.ClientID)
 		redirectQuery.Set("error", "access_denied")
 		redirectBase.RawQuery = redirectQuery.Encode()
 		http.Redirect(w, r, redirectBase.String(), http.StatusSeeOther)
