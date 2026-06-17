@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.10](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.9...backend-v0.0.10) (2026-06-17)
+
+
+### Features
+
+* **mcp:** implement RFC 7009 token revocation endpoint ([c585c2b](https://github.com/andreistefanciprian/phrasely/commit/c585c2b7a4f2757735ccc7472d747e2ef8948689))
+
+
+### Bug Fixes
+
+* **frontend:** improve logging, comments and test coverage for token revocation ([0174a04](https://github.com/andreistefanciprian/phrasely/commit/0174a042f2a9add82cfb0081461de5ba5d920626))
+* **frontend:** revoke OAuth tokens when user denies consent ([44153c1](https://github.com/andreistefanciprian/phrasely/commit/44153c1f113c69bf089e7a6f32ea147e21da50e8))
+
 ## [0.0.9](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.8...backend-v0.0.9) (2026-06-16)
 
 
