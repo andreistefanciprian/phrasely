@@ -241,7 +241,8 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 // revokeTokens handles DELETE /internal/oauth/tokens?client_id=...
 // Called by the frontend when the user explicitly denies an OAuth consent request.
 // It revokes all active refresh tokens for the authenticated user + given client so
-// the client loses access immediately rather than continuing with its existing tokens.
+// the client cannot refresh access after a prior authorization. Any already-issued
+// access token (JWT) remains valid until its 1-hour TTL expires.
 func (h *Handler) revokeTokens(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserIDFromContext(r.Context())
 	if userID == "" {

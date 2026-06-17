@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -148,6 +149,7 @@ func (c *apiClient) IssueAuthCode(jwt, clientID, redirectURI, codeChallenge stri
 // the client loses access even if it already holds tokens from a prior authorization.
 // Errors are non-fatal — the caller should log and still redirect with error=access_denied.
 func (c *apiClient) RevokeOAuthTokens(jwt, clientID string) error {
+	slog.Debug("revoking oauth tokens", "client_id", clientID)
 	req, err := http.NewRequest(http.MethodDelete,
 		c.baseURL+"/internal/oauth/tokens?client_id="+url.QueryEscape(clientID), nil)
 	if err != nil {
@@ -156,12 +158,15 @@ func (c *apiClient) RevokeOAuthTokens(jwt, clientID string) error {
 	req.Header.Set("Authorization", "Bearer "+jwt)
 	resp, err := c.http.Do(req)
 	if err != nil {
+		slog.Error("revoke oauth tokens: request failed", "client_id", clientID, "error", err)
 		return fmt.Errorf("revoke oauth tokens: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusNoContent {
+		slog.Error("revoke oauth tokens: unexpected status", "client_id", clientID, "status", resp.StatusCode)
 		return fmt.Errorf("backend returned %d", resp.StatusCode)
 	}
+	slog.Info("oauth tokens revoked", "client_id", clientID)
 	return nil
 }
 
