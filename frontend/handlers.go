@@ -30,11 +30,13 @@ func (app *application) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(authCookieName)
 		if err != nil {
+			slog.Debug("requireAuth: no auth cookie, redirecting to login", "path", r.URL.Path)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 		jwt := strings.TrimSpace(cookie.Value)
 		if jwt == "" {
+			slog.Debug("requireAuth: empty auth cookie, redirecting to login", "path", r.URL.Path)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
@@ -119,6 +121,7 @@ func (app *application) authVerify(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(authCookieTTL.Seconds()),
 	})
+	slog.Info("user authenticated via magic link")
 	http.Redirect(w, r, "/bubble", http.StatusSeeOther)
 }
 
@@ -135,6 +138,7 @@ func (app *application) signOut(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 		Expires:  time.Unix(0, 0),
 	})
+	slog.Info("user signed out")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -149,6 +153,7 @@ func (app *application) bubblePage(w http.ResponseWriter, r *http.Request) {
 		slog.Error("list phrases", "error", err)
 		phrases = []map[string]any{}
 	}
+	slog.Debug("bubble page", "phrase_count", len(phrases))
 	phrasesJSON, _ := json.Marshal(phrases)
 	app.renderAuth(w, "bubble.html", map[string]any{
 		"Page":        "bubble",
@@ -163,6 +168,7 @@ func (app *application) phrasesPage(w http.ResponseWriter, r *http.Request) {
 		slog.Error("list phrases", "error", err)
 		phrases = []map[string]any{}
 	}
+	slog.Debug("phrases page", "phrase_count", len(phrases))
 	phrasesJSON, _ := json.Marshal(phrases)
 	app.renderAuth(w, "phrases.html", map[string]any{
 		"Page":        "phrases",
@@ -184,11 +190,12 @@ func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 
 	status, body, err := app.api.Proxy(r.Method, path, jwt, r.Body, r.Header.Get("Content-Type"))
 	if err != nil {
-		slog.Error("api proxy", "path", path, "error", err)
+		slog.Error("api proxy", "method", r.Method, "path", path, "error", err)
 		http.Error(w, "upstream error", http.StatusBadGateway)
 		return
 	}
 
+	slog.Debug("api proxy", "method", r.Method, "path", path, "status", status)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(body)
@@ -300,6 +307,7 @@ func (app *application) authorizeGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("oauth: showing consent screen", "client_id", params.ClientID)
 	app.render(w, "authorize.html", params)
 }
 
@@ -346,6 +354,7 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 
 	// Deny: redirect with error=access_denied (RFC 6749 §4.1.2.1).
 	if r.PostForm.Get("action") == "deny" {
+		slog.Info("oauth: user denied consent", "client_id", params.ClientID)
 		redirectQuery.Set("error", "access_denied")
 		redirectBase.RawQuery = redirectQuery.Encode()
 		http.Redirect(w, r, redirectBase.String(), http.StatusSeeOther)
@@ -364,6 +373,7 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect back to the client with code + state.
 	// The client (ChatGPT) will immediately POST code + code_verifier to /token.
+	slog.Info("oauth: user granted consent, auth code issued", "client_id", params.ClientID)
 	redirectQuery.Set("code", code)
 	redirectBase.RawQuery = redirectQuery.Encode()
 	http.Redirect(w, r, redirectBase.String(), http.StatusSeeOther)
@@ -376,6 +386,7 @@ func (app *application) indexPage(w http.ResponseWriter, r *http.Request) {
 		slog.Error("list phrases for index", "error", err)
 		phrases = []map[string]any{}
 	}
+	slog.Debug("index page", "phrase_count", len(phrases))
 	phrasesJSON, _ := json.Marshal(phrases)
 	app.renderAuth(w, "index.html", map[string]any{
 		"Page":        "index",
