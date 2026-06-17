@@ -139,12 +139,12 @@ func proxyToBackend(w http.ResponseWriter, r *http.Request, api *apiClient, back
 
 	resp, err := api.http.Do(req)
 	if err != nil {
-		slog.Error("proxy: backend unavailable", "path", backendPath, "error", err)
+		slog.Error("oauth: proxy: backend unavailable", "path", backendPath, "error", err)
 		http.Error(w, "backend unavailable", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
-	slog.Debug("proxy: backend responded", "path", backendPath, "status", resp.StatusCode)
+	slog.Debug("oauth: proxy: backend responded", "path", backendPath, "status", resp.StatusCode)
 
 	// Copy backend response headers (Content-Type, Cache-Control, Pragma, etc.)
 	// while stripping hop-by-hop headers that proxies must not forward (RFC 7230 §6.1).
