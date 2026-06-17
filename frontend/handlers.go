@@ -25,6 +25,13 @@ func jwtFromContext(ctx context.Context) string {
 	return v
 }
 
+// isSafeLocalRedirect returns true when next is a safe same-origin path.
+// It must start with "/" but not "//" (which would be protocol-relative and
+// could redirect to an attacker-controlled host).
+func isSafeLocalRedirect(next string) bool {
+	return len(next) > 1 && next[0] == '/' && next[1] != '/'
+}
+
 // requireAuth wraps a handler and redirects unauthenticated requests to /login.
 func (app *application) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +77,21 @@ func (app *application) homePage(w http.ResponseWriter, r *http.Request) {
 func (app *application) loginPage(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		// Preserve the post-login destination across the magic-link round-trip.
+		// The authorize handler sets ?next=/authorize?... when it redirects here.
+		// We store it in a short-lived cookie so it survives the email detour.
+		if next := r.URL.Query().Get("next"); isSafeLocalRedirect(next) {
+			secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+			http.SetCookie(w, &http.Cookie{
+				Name:     "oauth_next",
+				Value:    next,
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   secure,
+				SameSite: http.SameSiteLaxMode,
+				MaxAge:   900, // 15 minutes — enough time to click the email link
+			})
+		}
 		app.render(w, "login.html", map[string]any{"Sent": false})
 
 	case http.MethodPost:
@@ -121,8 +143,25 @@ func (app *application) authVerify(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(authCookieTTL.Seconds()),
 	})
+
+	// If the user arrived here via an OAuth flow, send them back to the consent
+	// screen rather than the home page. The oauth_next cookie is set by loginPage
+	// when /authorize redirects an unauthenticated user to /login?next=...
+	redirect := "/bubble"
+	if c, err := r.Cookie("oauth_next"); err == nil && isSafeLocalRedirect(c.Value) {
+		redirect = c.Value
+		http.SetCookie(w, &http.Cookie{
+			Name:     "oauth_next",
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   -1,
+			Expires:  time.Unix(0, 0),
+		})
+	}
+
 	slog.Info("user authenticated via magic link")
-	http.Redirect(w, r, "/bubble", http.StatusSeeOther)
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
 func (app *application) signOut(w http.ResponseWriter, r *http.Request) {
@@ -276,7 +315,10 @@ func (app *application) authorizeGet(w http.ResponseWriter, r *http.Request) {
 	// for bad OAuth params rather than silently redirecting.
 	cookie, err := r.Cookie(authCookieName)
 	if err != nil || strings.TrimSpace(cookie.Value) == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		// Pass the full /authorize URL as ?next= so the login+magic-link flow
+		// brings the user back to the consent screen instead of the home page.
+		loginURL := "/login?next=" + url.QueryEscape("/authorize?"+r.URL.RawQuery)
+		http.Redirect(w, r, loginURL, http.StatusSeeOther)
 		return
 	}
 
