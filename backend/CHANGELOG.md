@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.10...backend-v0.1.0) (2026-06-17)
+
+
+### Features
+
+* **backend:** add pgvector foundation for semantic phrase search ([#102](https://github.com/andreistefanciprian/phrasely/issues/102)) ([27ae101](https://github.com/andreistefanciprian/phrasely/commit/27ae101f360819d1e156a5ab75cc9ba5cf5cfe4f))
+
 ## [0.0.10](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.9...backend-v0.0.10) (2026-06-17)
 
 
