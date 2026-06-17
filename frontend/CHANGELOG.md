@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.4](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.3...frontend-v0.0.4) (2026-06-17)
+
+
+### Features
+
+* **frontend:** add configurable log level via LOG_LEVEL env var ([d34929e](https://github.com/andreistefanciprian/phrasely/commit/d34929eaed395aa02646c7a90ccb8a2944b5db1f))
+* **frontend:** add debug and info logging throughout handlers ([d160ea6](https://github.com/andreistefanciprian/phrasely/commit/d160ea646a357db0887cbf6f09334492fdc5ec9a))
+
+
+### Bug Fixes
+
+* **frontend:** add btn-secondary CSS class for Deny button on consent screen ([e89421c](https://github.com/andreistefanciprian/phrasely/commit/e89421ccc7c60b9d8ccfbf6d461a9ed808a0686e))
+
 ## [0.0.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.2...frontend-v0.0.3) (2026-06-16)
 
 
