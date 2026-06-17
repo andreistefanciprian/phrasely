@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 )
 
 //go:embed templates/* static/*
@@ -17,6 +18,12 @@ type application struct {
 }
 
 func main() {
+	// Configure structured JSON logging first so every subsequent log line
+	// is parseable by Railway's log viewer. Level defaults to INFO.
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: parseLogLevel(os.Getenv("LOG_LEVEL")),
+	})))
+
 	apiURL := os.Getenv("API_HOST")
 	if apiURL == "" {
 		apiURL = "http://localhost:8080"
@@ -118,6 +125,21 @@ func main() {
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)
+	}
+}
+
+// parseLogLevel maps a LOG_LEVEL string to a slog.Level.
+// Defaults to INFO for empty or unrecognised values.
+func parseLogLevel(s string) slog.Level {
+	switch strings.ToUpper(s) {
+	case "DEBUG":
+		return slog.LevelDebug
+	case "WARN", "WARNING":
+		return slog.LevelWarn
+	case "ERROR":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
 }
 
