@@ -84,6 +84,12 @@ func (m *mockStore) RevokeRefreshTokens(ctx context.Context, userID, clientID st
 	}
 	panic("not expected")
 }
+func (m *mockStore) SetPhraseEmbedding(_ context.Context, _ string, _ []float32) error {
+	panic("not expected in oauth tests")
+}
+func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase, error) {
+	panic("not expected in oauth tests")
+}
 
 func callRevokeTokens(store db.Store, userID, clientID string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()

@@ -3,3 +3,4 @@ bin/
 .claude/
 .debug/
 frontend_nginx/
+*.local.md

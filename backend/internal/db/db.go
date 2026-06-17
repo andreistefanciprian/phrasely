@@ -8,6 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pgvector/pgvector-go"
+	pgxvector "github.com/pgvector/pgvector-go/pgx"
 )
 
 // ErrNotFound is returned when a requested record does not exist in the database.
@@ -122,6 +124,10 @@ type Store interface {
 	DeletePhrase(ctx context.Context, userID string, id string) error
 	UpdatePhrase(ctx context.Context, userID string, id string, req UpdatePhraseRequest) (*Phrase, error)
 
+	// Embedding methods — vector search powered by pgvector.
+	SetPhraseEmbedding(ctx context.Context, id string, embedding []float32) error
+	ListPhrasesWithoutEmbedding(ctx context.Context) ([]Phrase, error)
+
 	// Magic-link auth methods
 	UpsertUser(ctx context.Context, email string) (*User, error)
 	CreateMagicLinkToken(ctx context.Context, userID string, expiresAt time.Time) (*MagicLinkToken, error)
@@ -158,7 +164,16 @@ type PostgresStore struct {
 }
 
 func NewPostgresStore(ctx context.Context, dsn string) (*PostgresStore, error) {
-	pool, err := pgxpool.New(ctx, dsn)
+	config, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse dsn: %w", err)
+	}
+	// Register the pgvector type codec on every new connection so pgx can
+	// encode/decode vector(...) columns and parameters.
+	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		return pgxvector.RegisterTypes(ctx, conn)
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("open pool: %w", err)
 	}
@@ -494,3 +509,41 @@ func (s *PostgresStore) MarkTokenUsed(ctx context.Context, tokenID string) error
 	}
 	return nil
 }
+
+// ── Embedding methods ─────────────────────────────────────────────────────────
+
+// SetPhraseEmbedding stores the vector embedding for a phrase.
+func (s *PostgresStore) SetPhraseEmbedding(ctx context.Context, id string, embedding []float32) error {
+	_, err := s.Pool.Exec(ctx,
+		`UPDATE phrases SET embedding = $1 WHERE id = $2`,
+		pgvector.NewVector(embedding), id,
+	)
+	if err != nil {
+		return fmt.Errorf("set phrase embedding: %w", err)
+	}
+	return nil
+}
+
+// ListPhrasesWithoutEmbedding returns all phrases that have not yet been embedded.
+// Used by the backfill endpoint to catch up after the migration or on failure.
+func (s *PostgresStore) ListPhrasesWithoutEmbedding(ctx context.Context) ([]Phrase, error) {
+	rows, err := s.Pool.Query(ctx,
+		`SELECT id, phrase, headwords, note, source_urls, created_at, updated_at
+		 FROM phrases WHERE embedding IS NULL`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list phrases without embedding: %w", err)
+	}
+	defer rows.Close()
+
+	var phrases []Phrase
+	for rows.Next() {
+		var p Phrase
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan phrase: %w", err)
+		}
+		phrases = append(phrases, p)
+	}
+	return phrases, rows.Err()
+}
+

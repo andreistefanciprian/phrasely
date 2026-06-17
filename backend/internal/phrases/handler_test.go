@@ -45,6 +45,14 @@ func (m *mockStore) UpdatePhrase(ctx context.Context, userID string, id string, 
 	return m.updatePhrase(ctx, userID, id, req)
 }
 
+// Embedding methods — not exercised in phrase handler tests; panic if called.
+func (m *mockStore) SetPhraseEmbedding(_ context.Context, _ string, _ []float32) error {
+	panic("SetPhraseEmbedding not expected in phrase tests")
+}
+func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase, error) {
+	panic("ListPhrasesWithoutEmbedding not expected in phrase tests")
+}
+
 // Auth methods — not used in phrase tests; panic if called unexpectedly.
 func (m *mockStore) UpsertUser(_ context.Context, _ string) (*db.User, error) {
 	panic("UpsertUser not expected in phrase tests")
@@ -91,7 +99,7 @@ func newTestServer(store db.Store) *httptest.Server {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
-	NewHandler(store).RegisterRoutes(r)
+	NewHandler(store, nil).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 

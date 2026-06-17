@@ -16,6 +16,7 @@ Production: [getphrasely.com](https://getphrasely.com)
 backend/cmd/api/main.go                 — route registration, env wiring, migrations on startup
 backend/internal/db/db.go               — Store interface + all PostgresStore SQL implementations
 backend/internal/phrases/handler.go     — phrase CRUD handlers
+backend/internal/embeddings/service.go  — OpenAI text-embedding-3-small wrapper; PhraseText() builds the string to embed
 backend/internal/oauth/handler.go       — OAuth 2.1 handlers (register, authorize, token)
 backend/internal/auth/handler.go        — magic link + JWT verify handlers
 backend/internal/middleware/auth.go     — JWT middleware (injects user_id into context)
@@ -92,7 +93,7 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 | `PORT` | all | 8080/3000/8081 | Per service |
 | `BASE_URL` | backend | `http://localhost:3000` | Frontend origin for magic links |
 | `API_HOST` | frontend, mcp | `http://localhost:8080` | Private API address (overridden in prod) |
-| `OPENAI_API_KEY` | backend | — | Optional; curate endpoint disabled if unset |
+| `OPENAI_API_KEY` | backend | — | Optional; embeddings and curate endpoint disabled if unset |
 | `RESEND_API_KEY` | backend | — | Optional; magic links logged to stdout if unset |
 | `EMAIL_FROM` | backend | — | Required when `RESEND_API_KEY` is set |
 | `MCP_BASE_URL` | mcp | `http://localhost:8081` | Public MCP URL for OAuth discovery |
