@@ -4,19 +4,19 @@
       "release-type": "simple",
       "component": "frontend",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": false
     },
     "backend": {
       "release-type": "simple",
       "component": "backend",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": false
     },
     "mcp": {
       "release-type": "simple",
       "component": "mcp",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": false
     }
   },
   "separate-pull-requests": true,
