@@ -1,0 +1,22 @@
+name: CI — MCP
+
+on:
+  pull_request:
+    paths:
+      - 'mcp/**'
+  push:
+    branches: [main]
+    paths:
+      - 'mcp/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: mcp/go.mod
+      - name: Run tests
+        working-directory: mcp
+        run: go test ./... -v
