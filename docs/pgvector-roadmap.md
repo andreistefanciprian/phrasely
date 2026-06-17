@@ -32,7 +32,7 @@ Phase 7 — Phrase Graph      (Feature 10, future — depends on Phase 4)
 |---|---|
 | `backend/migrations/00003_add_phrase_embeddings.sql` | `CREATE EXTENSION vector`, `ADD COLUMN embedding vector(1536)`, HNSW index |
 | `backend/internal/embeddings/service.go` | New package — wraps `go-openai`, calls `text-embedding-3-small` |
-| `backend/internal/db/db.go` | 4 new Store methods (see below) |
+| `backend/internal/db/db.go` | 2 new Store methods (see below) |
 | `backend/internal/phrases/handler.go` | Wire embedder into create/update (async goroutine) |
 | `backend/cmd/api/main.go` | Initialize embedder alongside curate (optional, same `OPENAI_API_KEY`) |
 | `backend/internal/phrases/handler.go` | `POST /internal/phrases/embed-backfill` for existing phrases |
@@ -45,8 +45,6 @@ New dependency: `github.com/pgvector/pgvector-go` (pgx v5 compatible vector type
 |---|---|
 | `SetPhraseEmbedding(ctx, id, vector)` | Persist embedding after save |
 | `ListPhrasesWithoutEmbedding(ctx)` | Used by backfill endpoint |
-| `SearchPhrasesBySimilarity(ctx, userID, vector, limit)` | Cosine distance `<=>`, scoped to user |
-| `GetRelatedPhrases(ctx, userID, phraseID, limit)` | Same but excludes source phrase |
 
 ### Text embedded per phrase
 

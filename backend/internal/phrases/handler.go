@@ -253,17 +253,21 @@ func (h *Handler) backfillEmbeddings(w http.ResponseWriter, r *http.Request) {
 	slog.Info("backfill started", "total", len(phrases))
 	var embedded, failed int
 	for _, p := range phrases {
-		vec, err := h.embedder.Embed(r.Context(), embeddings.PhraseText(p))
+		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+		vec, err := h.embedder.Embed(ctx, embeddings.PhraseText(p))
 		if err != nil {
+			cancel()
 			slog.Error("backfill: embed phrase", "id", p.ID, "error", err)
 			failed++
 			continue
 		}
-		if err := h.store.SetPhraseEmbedding(r.Context(), p.ID, vec); err != nil {
+		if err := h.store.SetPhraseEmbedding(ctx, p.ID, vec); err != nil {
+			cancel()
 			slog.Error("backfill: set phrase embedding", "id", p.ID, "error", err)
 			failed++
 			continue
 		}
+		cancel()
 		embedded++
 	}
 
