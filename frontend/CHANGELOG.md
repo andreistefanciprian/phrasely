@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.5](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.4...frontend-v0.0.5) (2026-06-17)
+
+
+### Bug Fixes
+
+* **frontend:** allow root path in isSafeLocalRedirect ([2f24c56](https://github.com/andreistefanciprian/phrasely/commit/2f24c56186edd3d891bbc33ac5e14108c85019eb))
+* **frontend:** clear stale oauth_next cookie on regular login ([b4b6b39](https://github.com/andreistefanciprian/phrasely/commit/b4b6b396172323981080daaf6c51d83d30c5a21d))
+* **frontend:** restore OAuth consent screen after magic-link login ([52bcfa2](https://github.com/andreistefanciprian/phrasely/commit/52bcfa2e42e543d50a251dd19777200b45d1dc0c))
+
 ## [0.0.4](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.3...frontend-v0.0.4) (2026-06-17)
 
 
