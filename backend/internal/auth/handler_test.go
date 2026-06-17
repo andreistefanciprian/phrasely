@@ -83,6 +83,12 @@ func (m *mockStore) ConsumeRefreshToken(_ context.Context, _, _ string) (*db.OAu
 func (m *mockStore) RevokeRefreshTokens(_ context.Context, _, _ string) error {
 	panic("not expected in auth tests")
 }
+func (m *mockStore) SetPhraseEmbedding(_ context.Context, _ string, _ []float32) error {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase, error) {
+	panic("not expected in auth tests")
+}
 
 // spySender records calls to SendMagicLink for assertions.
 type spySender struct {

@@ -15,6 +15,7 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/curate"
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/email"
+	"github.com/andreistefanciprian/phrasely/internal/embeddings"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/andreistefanciprian/phrasely/internal/oauth"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
@@ -105,14 +106,17 @@ func main() {
 		slog.Warn("RESEND_API_KEY or EMAIL_FROM not set — magic links logged to stdout")
 	}
 	auth.NewHandler(store, baseURL, jwtSecret, mailer, magicLinkTTL, jwtTTL).RegisterRoutes(r)
-	phrases.NewHandler(store).RegisterRoutes(r)
 
 	// Internal OAuth 2.1 endpoints — only reachable by mcp and frontend over the
 	// private network. Not exposed to the internet.
 	oauth.NewHandler(store, jwtSecret).RegisterRoutes(r)
 
-	// Curate endpoint is optional — only registered when an API key is configured.
+	// Embeddings and curate are both optional — only enabled when OPENAI_API_KEY is set.
+	var embedder *embeddings.Service
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
+		embedder = embeddings.New(apiKey)
+		slog.Info("embeddings enabled")
+
 		curator, err := curate.NewCurator(apiKey)
 		if err != nil {
 			slog.Warn("failed to initialize curator — curate endpoint disabled", "error", err)
@@ -121,8 +125,10 @@ func main() {
 			slog.Info("curate endpoint enabled")
 		}
 	} else {
-		slog.Warn("OPENAI_API_KEY not set — curate endpoint disabled")
+		slog.Warn("OPENAI_API_KEY not set — embeddings and curate endpoint disabled")
 	}
+
+	phrases.NewHandler(store, embedder).RegisterRoutes(r)
 
 	// --- HTTP server ---
 	// Explicit timeouts prevent slow clients from holding connections open indefinitely.

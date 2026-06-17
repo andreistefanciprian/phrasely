@@ -1,12 +1,15 @@
 package phrases
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
+	"github.com/andreistefanciprian/phrasely/internal/embeddings"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -15,11 +18,12 @@ import (
 // Handler holds a reference to the store interface, not the concrete Postgres type.
 // This allows tests to inject a mock store without a real database.
 type Handler struct {
-	store db.Store
+	store   db.Store
+	embedder *embeddings.Service // nil when OPENAI_API_KEY is not set
 }
 
-func NewHandler(store db.Store) *Handler {
-	return &Handler{store: store}
+func NewHandler(store db.Store, embedder *embeddings.Service) *Handler {
+	return &Handler{store: store, embedder: embedder}
 }
 
 // RegisterRoutes attaches phrase endpoints to the given router.
@@ -29,6 +33,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases/{id}", h.update).Methods(http.MethodPatch)
 	r.HandleFunc("/api/v1/phrases/{id}", h.delete).Methods(http.MethodDelete)
+	r.HandleFunc("/internal/phrases/embed-backfill", h.backfillEmbeddings).Methods(http.MethodPost)
 }
 
 // list handles GET /api/v1/phrases.
@@ -107,6 +112,10 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.embedder != nil {
+		go h.embedPhrase(phrase)
+	}
+
 	slog.Debug("create phrase", "id", phrase.ID, "headword_count", len(phrase.Headwords))
 	respond(w, http.StatusCreated, phrase)
 }
@@ -155,6 +164,10 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.embedder != nil {
+		go h.embedPhrase(phrase)
+	}
+
 	slog.Debug("update phrase", "id", id)
 	respond(w, http.StatusOK, phrase)
 }
@@ -200,4 +213,60 @@ func respond(w http.ResponseWriter, status int, body any) {
 
 func respondErr(w http.ResponseWriter, status int, msg string) {
 	respond(w, status, map[string]string{"error": msg})
+}
+
+// embedPhrase generates and stores an embedding for p in the background.
+// If OpenAI is unavailable the error is logged and the phrase is left with a
+// NULL embedding — the backfill endpoint will pick it up later.
+func (h *Handler) embedPhrase(p *db.Phrase) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	vec, err := h.embedder.Embed(ctx, embeddings.PhraseText(*p))
+	if err != nil {
+		slog.Error("embed phrase", "id", p.ID, "error", err)
+		return
+	}
+	if err := h.store.SetPhraseEmbedding(ctx, p.ID, vec); err != nil {
+		slog.Error("set phrase embedding", "id", p.ID, "error", err)
+		return
+	}
+	slog.Debug("embed phrase", "id", p.ID)
+}
+
+// backfillEmbeddings handles POST /internal/phrases/embed-backfill.
+// It embeds every phrase that currently has a NULL embedding — used after the
+// initial migration and as a recovery path when OpenAI was temporarily unavailable.
+func (h *Handler) backfillEmbeddings(w http.ResponseWriter, r *http.Request) {
+	if h.embedder == nil {
+		respondErr(w, http.StatusServiceUnavailable, "embedder not configured: set OPENAI_API_KEY")
+		return
+	}
+
+	phrases, err := h.store.ListPhrasesWithoutEmbedding(r.Context())
+	if err != nil {
+		slog.Error("backfill: list phrases without embedding", "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to list phrases")
+		return
+	}
+
+	slog.Info("backfill started", "total", len(phrases))
+	var embedded, failed int
+	for _, p := range phrases {
+		vec, err := h.embedder.Embed(r.Context(), embeddings.PhraseText(p))
+		if err != nil {
+			slog.Error("backfill: embed phrase", "id", p.ID, "error", err)
+			failed++
+			continue
+		}
+		if err := h.store.SetPhraseEmbedding(r.Context(), p.ID, vec); err != nil {
+			slog.Error("backfill: set phrase embedding", "id", p.ID, "error", err)
+			failed++
+			continue
+		}
+		embedded++
+	}
+
+	slog.Info("backfill complete", "embedded", embedded, "failed", failed)
+	respond(w, http.StatusOK, map[string]int{"embedded": embedded, "failed": failed})
 }

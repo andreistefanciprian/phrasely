@@ -13,6 +13,7 @@ COPY internal/middleware ./internal/middleware
 COPY internal/phrases ./internal/phrases
 COPY internal/oauth ./internal/oauth
 COPY internal/curate/*.go ./internal/curate/
+COPY internal/embeddings ./internal/embeddings
 COPY migrations ./migrations
 # CGO_ENABLED=0  — static binary, no C runtime dependency
 # -trimpath      — removes local file paths from the binary
