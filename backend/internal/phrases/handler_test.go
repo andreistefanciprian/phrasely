@@ -76,6 +76,9 @@ func (m *mockStore) CreateRefreshToken(_ context.Context, _ db.CreateRefreshToke
 func (m *mockStore) ConsumeRefreshToken(_ context.Context, _, _ string) (*db.OAuthRefreshToken, error) {
 	panic("not expected in phrase tests")
 }
+func (m *mockStore) RevokeRefreshTokens(_ context.Context, _, _ string) error {
+	panic("not expected in phrase tests")
+}
 
 // newTestServer wires a Handler with the given store and returns a test HTTP server.
 // It injects testUserID into every request context so UserIDFromContext returns a

@@ -37,6 +37,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/internal/oauth/authorize", h.authorize).Methods(http.MethodPost)
 	r.HandleFunc("/internal/oauth/clients/{id}", h.getClient).Methods(http.MethodGet)
 	r.HandleFunc("/internal/oauth/token", h.token).Methods(http.MethodPost)
+	r.HandleFunc("/internal/oauth/tokens", h.revokeTokens).Methods(http.MethodDelete)
 }
 
 // registerRequest is the body of POST /internal/oauth/register.
@@ -235,6 +236,30 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("authorization code issued", "client_id", req.ClientID, "user_id", userID)
 	respond(w, http.StatusOK, authorizeResponse{Code: code.Code})
+}
+
+// revokeTokens handles DELETE /internal/oauth/tokens?client_id=...
+// Called by the frontend when the user explicitly denies an OAuth consent request.
+// It revokes all active refresh tokens for the authenticated user + given client so
+// the client loses access immediately rather than continuing with its existing tokens.
+func (h *Handler) revokeTokens(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == "" {
+		respondErr(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	clientID := r.URL.Query().Get("client_id")
+	if clientID == "" {
+		respondErr(w, http.StatusBadRequest, "client_id is required")
+		return
+	}
+	if err := h.store.RevokeRefreshTokens(r.Context(), userID, clientID); err != nil {
+		slog.Error("revoke refresh tokens", "error", err)
+		respondErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	slog.Info("oauth: refresh tokens revoked on deny", "client_id", clientID, "user_id", userID)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // redirectURIAllowed reports whether uri exactly matches one of the allowed URIs.

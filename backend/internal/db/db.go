@@ -147,6 +147,10 @@ type Store interface {
 	// clientID must match the token's owner — prevents one client consuming another's token.
 	// Returns ErrNotFound if the token doesn't exist, is already revoked, or clientID mismatches.
 	ConsumeRefreshToken(ctx context.Context, token, clientID string) (*OAuthRefreshToken, error)
+	// RevokeRefreshTokens revokes all active refresh tokens for the given user+client pair.
+	// Called when the user explicitly denies a consent request to ensure the client
+	// loses access even if it already holds tokens from a prior authorization.
+	RevokeRefreshTokens(ctx context.Context, userID, clientID string) error
 }
 
 type PostgresStore struct {
@@ -450,6 +454,23 @@ func (s *PostgresStore) ConsumeRefreshToken(ctx context.Context, token, clientID
 		return nil, fmt.Errorf("consume refresh token: %w", err)
 	}
 	return &t, nil
+}
+
+// RevokeRefreshTokens revokes all active refresh tokens for a given user+client pair.
+// Used when the user denies consent so the client immediately loses access.
+func (s *PostgresStore) RevokeRefreshTokens(ctx context.Context, userID, clientID string) error {
+	_, err := s.Pool.Exec(ctx,
+		`UPDATE oauth_refresh_tokens
+		 SET revoked_at = NOW()
+		 WHERE user_id = $1
+		   AND client_id = $2
+		   AND revoked_at IS NULL`,
+		userID, clientID,
+	)
+	if err != nil {
+		return fmt.Errorf("revoke refresh tokens: %w", err)
+	}
+	return nil
 }
 
 // ── Magic-link token methods ──────────────────────────────────────────────────
