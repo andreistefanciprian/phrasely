@@ -29,6 +29,10 @@ frontend/handlers.go                    — all page handlers + apiProxy
 frontend/templates/                     — html/template files (base.html, base-auth.html, navbar.html, ...)
 ```
 
+## Engineering philosophy
+
+**Don't over-engineer for scale or theoretical edge cases.** The app has a small user base — skip near-zero-probability race conditions, complex transaction schemes, and defensive code for attack vectors that require precise timing or adversarial clients. Fix things users actually hit.
+
 ## Conventions
 
 - `db.Store` interface in `backend/internal/db/db.go` — one central interface; add all new DB methods here
