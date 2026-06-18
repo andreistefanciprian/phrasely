@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
@@ -205,9 +206,13 @@ func (h *Handler) search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	q := r.URL.Query().Get("q")
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	if q == "" {
 		respondErr(w, http.StatusBadRequest, "q is required")
+		return
+	}
+	if len(q) > 500 {
+		respondErr(w, http.StatusBadRequest, "q must be 500 characters or fewer")
 		return
 	}
 
