@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.0...frontend-v0.3.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **frontend:** add id to Docker cache mounts for Railway compatibility ([24a486b](https://github.com/andreistefanciprian/phrasely/commit/24a486b99a4d3394dec784d2db1ace21bca486b0))
+* **frontend:** remove BuildKit cache mounts incompatible with Railway ([70d8fd3](https://github.com/andreistefanciprian/phrasely/commit/70d8fd33ad0eebd13434258798b7d28c4b937557))
+
 ## [0.3.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.2.0...frontend-v0.3.0) (2026-06-18)
 
 
