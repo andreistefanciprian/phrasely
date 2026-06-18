@@ -20,16 +20,6 @@
   .sibling-phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.8; text-align: center; color: var(--secondary); padding: 1rem 0; border-top: 1px solid var(--surface); }
   .sibling-phrase .def { font-style: italic; color: var(--definition); }
 
-  #search-results { display: none; max-width: 600px; width: 100%; animation: fadeUp 0.2s ease; }
-  .search-count { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 1.5rem; }
-  .search-result { padding: 1.25rem 0; border-top: 1px solid var(--surface); cursor: pointer; text-align: center; transition: opacity 0.15s; }
-  .search-result:hover { opacity: 0.6; }
-  .search-result-phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.8; color: var(--navy); }
-  .search-result-phrase .def { font-style: italic; color: var(--definition); }
-  .search-result-meta { margin-top: 0.4rem; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue); }
-  .search-result-note { margin-top: 0.3rem; font-size: 0.85rem; line-height: 1.6; color: var(--secondary); }
-  .search-empty { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 2rem 0; }
-
   #main-content { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   #tap-hint { display: none; margin-top: 2.5rem; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-align: center; text-transform: uppercase; }
   @media (hover: none) { #tap-hint { display: block; } }
@@ -47,7 +37,6 @@
   <div id="siblings"></div>
   <p id="tap-hint">Tap to shuffle</p>
 </div>
-<div id="search-results"></div>
 
 <script>
   const phrases = {{.PhrasesJSON}};
@@ -63,11 +52,6 @@
   function show(item) {
     item = item || phrases[Math.floor(Math.random() * phrases.length)];
     if (!item) return;
-
-    const mainEl    = document.getElementById('main-content');
-    const resultsEl = document.getElementById('search-results');
-    mainEl.style.display = '';
-    resultsEl.style.display = 'none';
 
     const phraseEl   = document.getElementById('phrase');
     const keywordEl  = document.getElementById('keyword');
@@ -117,45 +101,6 @@
     localStorage.setItem('pf_views', JSON.stringify(views));
   }
 
-  window.onSearch = function(query) {
-    const q = query.trim().toLowerCase();
-    const mainEl    = document.getElementById('main-content');
-    const resultsEl = document.getElementById('search-results');
-
-    if (!q) { mainEl.style.display = ''; resultsEl.style.display = 'none'; return; }
-
-    mainEl.style.display = 'none';
-    resultsEl.style.display = 'block';
-
-    const matches = phrases.filter(p => {
-      const hw = p.headwords || [];
-      return p.phrase.toLowerCase().includes(q) ||
-        hw.join(' vs ').toLowerCase().includes(q) ||
-        hw.some(w => w.toLowerCase().includes(q)) ||
-        (p.note || '').toLowerCase().includes(q);
-    });
-
-    const exactMatch = phrases.find(p => (p.headwords || []).join(' vs ').toLowerCase() === q);
-    if (exactMatch) {
-      const label = (exactMatch.headwords || []).join(' vs ');
-      const views = JSON.parse(localStorage.getItem('pf_views') || '{}');
-      views[label] = (views[label] || 0) + 1;
-      localStorage.setItem('pf_views', JSON.stringify(views));
-    }
-
-    if (matches.length === 0) { resultsEl.innerHTML = '<div class="search-empty">No phrases found.</div>'; return; }
-
-    resultsEl.innerHTML =
-      `<div class="search-count">${matches.length} result${matches.length !== 1 ? 's' : ''}</div>` +
-      matches.map(p =>
-        `<div class="search-result" onclick="show(phrases[${phrases.indexOf(p)}])">
-          <div class="search-result-phrase">${format(p.phrase)}</div>
-          <div class="search-result-meta">${escapeHtml((p.headwords || []).join(' vs '))}</div>
-          <div class="search-result-note">${escapeHtml(p.note || '')}</div>
-        </div>`
-      ).join('');
-  };
-
   // Initialise from URL params
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
@@ -164,8 +109,6 @@
   if (id) {
     const item = phrases.find(p => p.id === id);
     show(item || phrases[Math.floor(Math.random() * phrases.length)]);
-  } else if (q) {
-    onSearch(q);
   } else {
     show();
   }
@@ -176,8 +119,7 @@
   });
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { window.onSearch(''); }
-    if ((e.key === 'ArrowRight' || e.key === ' ') && document.activeElement.id !== 'search-input') {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
       e.preventDefault(); show();
     }
   });

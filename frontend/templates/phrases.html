@@ -5,9 +5,13 @@
 <style>
   body { padding: 6.5rem 1.5rem 4rem; }
   .container { max-width: 680px; margin: 0 auto; }
-  .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2rem; }
-  h1 { font-size: 1.1rem; font-weight: 600; }
-  .count { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; }
+  .search-input { flex: 1; padding: 0.45rem 0.75rem; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; color: var(--navy); background: transparent; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+  .search-input::placeholder { color: var(--muted); font-weight: 400; }
+  .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(90,84,255,0.1); }
+  .count { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; white-space: nowrap; }
+  .search-mode-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); text-align: center; margin-bottom: 1.5rem; display: none; }
+  .search-mode-label.visible { display: block; }
   .phrase-list { list-style: none; }
 
   .phrase-item { border-top: 1px solid var(--surface); padding: 1.25rem 0; animation: fadeUp 0.25s ease; }
@@ -55,9 +59,10 @@
 {{define "content"}}
 <div class="container">
   <div class="page-header">
-    <h1>My Phrases</h1>
+    <input class="search-input" id="search-input" type="search" placeholder="Search by word or meaning…" autocomplete="off" spellcheck="false">
     <span class="count" id="count">{{.Count}} phrase{{if ne .Count 1}}s{{end}}</span>
   </div>
+  <div class="search-mode-label" id="search-mode-label">Similar matches</div>
   <ul class="phrase-list" id="phrase-list"></ul>
 </div>
 
@@ -72,17 +77,21 @@
     return escapeHtml(text).replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
   }
 
-  function render() {
-    const list = document.getElementById('phrase-list');
+  function render(items, semantic) {
+    const list    = document.getElementById('phrase-list');
     const countEl = document.getElementById('count');
-    countEl.textContent = `${phrases.length} phrase${phrases.length !== 1 ? 's' : ''}`;
+    const modeEl  = document.getElementById('search-mode-label');
+    const display = items !== undefined ? items : phrases;
 
-    if (phrases.length === 0) {
-      list.innerHTML = '<li class="empty">No phrases yet. <a href="/add">Add your first →</a></li>';
+    countEl.textContent = `${display.length} phrase${display.length !== 1 ? 's' : ''}`;
+    modeEl.classList.toggle('visible', !!semantic);
+
+    if (display.length === 0) {
+      list.innerHTML = '<li class="empty">No phrases found.</li>';
       return;
     }
 
-    list.innerHTML = phrases.map(p => {
+    list.innerHTML = display.map(p => {
       const id        = escapeHtml(p.id);
       const phrase    = format(p.phrase);
       const meta      = escapeHtml((p.headwords || []).join(' vs '));
@@ -172,6 +181,34 @@
     if (res.ok) { phrases = phrases.filter(p => p.id !== id); render(); }
     else { hideConfirm(id); alert('Delete failed. Please try again.'); }
   }
+
+  // Augment search: headword substring match first; semantic fallback via API.
+  let searchTimer = null;
+
+  async function onSearch(q) {
+    q = q.trim();
+    if (!q) { render(); return; }
+
+    const local = phrases.filter(p =>
+      (p.headwords || []).some(w => w.toLowerCase().includes(q.toLowerCase()))
+    );
+    if (local.length > 0) { render(local, false); return; }
+
+    // No headword match — try semantic search.
+    let results;
+    try {
+      const res = await fetch(`/fd/phrases/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) { render([], false); return; }
+      results = await res.json();
+    } catch { render([], false); return; }
+
+    render(results || [], true);
+  }
+
+  document.getElementById('search-input').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => onSearch(e.target.value), 300);
+  });
 
   render();
 </script>

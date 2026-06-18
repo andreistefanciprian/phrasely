@@ -48,6 +48,13 @@ services:
       db:
         condition: service_healthy
 
+  adminer:
+    image: adminer
+    ports:
+      - "8082:8080"
+    depends_on:
+      - db
+
   db:
     image: pgvector/pgvector:pg17
     environment:
