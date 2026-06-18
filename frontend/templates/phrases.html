@@ -186,8 +186,10 @@
 
   // Augment search: headword substring match first; semantic fallback via API.
   let searchTimer = null;
+  let searchSeq = 0;
 
   async function onSearch(q) {
+    const seq = ++searchSeq;
     q = q.trim();
     if (!q) { render(); return; }
 
@@ -200,10 +202,11 @@
     let results;
     try {
       const res = await fetch(`/fd/phrases/search?q=${encodeURIComponent(q)}`);
-      if (!res.ok) { render([], false); return; }
+      if (!res.ok) { if (seq === searchSeq) render([], false); return; }
       results = await res.json();
-    } catch { render([], false); return; }
+    } catch { if (seq === searchSeq) render([], false); return; }
 
+    if (seq !== searchSeq) return;
     render(results || [], true);
   }
 
