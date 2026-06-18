@@ -28,6 +28,7 @@ func NewHandler(store db.Store, embedder *embeddings.Service) *Handler {
 
 // RegisterRoutes attaches phrase endpoints to the given router.
 func (h *Handler) RegisterRoutes(r *mux.Router) {
+	r.HandleFunc("/api/v1/phrases/search", h.search).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
 	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
@@ -193,6 +194,44 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("delete phrase", "id", id)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// search handles GET /api/v1/phrases/search?q=<query>.
+// Embeds the query and returns the top-10 phrases by cosine similarity.
+// Returns 400 if q is missing, 503 if the embedder is not configured.
+func (h *Handler) search(w http.ResponseWriter, r *http.Request) {
+	if h.embedder == nil {
+		respondErr(w, http.StatusServiceUnavailable, "semantic search is not available")
+		return
+	}
+
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		respondErr(w, http.StatusBadRequest, "q is required")
+		return
+	}
+
+	userID := middleware.UserIDFromContext(r.Context())
+
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	vec, err := h.embedder.Embed(ctx, q)
+	if err != nil {
+		slog.Error("embed search query", "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to embed query")
+		return
+	}
+
+	phrases, err := h.store.SearchPhrasesBySimilarity(ctx, userID, vec, 10)
+	if err != nil {
+		slog.Error("search phrases", "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to search phrases")
+		return
+	}
+
+	slog.Debug("search phrases", "q", q, "results", len(phrases))
+	respond(w, http.StatusOK, phrases)
 }
 
 // parseID extracts and validates the {id} path variable as a UUID.

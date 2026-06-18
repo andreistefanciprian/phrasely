@@ -90,6 +90,9 @@ func (m *mockStore) SetPhraseEmbedding(_ context.Context, _ string, _ []float32)
 func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase, error) {
 	panic("not expected in oauth tests")
 }
+func (m *mockStore) SearchPhrasesBySimilarity(_ context.Context, _ string, _ []float32, _ int) ([]db.Phrase, error) {
+	panic("not expected in oauth tests")
+}
 
 func callRevokeTokens(store db.Store, userID, clientID string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
