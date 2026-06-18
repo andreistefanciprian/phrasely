@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.7](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.6...frontend-v0.0.7) (2026-06-18)
+
+
+### Bug Fixes
+
+* **frontend:** improve home page copy and add random quote section ([#105](https://github.com/andreistefanciprian/phrasely/issues/105)) ([446c9c5](https://github.com/andreistefanciprian/phrasely/commit/446c9c5ab2d35c30aefc68f804096f7232d91f0b))
+
 ## [0.0.6](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.5...frontend-v0.0.6) (2026-06-17)
 
 
