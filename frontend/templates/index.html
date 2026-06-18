@@ -109,6 +109,9 @@
   if (id) {
     const item = phrases.find(p => p.id === id);
     show(item || phrases[Math.floor(Math.random() * phrases.length)]);
+  } else if (q) {
+    const matches = phrases.filter(p => (p.headwords || []).some(w => w.toLowerCase() === q.toLowerCase()));
+    show(matches.length > 0 ? matches[Math.floor(Math.random() * matches.length)] : phrases[Math.floor(Math.random() * phrases.length)]);
   } else {
     show();
   }
