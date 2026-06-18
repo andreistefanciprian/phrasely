@@ -274,6 +274,10 @@ func (app *application) addPage(w http.ResponseWriter, r *http.Request) {
 	app.renderAuth(w, "add.html", map[string]any{"Page": "add"})
 }
 
+func (app *application) settingsPage(w http.ResponseWriter, r *http.Request) {
+	app.renderAuth(w, "settings.html", map[string]any{"Page": "settings"})
+}
+
 // ── OAuth 2.1 consent screen ──────────────────────────────────────────────────
 
 // oauthParams holds the query/form values that travel with the OAuth flow.
