@@ -5,17 +5,14 @@ FROM golang:1.26.1-alpine AS builder
 WORKDIR /app
 
 COPY go.mod ./
-RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
-    go mod download
+RUN go mod download
 
 COPY . .
 
 # CGO_ENABLED=0  — static binary, no C runtime dependency
 # -trimpath      — removes local file paths from the binary (no source leakage)
 # -ldflags -s -w — strips debug symbols and DWARF info (smaller, no symbol table)
-RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
-    --mount=type=cache,id=go-build,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o frontdoor .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o frontdoor .
 
 # ── Final image ───────────────────────────────────────────────────────────────
 # scratch = completely empty — just the binary, no shell, no OS, zero attack surface
