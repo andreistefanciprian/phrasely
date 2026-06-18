@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.8...frontend-v0.1.0) (2026-06-18)
+
+
+### Features
+
+* **frontend:** add semantic search bar to Phrases page ([a2658d3](https://github.com/andreistefanciprian/phrasely/commit/a2658d341c41f80e5b561995f61ad015958fdf7b))
+
+
+### Bug Fixes
+
+* **backend:** trim and cap search query in semantic search handler ([5b069e5](https://github.com/andreistefanciprian/phrasely/commit/5b069e5bab24ee3eeb9bc95bed1a9113f83ef943))
+* **frontend:** guard semantic search against out-of-order responses ([bcaa613](https://github.com/andreistefanciprian/phrasely/commit/bcaa613353489aaaece601b3fb7de79a5541df9d))
+* **frontend:** restore empty-state message when user has no phrases ([5b069e5](https://github.com/andreistefanciprian/phrasely/commit/5b069e5bab24ee3eeb9bc95bed1a9113f83ef943))
+
 ## [0.0.8](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.7...frontend-v0.0.8) (2026-06-18)
 
 
