@@ -52,6 +52,9 @@ func (m *mockStore) SetPhraseEmbedding(_ context.Context, _ string, _ []float32)
 func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase, error) {
 	panic("ListPhrasesWithoutEmbedding not expected in phrase tests")
 }
+func (m *mockStore) SearchPhrasesBySimilarity(_ context.Context, _ string, _ []float32, _ int) ([]db.Phrase, error) {
+	panic("SearchPhrasesBySimilarity not expected in phrase tests")
+}
 
 // Auth methods — not used in phrase tests; panic if called unexpectedly.
 func (m *mockStore) UpsertUser(_ context.Context, _ string) (*db.User, error) {

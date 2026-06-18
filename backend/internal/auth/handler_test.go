@@ -89,6 +89,9 @@ func (m *mockStore) SetPhraseEmbedding(_ context.Context, _ string, _ []float32)
 func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase, error) {
 	panic("not expected in auth tests")
 }
+func (m *mockStore) SearchPhrasesBySimilarity(_ context.Context, _ string, _ []float32, _ int) ([]db.Phrase, error) {
+	panic("not expected in auth tests")
+}
 
 // spySender records calls to SendMagicLink for assertions.
 type spySender struct {
