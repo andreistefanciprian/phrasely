@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.1.0...frontend-v0.2.0) (2026-06-18)
+
+
+### Features
+
+* **frontend:** add settings page shell with navbar gear icon ([#112](https://github.com/andreistefanciprian/phrasely/issues/112)) ([ab281e1](https://github.com/andreistefanciprian/phrasely/commit/ab281e1778aeedf1ab44b123e1d28b925fd2aa9a))
+
 ## [0.1.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.8...frontend-v0.1.0) (2026-06-18)
 
 
