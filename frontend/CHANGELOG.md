@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.8](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.7...frontend-v0.0.8) (2026-06-18)
+
+
+### Bug Fixes
+
+* **frontend:** add random quote section to story page ([63fa6be](https://github.com/andreistefanciprian/phrasely/commit/63fa6be0d3538beefcc25bc5792cbed66d702b30))
+
 ## [0.0.7](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.0.6...frontend-v0.0.7) (2026-06-18)
 
 
