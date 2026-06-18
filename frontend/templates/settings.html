@@ -98,7 +98,7 @@ async function exportPhrases(action) {
       status.textContent = `${phrases.length} phrase${phrases.length !== 1 ? 's' : ''} copied.`;
       const btn = document.getElementById('btn-copy');
       btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Copy to clipboard'; }, 2000);
+      setTimeout(() => { btn.textContent = 'Copy to clipboard'; }, 4000);
     } catch {
       status.className = 'export-status error';
       status.textContent = 'Clipboard access denied.';
