@@ -23,5 +23,5 @@ The goal is simple: turn interesting words and expressions you hear in everyday 
 - [docs/local-development.md](docs/local-development.md) — local setup and day-to-day commands
 - [docs/frontend-architecture.md](docs/frontend-architecture.md) — frontend/API flow and cookie auth model
 - [docs/auth-magic-link.md](docs/auth-magic-link.md) — magic link authentication flow
-- [docs/mcp-server.md](docs/mcp-server.md) — MCP server plan
+- [docs/mcp-server.md](docs/mcp-server.md) — MCP server architecture and OAuth 2.1 flow
 - [mcp/README.md](mcp/README.md) — running and testing the MCP server locally
