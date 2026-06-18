@@ -5,12 +5,144 @@
 <style>
   body { display: flex; flex-direction: column; align-items: center; padding: 7rem 1.5rem 4rem; }
   .container { width: 100%; max-width: 480px; }
-  h1 { font-size: 1.1rem; font-weight: 600; color: var(--navy); margin-bottom: 2rem; }
+
+  .section-title { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+  .section-hint  { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.25rem; line-height: 1.5; }
+
+  .format-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 0.75rem; }
+  .fmt-btn {
+    padding: 0.3rem 0.65rem; font-family: inherit; font-size: 0.75rem; font-weight: 600;
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    transition: background 0.12s, color 0.12s;
+  }
+  .fmt-btn + .fmt-btn { border-left: 1px solid var(--border); }
+  .fmt-btn.active { background: var(--blue); color: #fff; }
+
+  .export-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .btn-export {
+    padding: 0.3rem 0.75rem; border-radius: 6px; font-family: inherit;
+    font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); background: none; color: var(--navy);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-export:hover    { border-color: var(--blue); color: var(--blue); }
+  .btn-export:disabled { opacity: 0.5; cursor: default; }
+
+  .export-status { margin-top: 0.75rem; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
+  .export-status.error { color: #e53e3e; }
 </style>
 {{end}}
 
 {{define "content"}}
 <div class="container">
-  <h1>Settings</h1>
+
+  <p class="section-title">Export phrases</p>
+  <p class="section-hint">A great phrase list takes years to build. Make sure you always have a copy.</p>
+
+  <div class="format-toggle">
+    <button class="fmt-btn active" data-fmt="csv"  onclick="setFmt('csv')">CSV</button>
+    <button class="fmt-btn"        data-fmt="json" onclick="setFmt('json')">JSON</button>
+    <button class="fmt-btn"        data-fmt="txt"  onclick="setFmt('txt')">TXT</button>
+  </div>
+  <div class="export-actions">
+    <button class="btn-export" id="btn-download" onclick="exportPhrases('download')">Download</button>
+    <button class="btn-export" id="btn-copy"     onclick="exportPhrases('copy')">Copy to clipboard</button>
+  </div>
+  <p class="export-status" id="export-status"></p>
+
 </div>
+
+<script>
+let selectedFmt = 'csv';
+
+function setFmt(fmt) {
+  selectedFmt = fmt;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.toggle('active', b.dataset.fmt === fmt));
+}
+
+async function exportPhrases(action) {
+  const btns   = document.querySelectorAll('.btn-export');
+  const status = document.getElementById('export-status');
+  btns.forEach(b => b.disabled = true);
+  status.className = 'export-status';
+  status.textContent = 'Fetching phrases…';
+
+  let phrases;
+  try {
+    const res = await fetch('/fd/phrases');
+    if (!res.ok) throw new Error('Failed to fetch phrases.');
+    phrases = await res.json();
+  } catch (e) {
+    status.className = 'export-status error';
+    status.textContent = e.message;
+    btns.forEach(b => b.disabled = false);
+    return;
+  }
+
+  if (!phrases || phrases.length === 0) {
+    status.textContent = 'No phrases to export.';
+    btns.forEach(b => b.disabled = false);
+    return;
+  }
+
+  const plainText = phrases.map(p => p.phrase || '').join('\n');
+
+  if (action === 'copy') {
+    try {
+      await navigator.clipboard.writeText(plainText);
+      status.textContent = `${phrases.length} phrase${phrases.length !== 1 ? 's' : ''} copied.`;
+      const btn = document.getElementById('btn-copy');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy to clipboard'; }, 2000);
+    } catch {
+      status.className = 'export-status error';
+      status.textContent = 'Clipboard access denied.';
+    }
+    btns.forEach(b => b.disabled = false);
+    return;
+  }
+
+  let content, mime, ext;
+
+  if (selectedFmt === 'json') {
+    const clean = phrases.map(({ phrase, headwords, note, source_urls, created_at }) =>
+      ({ phrase, headwords, note, source_urls, created_at }));
+    content = JSON.stringify({ exported_at: new Date().toISOString(), count: clean.length, phrases: clean }, null, 2);
+    mime = 'application/json';
+    ext  = 'json';
+
+  } else if (selectedFmt === 'csv') {
+    const escape = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const rows = [['phrase', 'headwords', 'note', 'source_urls', 'created_at']];
+    for (const p of phrases) {
+      rows.push([
+        escape(p.phrase),
+        escape((p.headwords   || []).join('|')),
+        escape(p.note),
+        escape((p.source_urls || []).join('|')),
+        escape(p.created_at),
+      ]);
+    }
+    content = rows.map(r => r.join(',')).join('\r\n');
+    mime = 'text/csv';
+    ext  = 'csv';
+
+  } else {
+    content = plainText;
+    mime = 'text/plain';
+    ext  = 'txt';
+  }
+
+  const date     = new Date().toISOString().slice(0, 10);
+  const filename = `phrasely-${date}.${ext}`;
+  const blob     = new Blob([content], { type: mime });
+  const url      = URL.createObjectURL(blob);
+  const a        = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+
+  status.textContent = `${phrases.length} phrase${phrases.length !== 1 ? 's' : ''} exported.`;
+  btns.forEach(b => b.disabled = false);
+}
+</script>
 {{end}}
