@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.2.0...backend-v0.2.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **backend:** make embed-backfill async with per-phrase progress logging ([8255dfb](https://github.com/andreistefanciprian/phrasely/commit/8255dfb3a59032df2ba1d4aeaa89cc352631f9d3))
+
 ## [0.2.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.1.0...backend-v0.2.0) (2026-06-18)
 
 
