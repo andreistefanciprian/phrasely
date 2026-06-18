@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -295,26 +296,31 @@ func (h *Handler) backfillEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("backfill started", "total", len(phrases))
-	var embedded, failed int
-	for _, p := range phrases {
-		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
-		vec, err := h.embedder.Embed(ctx, embeddings.PhraseText(p))
-		if err != nil {
-			cancel()
-			slog.Error("backfill: embed phrase", "id", p.ID, "error", err)
-			failed++
-			continue
-		}
-		if err := h.store.SetPhraseEmbedding(ctx, p.ID, vec); err != nil {
-			cancel()
-			slog.Error("backfill: set phrase embedding", "id", p.ID, "error", err)
-			failed++
-			continue
-		}
-		cancel()
-		embedded++
-	}
+	respond(w, http.StatusAccepted, map[string]int{"queued": len(phrases)})
 
-	slog.Info("backfill complete", "embedded", embedded, "failed", failed)
-	respond(w, http.StatusOK, map[string]int{"embedded": embedded, "failed": failed})
+	go func() {
+		var embedded, failed int
+		total := len(phrases)
+		for i, p := range phrases {
+			slog.Info("backfill: embedding phrase", "progress", fmt.Sprintf("%d/%d", i+1, total), "id", p.ID, "headwords", p.Headwords)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			vec, err := h.embedder.Embed(ctx, embeddings.PhraseText(p))
+			if err != nil {
+				cancel()
+				slog.Error("backfill: embed failed", "progress", fmt.Sprintf("%d/%d", i+1, total), "id", p.ID, "error", err)
+				failed++
+				continue
+			}
+			if err := h.store.SetPhraseEmbedding(ctx, p.ID, vec); err != nil {
+				cancel()
+				slog.Error("backfill: store failed", "progress", fmt.Sprintf("%d/%d", i+1, total), "id", p.ID, "error", err)
+				failed++
+				continue
+			}
+			cancel()
+			embedded++
+			slog.Info("backfill: phrase done", "progress", fmt.Sprintf("%d/%d", i+1, total), "id", p.ID, "embedded_so_far", embedded)
+		}
+		slog.Info("backfill complete", "total", total, "embedded", embedded, "failed", failed)
+	}()
 }
