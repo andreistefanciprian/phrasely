@@ -24,6 +24,10 @@
   .cta-row a { display: inline-block; padding: 0.75rem 1.75rem; background: var(--blue); color: var(--white); font-size: 0.875rem; font-weight: 600; border-radius: 100px; text-decoration: none; transition: opacity 0.15s; }
   .cta-row a:hover { opacity: 0.88; }
 
+  .quote-section { background: var(--surface); padding: 4rem 2rem; text-align: center; }
+  .quote { font-family: 'Lora', Georgia, serif; font-size: clamp(1.1rem, 3vw, 1.4rem); line-height: 1.8; color: var(--navy); max-width: 560px; margin: 0 auto 1rem; }
+  .quote-meta { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); }
+
   footer { text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
 
   @media (max-width: 600px) {
@@ -59,6 +63,11 @@
   <div class="cta-row">
     <a href="/login">Try Phrasely, it's free →</a>
   </div>
+</div>
+
+<div class="quote-section">
+  <p class="quote">"{{ .Quote }}"</p>
+  <p class="quote-meta">{{ .QuoteMeta }}</p>
 </div>
 
 <footer>&copy; 2026 Phrasely · Cip on <a href="https://www.linkedin.com/in/andreistefanciprian/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">LinkedIn</a> and <a href="https://github.com/andreistefanciprian" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">GitHub</a></footer>

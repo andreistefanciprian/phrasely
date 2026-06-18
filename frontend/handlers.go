@@ -207,7 +207,11 @@ func (app *application) signOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) storyPage(w http.ResponseWriter, r *http.Request) {
-	app.render(w, "story.html", nil)
+	sample := app.homePhraseSamples[rand.IntN(len(app.homePhraseSamples))]
+	app.render(w, "story.html", map[string]any{
+		"Quote":     sample.Phrase,
+		"QuoteMeta": sample.Keyword + " · captured from " + sample.Source,
+	})
 }
 
 func (app *application) bubblePage(w http.ResponseWriter, r *http.Request) {
