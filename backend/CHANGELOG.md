@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.1.0...backend-v0.2.0) (2026-06-18)
+
+
+### Features
+
+* **backend:** add semantic phrase search endpoint ([7799ea4](https://github.com/andreistefanciprian/phrasely/commit/7799ea4dec9d1dd7a57f3dcff224ef5b5f73ba7f))
+
+
+### Bug Fixes
+
+* **backend:** trim and cap search query in semantic search handler ([5b069e5](https://github.com/andreistefanciprian/phrasely/commit/5b069e5bab24ee3eeb9bc95bed1a9113f83ef943))
+* **frontend:** restore empty-state message when user has no phrases ([5b069e5](https://github.com/andreistefanciprian/phrasely/commit/5b069e5bab24ee3eeb9bc95bed1a9113f83ef943))
+
 ## [0.1.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.0.10...backend-v0.1.0) (2026-06-17)
 
 
