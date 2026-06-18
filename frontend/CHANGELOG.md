@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.1...frontend-v0.3.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* **frontend:** restore headword link navigation from shuffle page ([cbac91a](https://github.com/andreistefanciprian/phrasely/commit/cbac91aa51d6eec4cc351eb46cf283e25cb4ecc8))
+
 ## [0.3.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.0...frontend-v0.3.1) (2026-06-18)
 
 
