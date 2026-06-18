@@ -87,7 +87,9 @@
     modeEl.classList.toggle('visible', !!semantic);
 
     if (display.length === 0) {
-      list.innerHTML = '<li class="empty">No phrases found.</li>';
+      list.innerHTML = items === undefined
+        ? '<li class="empty">No phrases yet. <a href="/add">Add your first →</a></li>'
+        : '<li class="empty">No phrases found.</li>';
       return;
     }
 
