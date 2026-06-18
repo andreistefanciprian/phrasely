@@ -34,7 +34,7 @@ internals beyond passing the header along.
 
 ## Auth: OAuth 2.1 + PKCE
 
-All auth goes through OAuth 2.1. `/mcp` requires `Authorization: Bearer <access_token>`.
+In production, all auth goes through OAuth 2.1. `/mcp` requires `Authorization: Bearer <access_token>`. For local ad-hoc testing, a magic-link JWT works directly as the Bearer token (see [mcp/README.md](../mcp/README.md)).
 
 OAuth *logic and storage* (tables, code generation, token minting) live in `backend`.
 The *endpoints that clients call directly* are hosted/proxied by `mcp` — calling `backend`
@@ -49,8 +49,8 @@ internally for the actual work.
 
 ### Dynamic Client Registration — `POST /register` (proxied to `backend`)
 
-Client POSTs its `redirect_uri`, gets back a `client_id` (public client, no secret —
-PKCE is mandatory). Redirect URI is pinned at registration and validated on every
+Client POSTs a `redirect_uris` array (RFC 7591), gets back a `client_id` (public client, no secret —
+PKCE is mandatory). Redirect URIs are pinned at registration and validated on every
 `/authorize` call (open-redirect defense).
 
 ### `/authorize` (frontend, public)
@@ -62,8 +62,7 @@ flow, then bounces back to `/authorize` to complete.
 
 ### `/token` (proxied to `backend`)
 
-Client POSTs `code` + PKCE `code_verifier`. `backend` validates the challenge, marks the
-code used, and mints:
+Client POSTs `grant_type=authorization_code`, `code`, `code_verifier`, `client_id`, and `redirect_uri`. `backend` validates the PKCE challenge, marks the code used, and mints:
 - **access_token** — JWT (1h expiry), same format as `auth.signJWT`, so `middleware.Auth`
   works unchanged.
 - **refresh_token** — DB-persisted for revocation and rotation.
@@ -92,7 +91,7 @@ sequenceDiagram
     Note over C,API: One-time connector setup
     C->>MCP: GET /.well-known/oauth-authorization-server
     MCP-->>C: authorize (FE) / token,register (MCP) URLs, PKCE=S256
-    C->>MCP: POST /register (redirect_uri)
+    C->>MCP: POST /register (redirect_uris[])
     MCP->>API: register client (internal)
     API-->>MCP: client_id
     MCP-->>C: client_id
@@ -111,7 +110,7 @@ sequenceDiagram
     FE-->>C: Redirect to redirect_uri?code=...
 
     Note over C,API: Token exchange
-    C->>MCP: POST /token (code, code_verifier)
+    C->>MCP: POST /token (grant_type=authorization_code, code, code_verifier, client_id, redirect_uri)
     MCP->>API: exchange code (internal)
     API->>API: Validate PKCE, mark code used
     API-->>MCP: access_token (JWT, 1h) + refresh_token
@@ -125,7 +124,7 @@ sequenceDiagram
     MCP-->>C: tool result
 
     Note over C,API: Token refresh
-    C->>MCP: POST /token (grant_type=refresh_token)
+    C->>MCP: POST /token (grant_type=refresh_token, client_id, refresh_token)
     MCP->>API: refresh (internal)
     API-->>MCP: new access_token + rotated refresh_token
     MCP-->>C: new access_token
