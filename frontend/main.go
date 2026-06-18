@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"html/template"
 	"io/fs"
 	"log/slog"
@@ -10,11 +11,12 @@ import (
 	"strings"
 )
 
-//go:embed templates/* static/*
+//go:embed templates/* static/* home_phrases.json
 var files embed.FS
 
 type application struct {
-	api *apiClient
+	api               *apiClient
+	homePhraseSamples []homePhrase
 }
 
 func main() {
@@ -29,8 +31,18 @@ func main() {
 		apiURL = "http://localhost:8080"
 	}
 
+	var homePhraseSamples []homePhrase
+	if data, err := files.ReadFile("home_phrases.json"); err != nil {
+		slog.Error("failed to read home_phrases.json", "error", err)
+		os.Exit(1)
+	} else if err := json.Unmarshal(data, &homePhraseSamples); err != nil {
+		slog.Error("failed to parse home_phrases.json", "error", err)
+		os.Exit(1)
+	}
+
 	app := &application{
-		api: newAPIClient(apiURL),
+		api:               newAPIClient(apiURL),
+		homePhraseSamples: homePhraseSamples,
 	}
 
 	mux := http.NewServeMux()

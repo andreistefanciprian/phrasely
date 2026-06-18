@@ -6,12 +6,19 @@ import (
 	"errors"
 	"html/template"
 	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 	"time"
 )
+
+type homePhrase struct {
+	Phrase  string `json:"phrase"`
+	Keyword string `json:"keyword"`
+	Source  string `json:"source"`
+}
 
 const authCookieName = "auth_token"
 const authCookieTTL = 30 * 24 * time.Hour
@@ -54,7 +61,7 @@ func (app *application) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // ── Page handlers ─────────────────────────────────────────────────────────────
 
-func (app *application) notFound(w http.ResponseWriter, r *http.Request) {
+func (app *application) notFound(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	app.render(w, "404.html", nil)
 }
@@ -71,7 +78,11 @@ func (app *application) homePage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	app.render(w, "home.html", nil)
+	sample := app.homePhraseSamples[rand.IntN(len(app.homePhraseSamples))]
+	app.render(w, "home.html", map[string]any{
+		"Quote":     sample.Phrase,
+		"QuoteMeta": sample.Keyword + " · captured from " + sample.Source,
+	})
 }
 
 func (app *application) loginPage(w http.ResponseWriter, r *http.Request) {
