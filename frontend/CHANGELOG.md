@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.2.0...frontend-v0.3.0) (2026-06-18)
+
+
+### Features
+
+* **frontend:** add phrase export to settings page ([3f864e9](https://github.com/andreistefanciprian/phrasely/commit/3f864e945cef97e8846a045eb37ce86cada30a93))
+
+
+### Bug Fixes
+
+* **frontend:** accessibility and download reliability improvements ([db65fdf](https://github.com/andreistefanciprian/phrasely/commit/db65fdf0aee68a0f80e9e894d4ec14735a075688))
+* **frontend:** keep Copied! label for 4s after clipboard copy ([ebbc1de](https://github.com/andreistefanciprian/phrasely/commit/ebbc1de0c2ac0b1440d3d15e0347125cbed781f8))
+* **frontend:** use h2 for settings section title for accessibility ([c5c26d4](https://github.com/andreistefanciprian/phrasely/commit/c5c26d40b286bec4c81e602cf72d2f7f36c90fdf))
+
 ## [0.2.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.1.0...frontend-v0.2.0) (2026-06-18)
 
 
