@@ -77,10 +77,7 @@ Save the phrase to the DB immediately, then generate the embedding in a backgrou
 
 ### Open questions
 
-- [ ] **Replace or augment current headword filter?**
-  - *Replace*: one unified search box, always semantic. Simpler UX.
-  - *Augment*: exact headword match first, semantic fallback when no exact results. More reliable (typing "fortitude" always finds "fortitude").
-  - Leaning toward **augment**.
+- [x] **Augment**: exact headword match first, semantic fallback when no exact results. Typing a known headword always finds it; semantic kicks in when nothing matches.
 
 ---
 
@@ -162,7 +159,7 @@ Visual bubble map. Main work is frontend (D3.js or canvas). Depends on cluster d
 | # | Decision | Options | Status |
 |---|---|---|---|
 | 1 | Text to embed per phrase | headwords + phrase + note | ✅ Decided |
-| 2 | Semantic search UX | replace vs augment headword filter | ⬜ Open |
+| 2 | Semantic search UX | replace vs augment headword filter | ✅ Augment |
 | 3 | "You may also like" placement | list bottom / home section / sidebar | ⬜ Open |
 | 4 | Number of clusters | fixed vs dynamic | ⬜ Open |
 | 5 | Cluster recompute trigger | on-save vs on-demand | ⬜ Open |
