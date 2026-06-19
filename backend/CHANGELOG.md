@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.2.1...backend-v0.2.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* **backend:** make OAuth access token TTL configurable via OAUTH_ACCESS_TOKEN_TTL ([633615b](https://github.com/andreistefanciprian/phrasely/commit/633615bfc03852f7bda0e3b6384f7663c011dae9))
+* **backend:** update oauth handler tests for OAUTH_ACCESS_TOKEN_TTL param ([3114ff0](https://github.com/andreistefanciprian/phrasely/commit/3114ff03323cf96841cfc48ce0b3fd33118576e7))
+
 ## [0.2.1](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.2.0...backend-v0.2.1) (2026-06-18)
 
 
