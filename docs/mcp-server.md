@@ -82,52 +82,68 @@ every `refresh_token` grant.
 
 ```mermaid
 sequenceDiagram
-    participant U as User (browser)
-    participant C as Client (ChatGPT / Claude Desktop)
-    participant FE as Frontend (public)
-    participant MCP as MCP server (public)
-    participant API as API (private)
+    participant U as User
+    participant C as ChatGPT/Claude
+    participant FE as Frontend
+    participant MCP as MCP Server
+    participant API as Backend API
+    participant DB as PostgreSQL
 
-    Note over C,API: One-time connector setup
+    Note over C,DB: 1. Discovery + Registration (one-time per connector)
     C->>MCP: GET /.well-known/oauth-authorization-server
-    MCP-->>C: authorize (FE) / token,register (MCP) URLs, PKCE=S256
-    C->>MCP: POST /register (redirect_uris[])
-    MCP->>API: register client (internal)
-    API-->>MCP: client_id
-    MCP-->>C: client_id
+    MCP-->>C: authorization_endpoint (FE/authorize), token_endpoint (MCP/token), registration_endpoint (MCP/register), code_challenge_methods_supported=[S256]
+    C->>MCP: POST /register {redirect_uris: [...]}
+    MCP->>API: POST /internal/oauth/register {redirect_uris: [...]}
+    API->>DB: INSERT oauth_clients (generate client_id, redirect_uris[])
+    DB-->>API: ok
+    API-->>MCP: {client_id}
+    MCP-->>C: {client_id}
 
-    Note over C,API: Authorization (PKCE)
-    C->>U: Open /authorize?client_id&redirect_uri&code_challenge
-    U->>FE: GET /authorize (with auth_token cookie)
+    Note over C,DB: 2. Authorization Code + PKCE
+    C->>C: generate code_verifier (random 32B), code_challenge = BASE64URL(SHA256(code_verifier))
+    C->>U: open browser to /authorize?client_id=X, redirect_uri=Y, code_challenge=Z, code_challenge_method=S256
+    U->>FE: GET /authorize (Cookie: auth_token=JWT)
     alt no valid session
-        FE->>U: Redirect to magic-link login
-        U->>FE: Click magic link → session established
-        FE->>U: Redirect back to /authorize
+        FE->>U: redirect to /login
+        U->>FE: click magic link from email
+        FE->>U: set auth_token cookie, redirect back to /authorize
     end
-    FE->>U: Show consent screen ("Allow access to Phrasely?")
-    U->>FE: Approve
-    FE->>API: Create authorization_code (internal, user_id, code_challenge)
-    FE-->>C: Redirect to redirect_uri?code=...
+    FE->>U: consent screen - Allow access to your Phrasely phrases?
+    U->>FE: POST /authorize/approve
+    FE->>API: POST /internal/oauth/authorize {client_id, redirect_uri, code_challenge, user_id}
+    API->>DB: INSERT oauth_authorization_codes (code_challenge, user_id, client_id, redirect_uri, expires_at=+60s)
+    DB-->>API: code = gen_random_uuid() via RETURNING
+    API-->>FE: {code}
+    FE-->>C: 302 redirect_uri?code=...
 
-    Note over C,API: Token exchange
-    C->>MCP: POST /token (grant_type=authorization_code, code, code_verifier, client_id, redirect_uri)
-    MCP->>API: exchange code (internal)
-    API->>API: Validate PKCE, mark code used
-    API-->>MCP: access_token (JWT, 1h) + refresh_token
-    MCP-->>C: access_token + refresh_token
+    Note over C,DB: 3. Token Exchange
+    C->>MCP: POST /token {grant_type=authorization_code, code, code_verifier, client_id, redirect_uri}
+    MCP->>API: POST /internal/oauth/token (forwarded verbatim)
+    API->>DB: SELECT oauth_authorization_codes WHERE code=X, not used, not expired
+    API->>API: PKCE check - assert BASE64URL(SHA256(code_verifier)) == stored code_challenge
+    API->>DB: UPDATE oauth_authorization_codes SET used_at=now
+    API->>DB: INSERT oauth_refresh_tokens (user_id, client_id)
+    DB-->>API: token = gen_random_uuid() via RETURNING
+    API-->>MCP: {access_token (JWT, OAUTH_ACCESS_TOKEN_TTL default 1h), refresh_token, token_type=Bearer, expires_in=3600}
+    MCP-->>C: {access_token, refresh_token, token_type=Bearer, expires_in=3600}
 
-    Note over C,API: Using the MCP tools
-    C->>MCP: POST /mcp (list_phrases / add_phrase) + Bearer access_token
-    MCP->>API: GET/POST /api/v1/phrases + same Bearer access_token
-    API->>API: middleware.Auth validates JWT → user_id
-    API-->>MCP: result, scoped to user_id
-    MCP-->>C: tool result
+    Note over C,DB: 4. MCP Tool Calls (access token valid)
+    C->>MCP: POST /mcp {tool: list_phrases, arguments: {}} - Authorization: Bearer access_token
+    MCP->>API: GET /api/v1/phrases - Authorization: Bearer access_token
+    API->>API: middleware.Auth: verify JWT signature, extract user_id
+    API->>DB: SELECT phrases WHERE user_id=...
+    DB-->>API: rows
+    API-->>MCP: [{id, phrase, headwords, context, ...}]
+    MCP-->>C: tool result {phrases: [...]}
 
-    Note over C,API: Token refresh
-    C->>MCP: POST /token (grant_type=refresh_token, client_id, refresh_token)
-    MCP->>API: refresh (internal)
-    API-->>MCP: new access_token + rotated refresh_token
-    MCP-->>C: new access_token
+    Note over C,DB: 5. Token Refresh (after 1h when access token expires)
+    C->>MCP: POST /token {grant_type=refresh_token, refresh_token, client_id}
+    MCP->>API: POST /internal/oauth/token (forwarded verbatim)
+    API->>DB: DELETE oauth_refresh_tokens WHERE token=old (atomic revoke)
+    API->>DB: INSERT oauth_refresh_tokens (user_id, client_id)
+    DB-->>API: token = gen_random_uuid() via RETURNING
+    API-->>MCP: {access_token (JWT, 1h), refresh_token (rotated), expires_in=3600}
+    MCP-->>C: {access_token, refresh_token}
 ```
 
 **Why PKCE?** Clients like ChatGPT and Claude Desktop are public clients that cannot

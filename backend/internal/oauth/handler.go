@@ -24,12 +24,13 @@ import (
 )
 
 type Handler struct {
-	store     db.Store
-	jwtSecret string
+	store          db.Store
+	jwtSecret      string
+	accessTokenTTL time.Duration
 }
 
-func NewHandler(store db.Store, jwtSecret string) *Handler {
-	return &Handler{store: store, jwtSecret: jwtSecret}
+func NewHandler(store db.Store, jwtSecret string, accessTokenTTL time.Duration) *Handler {
+	return &Handler{store: store, jwtSecret: jwtSecret, accessTokenTTL: accessTokenTTL}
 }
 
 func (h *Handler) RegisterRoutes(r *mux.Router) {
@@ -336,10 +337,6 @@ func redirectURIAllowed(uri string, allowed []string) bool {
 	return false
 }
 
-// accessTokenTTL is how long an OAuth access token is valid.
-// Shorter than the magic-link JWT (30 days) because the client can refresh silently.
-const accessTokenTTL = time.Hour
-
 // token handles POST /internal/oauth/token.
 // Routes to the correct grant handler based on grant_type.
 // Request body is application/x-www-form-urlencoded (OAuth 2.1 §3.2).
@@ -463,7 +460,7 @@ func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 // writeTokenResponse signs a JWT access token and writes the standard token
 // response body with no-store cache headers (RFC 6749 §5.1).
 func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken string) {
-	accessToken, err := auth.SignJWT(userID, h.jwtSecret, accessTokenTTL)
+	accessToken, err := auth.SignJWT(userID, h.jwtSecret, h.accessTokenTTL)
 	if err != nil {
 		slog.Error("sign access token", "error", err)
 		respondErr(w, http.StatusInternalServerError, "internal error")
@@ -476,7 +473,7 @@ func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken
 	respond(w, http.StatusOK, map[string]any{
 		"access_token":  accessToken,
 		"token_type":    "Bearer",
-		"expires_in":    int(accessTokenTTL.Seconds()),
+		"expires_in":    int(h.accessTokenTTL.Seconds()),
 		"refresh_token": refreshToken,
 	})
 }
