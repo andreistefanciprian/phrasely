@@ -100,7 +100,8 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 | `FRONTEND_BASE_URL` | mcp | `http://localhost:3000` | Public frontend URL for OAuth discovery |
 | `LOG_LEVEL` | all | `INFO` | `DEBUG`, `INFO`, `WARN`, `ERROR` |
 | `MAGIC_LINK_TTL` | backend | `15m` | Go duration format |
-| `JWT_TTL` | backend | `720h` | Go duration format |
+| `JWT_TTL` | backend | `720h` | Go duration format (magic-link sessions) |
+| `OAUTH_ACCESS_TOKEN_TTL` | backend | `1h` | Go duration format (OAuth Bearer tokens) |
 
 ## API endpoints
 

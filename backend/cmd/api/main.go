@@ -109,7 +109,8 @@ func main() {
 
 	// Internal OAuth 2.1 endpoints — only reachable by mcp and frontend over the
 	// private network. Not exposed to the internet.
-	oauth.NewHandler(store, jwtSecret).RegisterRoutes(r)
+	oauthAccessTokenTTL := durationEnv("OAUTH_ACCESS_TOKEN_TTL", time.Hour)
+	oauth.NewHandler(store, jwtSecret, oauthAccessTokenTTL).RegisterRoutes(r)
 
 	// Embeddings and curate are both optional — only enabled when OPENAI_API_KEY is set.
 	var embedder *embeddings.Service
