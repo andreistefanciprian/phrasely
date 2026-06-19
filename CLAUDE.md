@@ -158,6 +158,10 @@ release-please runs on every push to `main` and tracks `frontend/`, `backend/`, 
 - **Before creating a PR, ask the user whether the change is a patch, minor, or major release** so the correct commit type is used
 - Merging the release-please PR tags the release as `frontend-vX.Y.Z` / `backend-vX.Y.Z` / `mcp-vX.Y.Z` and updates `CHANGELOG.md`
 
+## Design notes
+
+- **Shuffle page** — on load, all of the user's phrases are fetched in one SQL query and embedded as JSON into the HTML; all subsequent shuffles are client-side `Math.random()` with no further network calls, which is intentional: adding a per-shuffle random DB endpoint (`ORDER BY RANDOM()`) would add network latency per tap and cost more overall at small scale.
+
 ## Open questions
 
 - **Should headwords be required?** Currently POST requires at least one headword and PATCH cannot set headwords to empty. But should a user be able to save a phrase without identifying the headword yet — e.g. draft phrases waiting to be curated by the AI? If yes, `headwords NOT NULL DEFAULT '{}'` and relaxed validation. If no, keep current behaviour.
