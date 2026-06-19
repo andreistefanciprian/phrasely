@@ -105,7 +105,7 @@ func callRevokeTokens(store db.Store, userID, clientID string) *httptest.Respons
 		r = r.WithContext(context.WithValue(r.Context(), middleware.UserIDKey, userID))
 	}
 	router := mux.NewRouter()
-	NewHandler(store, testJWTSecret).RegisterRoutes(router)
+	NewHandler(store, testJWTSecret, time.Hour).RegisterRoutes(router)
 	router.ServeHTTP(w, r)
 	return w
 }
@@ -114,7 +114,7 @@ const testJWTSecret = "test-jwt-secret"
 
 func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()
-	NewHandler(store, testJWTSecret).RegisterRoutes(r)
+	NewHandler(store, testJWTSecret, time.Hour).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 
@@ -129,7 +129,7 @@ func callAuthorize(store db.Store, userID, body string) *httptest.ResponseRecord
 		r = r.WithContext(context.WithValue(r.Context(), middleware.UserIDKey, userID))
 	}
 	router := mux.NewRouter()
-	NewHandler(store, testJWTSecret).RegisterRoutes(router)
+	NewHandler(store, testJWTSecret, time.Hour).RegisterRoutes(router)
 	router.ServeHTTP(w, r)
 	return w
 }
@@ -405,7 +405,7 @@ func TestToken(t *testing.T) {
 		r := httptest.NewRequest(http.MethodPost, "/internal/oauth/token", strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		router := mux.NewRouter()
-		NewHandler(store, testJWTSecret).RegisterRoutes(router)
+		NewHandler(store, testJWTSecret, time.Hour).RegisterRoutes(router)
 		router.ServeHTTP(w, r)
 		return w
 	}
@@ -572,7 +572,7 @@ func TestRevoke(t *testing.T) {
 		r := httptest.NewRequest(http.MethodPost, "/internal/oauth/revoke", strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		router := mux.NewRouter()
-		NewHandler(store, testJWTSecret).RegisterRoutes(router)
+		NewHandler(store, testJWTSecret, time.Hour).RegisterRoutes(router)
 		router.ServeHTTP(w, r)
 		return w
 	}
@@ -670,7 +670,7 @@ func TestRefreshToken(t *testing.T) {
 		r := httptest.NewRequest(http.MethodPost, "/internal/oauth/token", strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		router := mux.NewRouter()
-		NewHandler(store, testJWTSecret).RegisterRoutes(router)
+		NewHandler(store, testJWTSecret, time.Hour).RegisterRoutes(router)
 		router.ServeHTTP(w, r)
 		return w
 	}
