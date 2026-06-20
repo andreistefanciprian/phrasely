@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.3...frontend-v0.4.0) (2026-06-20)
+
+
+### Features
+
+* **backend,frontend:** add related phrases and rename shuffle page ([427302a](https://github.com/andreistefanciprian/phrasely/commit/427302a8fddb7c0b8e41e2321481c9bd4bb1983f))
+
 ## [0.3.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.2...frontend-v0.3.3) (2026-06-20)
 
 
