@@ -21,12 +21,13 @@ import (
 // Handler holds a reference to the store interface, not the concrete Postgres type.
 // This allows tests to inject a mock store without a real database.
 type Handler struct {
-	store   db.Store
-	embedder *embeddings.Service // nil when OPENAI_API_KEY is not set
+	store          db.Store
+	embedder       *embeddings.Service // nil when OPENAI_API_KEY is not set
+	relatedMaxDist float64
 }
 
-func NewHandler(store db.Store, embedder *embeddings.Service) *Handler {
-	return &Handler{store: store, embedder: embedder}
+func NewHandler(store db.Store, embedder *embeddings.Service, relatedMaxDist float64) *Handler {
+	return &Handler{store: store, embedder: embedder, relatedMaxDist: relatedMaxDist}
 }
 
 // RegisterRoutes attaches phrase endpoints to the given router.
@@ -36,6 +37,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases/random", h.randomPhrases).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
+	r.HandleFunc("/api/v1/phrases/{id}/related", h.related).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases/{id}", h.update).Methods(http.MethodPatch)
 	r.HandleFunc("/api/v1/phrases/{id}", h.delete).Methods(http.MethodDelete)
@@ -281,6 +283,34 @@ func (h *Handler) search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug("search phrases", "q", q, "results", len(phrases))
+	respond(w, http.StatusOK, phrases)
+}
+
+// related handles GET /api/v1/phrases/{id}/related?limit=5.
+// Returns phrases semantically close to the given phrase, capped by RELATED_MAX_DISTANCE.
+// Returns an empty array when no phrases fall within the distance threshold.
+func (h *Handler) related(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+
+	limit := 5
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 && n <= 20 {
+			limit = n
+		}
+	}
+
+	phrases, err := h.store.GetRelatedPhrases(r.Context(), userID, id, h.relatedMaxDist, limit)
+	if err != nil {
+		slog.Error("get related phrases", "id", id, "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to get related phrases")
+		return
+	}
+
+	slog.Debug("related phrases", "id", id, "results", len(phrases))
 	respond(w, http.StatusOK, phrases)
 }
 

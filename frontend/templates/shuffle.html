@@ -20,10 +20,17 @@
   .sibling-phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.8; text-align: center; color: var(--secondary); padding: 1rem 0; border-top: 1px solid var(--surface); }
   .sibling-phrase .def { font-style: italic; color: var(--definition); }
 
+  #related { margin-top: 2.5rem; max-width: 600px; width: 100%; }
+  #related:empty { display: none; }
+  .related-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); text-align: center; margin-bottom: 1.25rem; }
+  .related-phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.8; text-align: center; color: var(--secondary); padding: 1rem 0; border-top: 1px solid var(--surface); cursor: pointer; transition: color 0.15s; text-decoration: none; display: block; }
+  .related-phrase:hover { color: var(--navy); }
+  .related-phrase .def { font-style: italic; color: var(--definition); }
+
   #main-content { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   #tap-hint { display: none; margin-top: 2.5rem; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-align: center; text-transform: uppercase; }
   @media (hover: none) { #tap-hint { display: block; } }
-  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } .search-result { padding: 1rem 0; } #siblings { margin-top: 2rem; } }
+  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } .search-result { padding: 1rem 0; } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 </style>
@@ -37,6 +44,7 @@
   <div id="siblings"></div>
   <p id="tap-hint">Tap to shuffle</p>
 </div>
+<div id="related"></div>
 
 <script>
   const phrases = {{.PhrasesJSON}};
@@ -90,7 +98,7 @@
     noteEl.textContent = item.note;
 
     const label = headwords.join(' vs ');
-    const siblings = phrases.filter(p => (p.headwords || []).join(' vs ') === label && p.phrase !== item.phrase);
+    const siblings = phrases.filter(p => (p.headwords || []).join(' vs ') === label && p.id !== item.id);
     siblingsEl.innerHTML = siblings.length > 0
       ? `<div class="siblings-label">Also with this headword</div>` +
         siblings.map(s => `<div class="sibling-phrase">${format(s.phrase)}</div>`).join('')
@@ -101,6 +109,22 @@
     localStorage.setItem('pf_views', JSON.stringify(views));
   }
 
+  async function fetchRelated(phraseId, siblingLabel) {
+    const relatedEl = document.getElementById('related');
+    relatedEl.innerHTML = '';
+    try {
+      const res = await fetch(`/fd/phrases/${phraseId}/related?limit=5`);
+      if (!res.ok) return;
+      const items = await res.json();
+      if (!items || items.length === 0) return;
+      const filtered = items.filter(p => (p.headwords || []).join(' vs ') !== siblingLabel);
+      if (filtered.length === 0) return;
+      relatedEl.innerHTML =
+        `<div class="related-label">You may also like</div>` +
+        filtered.map(p => `<a class="related-phrase" href="/shuffle?id=${escapeHtml(p.id)}">${format(p.phrase)}</a>`).join('');
+    } catch (err) { console.error('fetchRelated', err); }
+  }
+
   // Initialise from URL params
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
@@ -109,6 +133,7 @@
   if (id) {
     const item = phrases.find(p => p.id === id);
     show(item || phrases[Math.floor(Math.random() * phrases.length)]);
+    fetchRelated(id, (item?.headwords || []).join(' vs '));
   } else if (q) {
     const matches = phrases.filter(p => (p.headwords || []).some(w => w.toLowerCase() === q.toLowerCase()));
     show(matches.length > 0 ? matches[Math.floor(Math.random() * matches.length)] : phrases[Math.floor(Math.random() * phrases.length)]);
@@ -119,11 +144,14 @@
   document.getElementById('main-content').addEventListener('click', e => {
     if (e.target.tagName === 'A') return;
     show();
+    document.getElementById('related').innerHTML = '';
   });
 
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === ' ') {
-      e.preventDefault(); show();
+      e.preventDefault();
+      show();
+      document.getElementById('related').innerHTML = '';
     }
   });
 </script>
