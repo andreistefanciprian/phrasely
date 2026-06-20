@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.2...frontend-v0.3.3) (2026-06-20)
+
+
+### Bug Fixes
+
+* **frontend:** proxy /fd/internal/* to API without /api/v1 prefix ([c4bd7d0](https://github.com/andreistefanciprian/phrasely/commit/c4bd7d00519727f054bec0b8c74201f934f8fa59))
+
 ## [0.3.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.1...frontend-v0.3.2) (2026-06-18)
 
 
