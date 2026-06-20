@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.2.0...mcp-v0.2.1) (2026-06-20)
+
+
+### Bug Fixes
+
+* **mcp:** add tool annotations and server instructions for ChatGPT submission ([82ee90a](https://github.com/andreistefanciprian/phrasely/commit/82ee90a6a91ad6d234c26d3ded79a8c0b3552cfc))
+
 ## [0.2.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.1.0...mcp-v0.2.0) (2026-06-20)
 
 
