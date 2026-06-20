@@ -807,12 +807,17 @@ func TestRandomPhrases_ExplicitCount(t *testing.T) {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
 
-	var got []db.PhraseSummary
+	var got []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
 	if len(got) != 3 {
 		t.Errorf("expected 3 phrases, got %d", len(got))
+	}
+	for _, item := range got {
+		if len(item) != 2 {
+			t.Errorf("expected 2 keys per item (phrase, headwords), got %d: %v", len(item), item)
+		}
 	}
 }
 
@@ -837,5 +842,13 @@ func TestRandomPhrases_CountCappedAt10(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got == nil {
+		t.Error("expected empty array, got null")
 	}
 }
