@@ -43,6 +43,14 @@ type Phrase struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
+// PhraseSummary is a lightweight projection of a phrase record containing only
+// the fields needed for listing — used by the MCP list_phrases tool to avoid
+// sending id, note and source_urls into the AI model's context window.
+type PhraseSummary struct {
+	Phrase    string   `json:"phrase"`
+	Headwords []string `json:"headwords"`
+}
+
 // CreatePhraseRequest holds the fields needed to insert a new phrase.
 type CreatePhraseRequest struct {
 	Phrase     string   `json:"phrase"`
@@ -120,6 +128,7 @@ type Store interface {
 	// Phrase methods — all scoped to the owning user.
 	CreatePhrase(ctx context.Context, userID string, req CreatePhraseRequest) (*Phrase, error)
 	ListPhrases(ctx context.Context, userID string, headword string) ([]Phrase, error)
+	ListPhrasesSummary(ctx context.Context, userID string) ([]PhraseSummary, error)
 	GetPhrase(ctx context.Context, userID string, id string) (*Phrase, error)
 	DeletePhrase(ctx context.Context, userID string, id string) error
 	UpdatePhrase(ctx context.Context, userID string, id string, req UpdatePhraseRequest) (*Phrase, error)
@@ -217,6 +226,29 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, userID string, headword
 		phrases = append(phrases, p)
 	}
 	return phrases, rows.Err()
+}
+
+// ListPhrasesSummary returns a lightweight projection (phrase, headwords) for all
+// phrases owned by userID, newest first. Used by the MCP list_phrases tool.
+func (s *PostgresStore) ListPhrasesSummary(ctx context.Context, userID string) ([]PhraseSummary, error) {
+	rows, err := s.Pool.Query(ctx,
+		`SELECT phrase, headwords FROM phrases WHERE user_id = $1 ORDER BY created_at DESC`,
+		userID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list phrases summary: %w", err)
+	}
+	defer rows.Close()
+
+	summaries := []PhraseSummary{}
+	for rows.Next() {
+		var p PhraseSummary
+		if err := rows.Scan(&p.Phrase, &p.Headwords); err != nil {
+			return nil, fmt.Errorf("scan phrase summary: %w", err)
+		}
+		summaries = append(summaries, p)
+	}
+	return summaries, rows.Err()
 }
 
 // GetPhrase fetches a phrase by ID scoped to userID. Returns ErrNotFound if no match.

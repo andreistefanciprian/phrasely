@@ -31,6 +31,7 @@ func NewHandler(store db.Store, embedder *embeddings.Service) *Handler {
 // RegisterRoutes attaches phrase endpoints to the given router.
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases/search", h.search).Methods(http.MethodGet)
+	r.HandleFunc("/api/v1/phrases/summary", h.listSummary).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
 	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
@@ -54,6 +55,20 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug("list phrases", "count", len(phrases), "filtered", headword != "")
+	respond(w, http.StatusOK, phrases)
+}
+
+// listSummary handles GET /api/v1/phrases/summary.
+// Returns a lightweight projection (id, phrase, headwords) for the MCP list_phrases tool.
+func (h *Handler) listSummary(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	phrases, err := h.store.ListPhrasesSummary(r.Context(), userID)
+	if err != nil {
+		slog.Error("list phrases summary", "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to list phrases")
+		return
+	}
+	slog.Debug("list phrases summary", "count", len(phrases))
 	respond(w, http.StatusOK, phrases)
 }
 
