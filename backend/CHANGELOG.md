@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.3.0...backend-v0.4.0) (2026-06-20)
+
+
+### Features
+
+* **backend,mcp:** add sample_phrases tool and GET /api/v1/phrases/random endpoint ([c7cbb17](https://github.com/andreistefanciprian/phrasely/commit/c7cbb17310a8662c32a8765a4c199a5bc5320112)), closes [#134](https://github.com/andreistefanciprian/phrasely/issues/134)
+
+
+### Bug Fixes
+
+* **mcp,backend:** address code review findings on sample_phrases ([3d05873](https://github.com/andreistefanciprian/phrasely/commit/3d05873e71b420223abdfdaf84103e23dc91af90))
+
 ## [0.3.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.2.2...backend-v0.3.0) (2026-06-20)
 
 
