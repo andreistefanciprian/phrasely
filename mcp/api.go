@@ -109,6 +109,31 @@ func (c *apiClient) ListPhrasesSummary(jwt, headword string) ([]PhraseSummary, e
 	return summaries, nil
 }
 
+// GetRandomPhrases fetches count randomly selected phrases for the authenticated user.
+func (c *apiClient) GetRandomPhrases(jwt string, count int) ([]PhraseSummary, error) {
+	req, err := http.NewRequest(http.MethodGet,
+		fmt.Sprintf("%s/api/v1/phrases/random?count=%d", c.baseURL, count), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("get random phrases: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned %d", resp.StatusCode)
+	}
+
+	var summaries []PhraseSummary
+	if err := json.NewDecoder(resp.Body).Decode(&summaries); err != nil {
+		return nil, fmt.Errorf("decode random phrases: %w", err)
+	}
+	return summaries, nil
+}
+
 // ListPhrases fetches the authenticated user's phrases, optionally filtered by headword.
 func (c *apiClient) ListPhrases(jwt, headword string) ([]Phrase, error) {
 	reqURL := c.baseURL + "/api/v1/phrases"

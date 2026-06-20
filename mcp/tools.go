@@ -16,6 +16,11 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 	}, listPhrasesHandler(api, jwt))
 
 	mcp.AddTool(server, &mcp.Tool{
+		Name:        "sample_phrases",
+		Description: "Randomly sample N phrases from the user's saved collection. Use this when the user asks to pick, show, quiz, or suggest a random phrase or a few random phrases — not when they want to list all phrases.",
+	}, samplePhrasesHandler(api, jwt))
+
+	mcp.AddTool(server, &mcp.Tool{
 		Name: "add_phrase",
 		Description: `Save a curated phrase to the user's phrase database. Before calling this tool, curate the input:
 
@@ -25,6 +30,34 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 4. Note — 1–3 sentences on usage, tone, nuance, or register. If the word or expression has an interesting origin or etymology that would help remember it, include that.
 5. source_urls — one Merriam-Webster URL per headword (https://www.merriam-webster.com/dictionary/{lookup-form}, spaces as %20). For verb idioms use the noun lookup form (e.g. "bearing the brunt" → the%20brunt%20of).`,
 	}, addPhraseHandler(api, jwt))
+}
+
+// SamplePhrasesInput is the input schema for the sample_phrases tool.
+type SamplePhrasesInput struct {
+	Count int `json:"count,omitempty" jsonschema:"number of phrases to sample (default 1, max 10)"`
+}
+
+// SamplePhrasesOutput is the output schema for the sample_phrases tool.
+type SamplePhrasesOutput struct {
+	Total   int             `json:"total"`
+	Phrases []PhraseSummary `json:"phrases"`
+}
+
+func samplePhrasesHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[SamplePhrasesInput, SamplePhrasesOutput] {
+	return func(ctx context.Context, req *mcp.CallToolRequest, in SamplePhrasesInput) (*mcp.CallToolResult, SamplePhrasesOutput, error) {
+		count := in.Count
+		if count < 1 {
+			count = 1
+		}
+		slog.Debug("tool: sample_phrases", "count", count)
+		phrases, err := api.GetRandomPhrases(jwt, count)
+		if err != nil {
+			slog.Error("tool: sample_phrases failed", "error", err)
+			return nil, SamplePhrasesOutput{}, err
+		}
+		slog.Debug("tool: sample_phrases returned", "count", len(phrases))
+		return nil, SamplePhrasesOutput{Total: len(phrases), Phrases: phrases}, nil
+	}
 }
 
 // ListPhrasesInput is the input schema for the list_phrases tool.

@@ -56,6 +56,9 @@ func (m *mockStore) ListPhrases(_ context.Context, _ string, _ string) ([]db.Phr
 func (m *mockStore) ListPhrasesSummary(_ context.Context, _ string, _ string) ([]db.PhraseSummary, error) {
 	panic("not expected in auth tests")
 }
+func (m *mockStore) GetRandomPhrases(_ context.Context, _ string, _ int) ([]db.PhraseSummary, error) {
+	panic("not expected in auth tests")
+}
 func (m *mockStore) GetPhrase(_ context.Context, _ string, _ string) (*db.Phrase, error) {
 	panic("not expected in auth tests")
 }

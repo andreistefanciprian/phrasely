@@ -129,6 +129,7 @@ type Store interface {
 	CreatePhrase(ctx context.Context, userID string, req CreatePhraseRequest) (*Phrase, error)
 	ListPhrases(ctx context.Context, userID string, headword string) ([]Phrase, error)
 	ListPhrasesSummary(ctx context.Context, userID string, headword string) ([]PhraseSummary, error)
+	GetRandomPhrases(ctx context.Context, userID string, count int) ([]PhraseSummary, error)
 	GetPhrase(ctx context.Context, userID string, id string) (*Phrase, error)
 	DeletePhrase(ctx context.Context, userID string, id string) error
 	UpdatePhrase(ctx context.Context, userID string, id string, req UpdatePhraseRequest) (*Phrase, error)
@@ -244,6 +245,28 @@ func (s *PostgresStore) ListPhrasesSummary(ctx context.Context, userID string, h
 	rows, err := s.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list phrases summary: %w", err)
+	}
+	defer rows.Close()
+
+	summaries := []PhraseSummary{}
+	for rows.Next() {
+		var p PhraseSummary
+		if err := rows.Scan(&p.Phrase, &p.Headwords); err != nil {
+			return nil, fmt.Errorf("scan phrase summary: %w", err)
+		}
+		summaries = append(summaries, p)
+	}
+	return summaries, rows.Err()
+}
+
+// GetRandomPhrases returns count randomly selected phrases (phrase, headwords) for userID.
+func (s *PostgresStore) GetRandomPhrases(ctx context.Context, userID string, count int) ([]PhraseSummary, error) {
+	rows, err := s.Pool.Query(ctx,
+		`SELECT phrase, headwords FROM phrases WHERE user_id = $1 ORDER BY RANDOM() LIMIT $2`,
+		userID, count,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get random phrases: %w", err)
 	}
 	defer rows.Close()
 

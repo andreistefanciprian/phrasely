@@ -24,6 +24,7 @@ type mockStore struct {
 	createPhrase       func(ctx context.Context, userID string, req db.CreatePhraseRequest) (*db.Phrase, error)
 	listPhrases        func(ctx context.Context, userID string, headword string) ([]db.Phrase, error)
 	listPhrasesSummary func(ctx context.Context, userID string, headword string) ([]db.PhraseSummary, error)
+	getRandomPhrases   func(ctx context.Context, userID string, count int) ([]db.PhraseSummary, error)
 	getPhrase          func(ctx context.Context, userID string, id string) (*db.Phrase, error)
 	deletePhrase       func(ctx context.Context, userID string, id string) error
 	updatePhrase       func(ctx context.Context, userID string, id string, req db.UpdatePhraseRequest) (*db.Phrase, error)
@@ -38,6 +39,9 @@ func (m *mockStore) ListPhrases(ctx context.Context, userID string, headword str
 }
 func (m *mockStore) ListPhrasesSummary(ctx context.Context, userID string, headword string) ([]db.PhraseSummary, error) {
 	return m.listPhrasesSummary(ctx, userID, headword)
+}
+func (m *mockStore) GetRandomPhrases(ctx context.Context, userID string, count int) ([]db.PhraseSummary, error) {
+	return m.getRandomPhrases(ctx, userID, count)
 }
 func (m *mockStore) GetPhrase(ctx context.Context, userID string, id string) (*db.Phrase, error) {
 	return m.getPhrase(ctx, userID, id)
@@ -731,5 +735,107 @@ func TestListPhrasesSummary_ForwardsHeadwordFilter(t *testing.T) {
 	}
 	if len(got) != 1 {
 		t.Errorf("expected 1 filtered summary, got %d", len(got))
+	}
+}
+
+func TestRandomPhrases_DefaultCount(t *testing.T) {
+	store := &mockStore{
+		getRandomPhrases: func(_ context.Context, userID string, count int) ([]db.PhraseSummary, error) {
+			if userID != testUserID {
+				t.Errorf("expected userID %q, got %q", testUserID, userID)
+			}
+			if count != 1 {
+				t.Errorf("expected default count 1, got %d", count)
+			}
+			return []db.PhraseSummary{
+				{Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
+			}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/random")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("expected 1 phrase, got %d", len(got))
+	}
+	for _, item := range got {
+		if len(item) != 2 {
+			t.Errorf("expected 2 keys per item (phrase, headwords), got %d: %v", len(item), item)
+		}
+	}
+}
+
+func TestRandomPhrases_ExplicitCount(t *testing.T) {
+	store := &mockStore{
+		getRandomPhrases: func(_ context.Context, _ string, count int) ([]db.PhraseSummary, error) {
+			if count != 3 {
+				t.Errorf("expected count 3, got %d", count)
+			}
+			return []db.PhraseSummary{
+				{Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
+				{Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
+				{Phrase: "She was conspicuous.", Headwords: []string{"conspicuous"}},
+			}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/random?count=3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got []db.PhraseSummary
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got) != 3 {
+		t.Errorf("expected 3 phrases, got %d", len(got))
+	}
+}
+
+func TestRandomPhrases_CountCappedAt10(t *testing.T) {
+	store := &mockStore{
+		getRandomPhrases: func(_ context.Context, _ string, count int) ([]db.PhraseSummary, error) {
+			if count != 10 {
+				t.Errorf("expected count capped at 10, got %d", count)
+			}
+			return []db.PhraseSummary{}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/random?count=99")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
 }
