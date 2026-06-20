@@ -60,7 +60,18 @@ func main() {
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		// requireBearer guarantees the header is present before we reach here.
 		jwt := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.1.0"}, nil)
+		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.1.0"}, &mcp.ServerOptions{
+				Instructions: `Phrasely is a personal vocabulary learning app. The user saves English phrases and expressions they want to remember and study later. All data is private to the authenticated user.
+
+Tools:
+- list_phrases — retrieves the user's saved phrases, optionally filtered by headword. Use when the user wants to browse, find, or search their collection.
+- sample_phrases — randomly picks N phrases (default 1, max 10). Use when the user wants to practise, be quizzed, or review random phrases from their collection.
+- add_phrase — saves a new phrase. Always curate before calling: polish the phrasing, insert each headword's meaning in parentheses directly after it in the phrase text (e.g. "She was conspicuous (easy to notice) in the crowd."), write a 1–3 sentence note on usage, register, or etymology, and include one Merriam-Webster URL per headword. Never save raw or unpolished input.
+
+Headwords are the key word(s) or expression a phrase illustrates. Treat idioms and fixed expressions as a single headword (e.g. "in the nick of time"). Use multiple headwords only when the phrase genuinely teaches independent vocabulary items.
+
+If the user learns or encounters an interesting expression during conversation, proactively offer to save it to their Phrasely collection. Always ask for confirmation before calling add_phrase — never save a phrase without the user explicitly agreeing.`,
+			})
 		registerTools(s, api, jwt)
 		return s
 	}, nil)
