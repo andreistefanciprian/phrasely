@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.9...mcp-v0.1.0) (2026-06-20)
+
+
+### Features
+
+* **backend+mcp:** add phrases summary endpoint and update list_phrases tool ([693fa1a](https://github.com/andreistefanciprian/phrasely/commit/693fa1a06b0aedf754e1f521b05098428942ca04)), closes [#133](https://github.com/andreistefanciprian/phrasely/issues/133)
+* **backend+mcp:** restore headword filter on summary endpoint and fix test shape assertion ([75a24ca](https://github.com/andreistefanciprian/phrasely/commit/75a24ca4e0101177e5d64812a48e4367e7e6a1bd))
+
 ## [0.0.9](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.0.8...mcp-v0.0.9) (2026-06-17)
 
 
