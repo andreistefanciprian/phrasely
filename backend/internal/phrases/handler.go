@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ func NewHandler(store db.Store, embedder *embeddings.Service) *Handler {
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/phrases/search", h.search).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases/summary", h.listSummary).Methods(http.MethodGet)
+	r.HandleFunc("/api/v1/phrases/random", h.randomPhrases).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.list).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/phrases", h.create).Methods(http.MethodPost)
 	r.HandleFunc("/api/v1/phrases/{id}", h.get).Methods(http.MethodGet)
@@ -70,6 +72,32 @@ func (h *Handler) listSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Debug("list phrases summary", "count", len(phrases))
+	respond(w, http.StatusOK, phrases)
+}
+
+// randomPhrases handles GET /api/v1/phrases/random.
+// Accepts an optional ?count= query param (default 1, max 10).
+func (h *Handler) randomPhrases(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+
+	count := 1
+	if raw := r.URL.Query().Get("count"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			count = n
+		}
+	}
+	if count > 10 {
+		count = 10
+	}
+
+	phrases, err := h.store.GetRandomPhrases(r.Context(), userID, count)
+	if err != nil {
+		slog.Error("random phrases", "error", err)
+		respondErr(w, http.StatusInternalServerError, "failed to get random phrases")
+		return
+	}
+
+	slog.Debug("random phrases", "count", len(phrases))
 	respond(w, http.StatusOK, phrases)
 }
 
