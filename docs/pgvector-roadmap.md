@@ -81,22 +81,22 @@ Save the phrase to the DB immediately, then generate the embedding in a backgrou
 
 ---
 
-## Phase 3 — Related Phrases & You May Also Like
+## Phase 3 — Related Phrases & You May Also Like ✅
 
 **Unlocks:** Feature 2 (related phrases), Feature 3 (you may also like).
 
-### What gets built
+### What was built
 
-- `GET /api/v1/phrases/{id}/related?limit=5`
-- Phrase detail page: "Related phrases" section below the phrase
-- Collection home: "You may also like" — phrases similar to the user's most recent 3–5 saves
+- `GET /api/v1/phrases/{id}/related?limit=5` — cosine similarity search anchored to a stored phrase embedding; excludes self; returns `[]` (not noise) when no phrases fall within the distance threshold
+- Distance threshold configurable via `RELATED_MAX_DISTANCE` env var (default `0.45` cosine distance)
+- **"You may also like"** section on `/shuffle?id=` (detail view only — not on random shuffle, consistent with no-network-on-shuffle design)
+- Sibling phrases (same headword set) are filtered client-side from related results to avoid showing the same phrase twice
+- `/index` renamed to `/shuffle` across all routes, handlers, and templates
 
-### Open questions
+### Decisions made
 
-- [ ] **Where does "You may also like" live?** Options:
-  - Bottom of the main phrase list
-  - Dedicated section on the collection home page
-  - Sidebar or drawer
+- **"You may also like" lives on the shuffle detail view** (`/shuffle?id=`), not the phrase list or a dedicated home section. One endpoint serves both "Related phrases" and "You may also like" — context determines the label.
+- **HNSW index bypass noted but deferred**: the `WHERE distance < threshold` pattern forces a seqscan; at current phrase counts this is negligible. Fix is restructuring to `ORDER BY ... LIMIT` first, then filter — revisit when phrase counts reach thousands.
 
 ---
 
@@ -160,7 +160,7 @@ Visual bubble map. Main work is frontend (D3.js or canvas). Depends on cluster d
 |---|---|---|---|
 | 1 | Text to embed per phrase | headwords + phrase + note | ✅ Decided |
 | 2 | Semantic search UX | replace vs augment headword filter | ✅ Augment |
-| 3 | "You may also like" placement | list bottom / home section / sidebar | ⬜ Open |
+| 3 | "You may also like" placement | list bottom / home section / sidebar | ✅ Shuffle detail view (`/shuffle?id=`) |
 | 4 | Number of clusters | fixed vs dynamic | ⬜ Open |
 | 5 | Cluster recompute trigger | on-save vs on-demand | ⬜ Open |
 | 6 | Cluster labels | OpenAI-named vs unlabelled | ⬜ Open |
