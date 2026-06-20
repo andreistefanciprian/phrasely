@@ -12,7 +12,7 @@ import (
 func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_phrases",
-		Description: "List the user's saved phrases, optionally filtered by headword.",
+		Description: "List the user's saved phrases (phrase and headwords only).",
 	}, listPhrasesHandler(api, jwt))
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -28,25 +28,24 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 }
 
 // ListPhrasesInput is the input schema for the list_phrases tool.
-type ListPhrasesInput struct {
-	Headword string `json:"headword,omitempty" jsonschema:"filter phrases to those containing this headword"`
-}
+type ListPhrasesInput struct{}
 
 // ListPhrasesOutput is the output schema for the list_phrases tool.
 type ListPhrasesOutput struct {
-	Phrases []Phrase `json:"phrases"`
+	Total   int             `json:"total"`
+	Phrases []PhraseSummary `json:"phrases"`
 }
 
 func listPhrasesHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[ListPhrasesInput, ListPhrasesOutput] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in ListPhrasesInput) (*mcp.CallToolResult, ListPhrasesOutput, error) {
-		slog.Debug("tool: list_phrases", "headword", in.Headword)
-		phrases, err := api.ListPhrases(jwt, in.Headword)
+		slog.Debug("tool: list_phrases")
+		phrases, err := api.ListPhrasesSummary(jwt)
 		if err != nil {
 			slog.Error("tool: list_phrases failed", "error", err)
 			return nil, ListPhrasesOutput{}, err
 		}
 		slog.Debug("tool: list_phrases returned", "count", len(phrases))
-		return nil, ListPhrasesOutput{Phrases: phrases}, nil
+		return nil, ListPhrasesOutput{Total: len(phrases), Phrases: phrases}, nil
 	}
 }
 

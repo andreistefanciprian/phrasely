@@ -33,6 +33,13 @@ type Phrase struct {
 	SourceURLs []string `json:"source_urls"`
 }
 
+// PhraseSummary mirrors backend/internal/db.PhraseSummary — lightweight projection
+// returned by GET /api/v1/phrases/summary to reduce token usage in AI contexts.
+type PhraseSummary struct {
+	Phrase    string   `json:"phrase"`
+	Headwords []string `json:"headwords"`
+}
+
 // AddPhraseRequest holds the fields needed to create a new phrase, mirroring
 // backend/internal/db.CreatePhraseRequest.
 type AddPhraseRequest struct {
@@ -70,6 +77,32 @@ func (c *apiClient) AddPhrase(jwt string, in AddPhraseRequest) (Phrase, error) {
 		return Phrase{}, fmt.Errorf("decode phrase: %w", err)
 	}
 	return phrase, nil
+}
+
+// ListPhrasesSummary fetches a lightweight projection (phrase, headwords) of all
+// phrases for the authenticated user. Used by the list_phrases MCP tool to minimise
+// token usage — id, note and source_urls are omitted.
+func (c *apiClient) ListPhrasesSummary(jwt string) ([]PhraseSummary, error) {
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+"/api/v1/phrases/summary", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("list phrases summary: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned %d", resp.StatusCode)
+	}
+
+	var summaries []PhraseSummary
+	if err := json.NewDecoder(resp.Body).Decode(&summaries); err != nil {
+		return nil, fmt.Errorf("decode phrases summary: %w", err)
+	}
+	return summaries, nil
 }
 
 // ListPhrases fetches the authenticated user's phrases, optionally filtered by headword.
