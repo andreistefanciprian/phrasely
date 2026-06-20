@@ -23,7 +23,7 @@ const testUserID = "550e8400-e29b-41d4-a716-446655440099"
 type mockStore struct {
 	createPhrase       func(ctx context.Context, userID string, req db.CreatePhraseRequest) (*db.Phrase, error)
 	listPhrases        func(ctx context.Context, userID string, headword string) ([]db.Phrase, error)
-	listPhrasesSummary func(ctx context.Context, userID string) ([]db.PhraseSummary, error)
+	listPhrasesSummary func(ctx context.Context, userID string, headword string) ([]db.PhraseSummary, error)
 	getPhrase          func(ctx context.Context, userID string, id string) (*db.Phrase, error)
 	deletePhrase       func(ctx context.Context, userID string, id string) error
 	updatePhrase       func(ctx context.Context, userID string, id string, req db.UpdatePhraseRequest) (*db.Phrase, error)
@@ -36,8 +36,8 @@ func (m *mockStore) CreatePhrase(ctx context.Context, userID string, req db.Crea
 func (m *mockStore) ListPhrases(ctx context.Context, userID string, headword string) ([]db.Phrase, error) {
 	return m.listPhrases(ctx, userID, headword)
 }
-func (m *mockStore) ListPhrasesSummary(ctx context.Context, userID string) ([]db.PhraseSummary, error) {
-	return m.listPhrasesSummary(ctx, userID)
+func (m *mockStore) ListPhrasesSummary(ctx context.Context, userID string, headword string) ([]db.PhraseSummary, error) {
+	return m.listPhrasesSummary(ctx, userID, headword)
 }
 func (m *mockStore) GetPhrase(ctx context.Context, userID string, id string) (*db.Phrase, error) {
 	return m.getPhrase(ctx, userID, id)
@@ -633,7 +633,7 @@ func TestCreatePhrase_BodyTooLarge(t *testing.T) {
 
 func TestListPhrasesSummary_ReturnsLightweightProjection(t *testing.T) {
 	store := &mockStore{
-		listPhrasesSummary: func(_ context.Context, userID string) ([]db.PhraseSummary, error) {
+		listPhrasesSummary: func(_ context.Context, userID string, _ string) ([]db.PhraseSummary, error) {
 			if userID != testUserID {
 				t.Errorf("expected userID %q, got %q", testUserID, userID)
 			}
@@ -657,11 +657,16 @@ func TestListPhrasesSummary_ReturnsLightweightProjection(t *testing.T) {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
 
-	var got []db.PhraseSummary
+	var got []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
 	if len(got) != 2 {
 		t.Errorf("expected 2 summaries, got %d", len(got))
+	}
+	for i, item := range got {
+		if len(item) != 2 || item["phrase"] == nil || item["headwords"] == nil {
+			t.Fatalf("unexpected shape at index %d: %v", i, item)
+		}
 	}
 }

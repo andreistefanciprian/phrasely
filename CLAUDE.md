@@ -149,6 +149,7 @@ MCP server is the public OAuth face; backend handles the real work over the priv
 - **Never push without explicit approval from the user**
 - Branch naming: `pr/<number>-<short-description>`
 - Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.) with scope when relevant, e.g. `feat(frontend): add shuffle button`
+- **Copilot review**: after opening a PR, wait for the Copilot review; reason through each finding before deciding whether to fix — only act if the finding is valid and reasonable within the scope of the change; we're not building perfection
 
 ## Release process (release-please)
 

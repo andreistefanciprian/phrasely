@@ -59,10 +59,11 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 }
 
 // listSummary handles GET /api/v1/phrases/summary.
-// Returns a lightweight projection (id, phrase, headwords) for the MCP list_phrases tool.
+// Returns a lightweight projection (phrase, headwords) for the MCP list_phrases tool.
 func (h *Handler) listSummary(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserIDFromContext(r.Context())
-	phrases, err := h.store.ListPhrasesSummary(r.Context(), userID)
+	headword := r.URL.Query().Get("headword")
+	phrases, err := h.store.ListPhrasesSummary(r.Context(), userID, headword)
 	if err != nil {
 		slog.Error("list phrases summary", "error", err)
 		respondErr(w, http.StatusInternalServerError, "failed to list phrases")
