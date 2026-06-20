@@ -128,7 +128,7 @@ type Store interface {
 	// Phrase methods — all scoped to the owning user.
 	CreatePhrase(ctx context.Context, userID string, req CreatePhraseRequest) (*Phrase, error)
 	ListPhrases(ctx context.Context, userID string, headword string) ([]Phrase, error)
-	ListPhrasesSummary(ctx context.Context, userID string) ([]PhraseSummary, error)
+	ListPhrasesSummary(ctx context.Context, userID string, headword string) ([]PhraseSummary, error)
 	GetPhrase(ctx context.Context, userID string, id string) (*Phrase, error)
 	DeletePhrase(ctx context.Context, userID string, id string) error
 	UpdatePhrase(ctx context.Context, userID string, id string, req UpdatePhraseRequest) (*Phrase, error)
@@ -230,11 +230,18 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, userID string, headword
 
 // ListPhrasesSummary returns a lightweight projection (phrase, headwords) for all
 // phrases owned by userID, newest first. Used by the MCP list_phrases tool.
-func (s *PostgresStore) ListPhrasesSummary(ctx context.Context, userID string) ([]PhraseSummary, error) {
-	rows, err := s.Pool.Query(ctx,
-		`SELECT phrase, headwords FROM phrases WHERE user_id = $1 ORDER BY created_at DESC`,
-		userID,
-	)
+// If headword is non-empty, results are filtered by case-insensitive partial match.
+func (s *PostgresStore) ListPhrasesSummary(ctx context.Context, userID string, headword string) ([]PhraseSummary, error) {
+	query := `SELECT phrase, headwords FROM phrases WHERE user_id = $1`
+	args := []any{userID}
+
+	if headword != "" {
+		query += ` AND headwords_text(headwords) ILIKE $2`
+		args = append(args, "%"+headword+"%")
+	}
+	query += ` ORDER BY created_at DESC`
+
+	rows, err := s.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list phrases summary: %w", err)
 	}

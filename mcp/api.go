@@ -82,8 +82,12 @@ func (c *apiClient) AddPhrase(jwt string, in AddPhraseRequest) (Phrase, error) {
 // ListPhrasesSummary fetches a lightweight projection (phrase, headwords) of all
 // phrases for the authenticated user. Used by the list_phrases MCP tool to minimise
 // token usage — id, note and source_urls are omitted.
-func (c *apiClient) ListPhrasesSummary(jwt string) ([]PhraseSummary, error) {
-	req, err := http.NewRequest(http.MethodGet, c.baseURL+"/api/v1/phrases/summary", nil)
+func (c *apiClient) ListPhrasesSummary(jwt, headword string) ([]PhraseSummary, error) {
+	reqURL := c.baseURL + "/api/v1/phrases/summary"
+	if headword != "" {
+		reqURL += "?headword=" + url.QueryEscape(headword)
+	}
+	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, err
 	}

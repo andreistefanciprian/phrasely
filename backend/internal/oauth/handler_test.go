@@ -45,7 +45,7 @@ func (m *mockStore) CreatePhrase(_ context.Context, _ string, _ db.CreatePhraseR
 func (m *mockStore) ListPhrases(_ context.Context, _ string, _ string) ([]db.Phrase, error) {
 	panic("not expected")
 }
-func (m *mockStore) ListPhrasesSummary(_ context.Context, _ string) ([]db.PhraseSummary, error) {
+func (m *mockStore) ListPhrasesSummary(_ context.Context, _ string, _ string) ([]db.PhraseSummary, error) {
 	panic("not expected")
 }
 func (m *mockStore) GetPhrase(_ context.Context, _ string, _ string) (*db.Phrase, error) {
