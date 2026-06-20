@@ -670,3 +670,66 @@ func TestListPhrasesSummary_ReturnsLightweightProjection(t *testing.T) {
 		}
 	}
 }
+
+func TestListPhrasesSummary_EmptyReturnsArray(t *testing.T) {
+	store := &mockStore{
+		listPhrasesSummary: func(_ context.Context, _ string, _ string) ([]db.PhraseSummary, error) {
+			return []db.PhraseSummary{}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/summary")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got == nil {
+		t.Error("expected empty array, got null")
+	}
+}
+
+func TestListPhrasesSummary_ForwardsHeadwordFilter(t *testing.T) {
+	store := &mockStore{
+		listPhrasesSummary: func(_ context.Context, _ string, headword string) ([]db.PhraseSummary, error) {
+			if headword != "serendipitous" {
+				t.Errorf("expected headword %q, got %q", "serendipitous", headword)
+			}
+			return []db.PhraseSummary{
+				{Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
+			}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/summary?headword=serendipitous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("expected 1 filtered summary, got %d", len(got))
+	}
+}
