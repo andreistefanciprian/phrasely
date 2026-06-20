@@ -49,6 +49,9 @@ func samplePhrasesHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[SampleP
 		if count < 1 {
 			count = 1
 		}
+		if count > 10 {
+			count = 10
+		}
 		slog.Debug("tool: sample_phrases", "count", count)
 		phrases, err := api.GetRandomPhrases(jwt, count)
 		if err != nil {
