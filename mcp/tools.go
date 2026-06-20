@@ -10,14 +10,25 @@ import (
 // registerTools attaches the phrasely tools to the MCP server.
 // jwt is the per-request OAuth access token forwarded to the backend.
 func registerTools(server *mcp.Server, api *apiClient, jwt string) {
+	// pFalse is a *bool pointing to false, used for pointer-typed ToolAnnotations fields.
+	pFalse := new(bool)
+
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_phrases",
 		Description: "List the user's saved phrases (phrase and headwords only), optionally filtered by headword.",
+		Annotations: &mcp.ToolAnnotations{
+			ReadOnlyHint:  true,
+			OpenWorldHint: pFalse,
+		},
 	}, listPhrasesHandler(api, jwt))
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sample_phrases",
 		Description: "Randomly sample N phrases from the user's saved collection. Use this when the user asks to pick, show, quiz, or suggest a random phrase or a few random phrases — not when they want to list all phrases.",
+		Annotations: &mcp.ToolAnnotations{
+			ReadOnlyHint:  true,
+			OpenWorldHint: pFalse,
+		},
 	}, samplePhrasesHandler(api, jwt))
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -29,6 +40,10 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 3. Headwords — treat idioms and fixed expressions as ONE headword (e.g. "in the nick of time", not "nick" + "time"). Return multiple headwords only when the phrase teaches genuinely independent words. The headwords array must contain ONLY the raw expression — no definitions, no parentheses.
 4. Note — 1–3 sentences on usage, tone, nuance, or register. If the word or expression has an interesting origin or etymology that would help remember it, include that.
 5. source_urls — one Merriam-Webster URL per headword (https://www.merriam-webster.com/dictionary/{lookup-form}, spaces as %20). For verb idioms use the noun lookup form (e.g. "bearing the brunt" → the%20brunt%20of).`,
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: pFalse,
+			OpenWorldHint:   pFalse,
+		},
 	}, addPhraseHandler(api, jwt))
 }
 
@@ -96,8 +111,10 @@ type AddPhraseInput struct {
 }
 
 // AddPhraseOutput is the output schema for the add_phrase tool.
+// Returns only phrase and headwords — the internal ID and other fields are omitted
+// as they are not needed by the model and should not be exposed.
 type AddPhraseOutput struct {
-	Phrase Phrase `json:"phrase"`
+	Phrase PhraseSummary `json:"phrase"`
 }
 
 func addPhraseHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[AddPhraseInput, AddPhraseOutput] {
@@ -113,7 +130,10 @@ func addPhraseHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[AddPhraseIn
 			slog.Error("tool: add_phrase failed", "error", err)
 			return nil, AddPhraseOutput{}, err
 		}
-		slog.Debug("tool: add_phrase saved", "id", phrase.ID)
-		return nil, AddPhraseOutput{Phrase: phrase}, nil
+		slog.Debug("tool: add_phrase saved")
+		return nil, AddPhraseOutput{Phrase: PhraseSummary{
+			Phrase:    phrase.Phrase,
+			Headwords: phrase.Headwords,
+		}}, nil
 	}
 }
