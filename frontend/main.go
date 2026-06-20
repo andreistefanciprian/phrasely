@@ -89,7 +89,7 @@ func main() {
 	mux.HandleFunc("/bubble", app.requireAuth(app.bubblePage))
 	mux.HandleFunc("/phrases", app.requireAuth(app.phrasesPage))
 	mux.HandleFunc("/add", app.requireAuth(app.addPage))
-	mux.HandleFunc("/index", app.requireAuth(app.indexPage))
+	mux.HandleFunc("/shuffle", app.requireAuth(app.shufflePage))
 	mux.HandleFunc("/settings", app.requireAuth(app.settingsPage))
 
 	// API proxy — cookie-authenticated, forwards to private API

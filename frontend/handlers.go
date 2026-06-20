@@ -461,17 +461,17 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectBase.String(), http.StatusSeeOther)
 }
 
-func (app *application) indexPage(w http.ResponseWriter, r *http.Request) {
+func (app *application) shufflePage(w http.ResponseWriter, r *http.Request) {
 	jwt := jwtFromContext(r.Context())
 	phrases, err := app.api.ListPhrases(jwt)
 	if err != nil {
-		slog.Error("list phrases for index", "error", err)
+		slog.Error("list phrases for shuffle", "error", err)
 		phrases = []map[string]any{}
 	}
-	slog.Debug("index page", "phrase_count", len(phrases))
+	slog.Debug("shuffle page", "phrase_count", len(phrases))
 	phrasesJSON, _ := json.Marshal(phrases)
-	app.renderAuth(w, "index.html", map[string]any{
-		"Page":        "index",
+	app.renderAuth(w, "shuffle.html", map[string]any{
+		"Page":        "shuffle",
 		"PhrasesJSON": template.JS(phrasesJSON),
 	})
 }

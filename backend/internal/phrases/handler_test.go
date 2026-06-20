@@ -63,6 +63,9 @@ func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase,
 func (m *mockStore) SearchPhrasesBySimilarity(_ context.Context, _ string, _ []float32, _ int) ([]db.Phrase, error) {
 	panic("SearchPhrasesBySimilarity not expected in phrase tests")
 }
+func (m *mockStore) GetRelatedPhrases(_ context.Context, _ string, _ string, _ float64, _ int) ([]db.Phrase, error) {
+	panic("GetRelatedPhrases not expected in phrase tests")
+}
 
 // Auth methods — not used in phrase tests; panic if called unexpectedly.
 func (m *mockStore) UpsertUser(_ context.Context, _ string) (*db.User, error) {
@@ -110,7 +113,7 @@ func newTestServer(store db.Store) *httptest.Server {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
-	NewHandler(store, nil).RegisterRoutes(r)
+	NewHandler(store, nil, 0.45).RegisterRoutes(r)
 	return httptest.NewServer(r)
 }
 

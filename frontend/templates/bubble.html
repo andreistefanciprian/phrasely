@@ -120,7 +120,7 @@
       const el = document.createElement('a');
       el.textContent = label;
       el.className = 'word';
-      el.href = `/index?q=${encodeURIComponent(label)}`;
+      el.href = `/shuffle?q=${encodeURIComponent(label)}`;
       el.style.left = pos.x + 'px';
       el.style.top  = pos.y + 'px';
       el.style.fontSize = rem + 'rem';

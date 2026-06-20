@@ -162,6 +162,8 @@ release-please runs on every push to `main` and tracks `frontend/`, `backend/`, 
 ## Design notes
 
 - **Shuffle page** — on load, all of the user's phrases are fetched in one SQL query and embedded as JSON into the HTML; all subsequent shuffles are client-side `Math.random()` with no further network calls, which is intentional: adding a per-shuffle random DB endpoint (`ORDER BY RANDOM()`) would add network latency per tap and cost more overall at small scale.
+- **Search in Phrases page** — headword substring match runs first, client-side against the in-memory phrases array. Semantic search (`GET /api/v1/phrases/search?q=`) only fires if the local match returns nothing. This means semantically related phrases with different headwords are invisible when a headword match exists — by design, to avoid unnecessary API calls and keep the common case instant.
+- **Siblings vs. related phrases** — siblings are phrases that share the exact same headword set, computed client-side by string comparison against the in-memory phrases array. "You may also like" is a live API call to `GET /api/v1/phrases/{id}/related` which uses cosine similarity on stored embeddings. Because siblings share a headword they are semantically very close, so they would almost always appear in both sections. To avoid showing the same phrase twice, `fetchRelated` client-side filters out any result whose headword set matches the current phrase's headwords before rendering. The distance threshold for related results is `RELATED_MAX_DISTANCE` (default `0.45`, cosine distance); phrases beyond this threshold are excluded entirely rather than shown as noise.
 
 ## Open questions
 

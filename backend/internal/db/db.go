@@ -138,6 +138,7 @@ type Store interface {
 	SetPhraseEmbedding(ctx context.Context, id string, embedding []float32) error
 	ListPhrasesWithoutEmbedding(ctx context.Context) ([]Phrase, error)
 	SearchPhrasesBySimilarity(ctx context.Context, userID string, embedding []float32, limit int) ([]Phrase, error)
+	GetRelatedPhrases(ctx context.Context, userID string, phraseID string, maxDist float64, limit int) ([]Phrase, error)
 
 	// Magic-link auth methods
 	UpsertUser(ctx context.Context, email string) (*User, error)
@@ -604,6 +605,41 @@ func (s *PostgresStore) SearchPhrasesBySimilarity(ctx context.Context, userID st
 	defer rows.Close()
 
 	var phrases []Phrase
+	for rows.Next() {
+		var p Phrase
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan phrase: %w", err)
+		}
+		phrases = append(phrases, p)
+	}
+	return phrases, rows.Err()
+}
+
+// GetRelatedPhrases returns up to limit phrases semantically close to phraseID,
+// excluding the phrase itself. Only phrases within maxDist cosine distance are returned;
+// if none qualify the result is an empty slice rather than unrelated noise.
+func (s *PostgresStore) GetRelatedPhrases(ctx context.Context, userID string, phraseID string, maxDist float64, limit int) ([]Phrase, error) {
+	rows, err := s.Pool.Query(ctx,
+		`WITH src AS (
+		   SELECT embedding FROM phrases WHERE id = $2 AND user_id = $1
+		 )
+		 SELECT p.id, p.phrase, p.headwords, p.note, p.source_urls, p.created_at, p.updated_at
+		 FROM phrases p, src
+		 WHERE p.user_id = $1
+		   AND p.id != $2
+		   AND p.embedding IS NOT NULL
+		   AND src.embedding IS NOT NULL
+		   AND p.embedding <=> src.embedding < $3
+		 ORDER BY p.embedding <=> src.embedding
+		 LIMIT $4`,
+		userID, phraseID, maxDist, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get related phrases: %w", err)
+	}
+	defer rows.Close()
+
+	phrases := []Phrase{}
 	for rows.Next() {
 		var p Phrase
 		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -129,7 +130,8 @@ func main() {
 		slog.Warn("OPENAI_API_KEY not set — embeddings and curate endpoint disabled")
 	}
 
-	phrases.NewHandler(store, embedder).RegisterRoutes(r)
+	relatedMaxDist := floatEnv("RELATED_MAX_DISTANCE", 0.45)
+	phrases.NewHandler(store, embedder, relatedMaxDist).RegisterRoutes(r)
 
 	// --- HTTP server ---
 	// Explicit timeouts prevent slow clients from holding connections open indefinitely.
@@ -196,6 +198,20 @@ func parseLogLevel(s string) slog.Level {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+// floatEnv reads a float64 from the named env var, falling back to def if unset or invalid.
+func floatEnv(key string, def float64) float64 {
+	val := os.Getenv(key)
+	if val == "" {
+		return def
+	}
+	f, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		slog.Warn("invalid float env var, using default", "key", key, "value", val, "default", def)
+		return def
+	}
+	return f
 }
 
 // durationEnv reads a duration from the named env var (e.g. "15m", "720h"),
