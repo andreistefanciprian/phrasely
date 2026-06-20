@@ -1,0 +1,80 @@
+name: Rebase release PRs
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase open release PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          prs=$(gh pr list --label "autorelease: pending" --json number,headRefName --jq '.[]')
+
+          if [ -z "$prs" ]; then
+            echo "No open release PRs found"
+            exit 0
+          fi
+
+          echo "$prs" | while IFS= read -r pr; do
+            pr_number=$(echo "$pr" | jq -r '.number')
+            branch=$(echo "$pr" | jq -r '.headRefName')
+
+            echo "Processing PR #$pr_number ($branch)"
+
+            git fetch origin "$branch"
+            git checkout -B "$branch" "origin/$branch"
+
+            if git rebase origin/main; then
+              echo "PR #$pr_number rebased cleanly — pushing"
+              git push --force-with-lease origin "$branch"
+            else
+              conflicted=$(git diff --name-only --diff-filter=U)
+              if [ "$conflicted" = ".release-please-manifest.json" ]; then
+                echo "PR #$pr_number has manifest conflict — resolving"
+
+                # ours = main (rebase target), theirs = PR branch commit
+                git checkout --ours .release-please-manifest.json
+                cp .release-please-manifest.json /tmp/main-manifest.json
+                git checkout --theirs .release-please-manifest.json
+
+                # For each key take whichever version is higher (semver comparison)
+                jq -s '
+                  .[0] as $main | .[1] as $pr |
+                  $main * ($pr | with_entries(
+                    select(
+                      (.value | split(".") | map(tonumber)) >
+                      (($main[.key] // "0.0.0") | split(".") | map(tonumber))
+                    )
+                  ))
+                ' /tmp/main-manifest.json .release-please-manifest.json > /tmp/resolved-manifest.json
+                mv /tmp/resolved-manifest.json .release-please-manifest.json
+
+                git add .release-please-manifest.json
+                GIT_EDITOR=: git rebase --continue
+                git push --force-with-lease origin "$branch"
+                echo "PR #$pr_number resolved and pushed"
+              else
+                echo "PR #$pr_number has unexpected conflicts beyond the manifest — skipping"
+                echo "Conflicted files: $conflicted"
+                git rebase --abort
+              fi
+            fi
+          done
