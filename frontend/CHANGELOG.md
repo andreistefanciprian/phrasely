@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.5.0...frontend-v0.6.0) (2026-06-21)
+
+
+### Features
+
+* **backend,frontend:** add Phrase Digest email feature ([90d719f](https://github.com/andreistefanciprian/phrasely/commit/90d719f713f62c4654016fe62515012610dc773d))
+
+
+### Bug Fixes
+
+* **frontend:** use label element for digest frequency selector accessibility ([33f9728](https://github.com/andreistefanciprian/phrasely/commit/33f972883b05bb799c25f9476079b58993b3fd1c))
+
 ## [0.5.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.4.0...frontend-v0.5.0) (2026-06-21)
 
 
