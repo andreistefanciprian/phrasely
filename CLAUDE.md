@@ -7,7 +7,7 @@ Production: [getphrasely.com](https://getphrasely.com)
 - **API** (`backend/`): Go + gorilla/mux, slog, pgx/v5
 - **Frontend** (`frontend/`): Go SSR server (html/template + plain CSS), port 3000
 - **MCP Server** (`mcp/`): Go Streamable HTTP (`github.com/modelcontextprotocol/go-sdk`), OAuth 2.1 proxy + `/mcp` endpoint, port 8081
-- **Phrase Digest worker** (`backend/cmd/send-phrase-digest/`): one-shot Go binary, runs as a Railway cron job (hourly), sends digest emails at 7am UTC
+- **Phrase Digest worker** (`backend/cmd/send-phrase-digest/`): one-shot Go binary, runs as a Railway cron job (`0 7 * * *`), sends digest emails at 7am UTC
 - **DB**: PostgreSQL 17
 - **Infra**: Docker Compose (local), Railway (prod); DNS managed via Cloudflare
 

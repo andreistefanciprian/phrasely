@@ -1,5 +1,5 @@
 // Command send-phrase-digest sends the Phrase Digest email to every user who
-// is due for one. Intended to run as a Railway cron job, hourly.
+// is due for one. Intended to run as a Railway cron job, at 7AM each day.
 package main
 
 import (
