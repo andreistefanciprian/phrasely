@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Phrase Digest</title>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Inter,-apple-system,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+    <tr>
+      <td align="center" style="padding:48px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+
+          <tr>
+            <td style="padding-bottom:24px;">
+              <p style="margin:0;font-size:0.8rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#9DA3CC;">Phrase Digest</p>
+            </td>
+          </tr>
+
+          {{range .}}
+          <tr>
+            <td style="background:#F8F9FF;border-radius:12px;padding:28px 32px;margin-bottom:12px;display:block;">
+              <p style="margin:0 0 8px;font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#9DA3CC;">{{.Headword}}</p>
+              <p style="margin:0;font-size:1rem;color:#0F1B6E;line-height:1.7;font-family:Georgia,serif;">{{.Phrase}}</p>
+            </td>
+          </tr>
+          <tr><td style="height:10px;"></td></tr>
+          {{end}}
+
+          <tr>
+            <td style="padding-top:16px;">
+              <a href="https://getphrasely.com"
+                 style="font-size:0.8rem;color:#9DA3CC;text-decoration:none;">
+                Open Phrasely →
+              </a>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

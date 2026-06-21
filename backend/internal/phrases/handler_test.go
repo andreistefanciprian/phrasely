@@ -101,6 +101,18 @@ func (m *mockStore) ConsumeRefreshToken(_ context.Context, _, _ string) (*db.OAu
 func (m *mockStore) RevokeRefreshTokens(_ context.Context, _, _ string) error {
 	panic("not expected in phrase tests")
 }
+func (m *mockStore) GetDigestPreferences(_ context.Context, _ string) (*db.DigestPreferences, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) UpsertDigestPreferences(_ context.Context, _ string, _ string) (*db.DigestPreferences, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) ListDigestRecipients(_ context.Context) ([]db.DigestRecipient, error) {
+	panic("not expected in phrase tests")
+}
+func (m *mockStore) MarkDigestSent(_ context.Context, _ string, _ time.Time) error {
+	panic("not expected in phrase tests")
+}
 
 // newTestServer wires a Handler with the given store and returns a test HTTP server.
 // It injects testUserID into every request context so UserIDFromContext returns a

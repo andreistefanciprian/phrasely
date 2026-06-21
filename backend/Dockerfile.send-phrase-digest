@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1.7
+
+FROM golang:1.26.1-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd/send-phrase-digest ./cmd/send-phrase-digest
+COPY internal/db ./internal/db
+COPY internal/email ./internal/email
+COPY internal/phrasedigest ./internal/phrasedigest
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /send-phrase-digest ./cmd/send-phrase-digest
+
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /send-phrase-digest /send-phrase-digest
+USER 1001
+ENTRYPOINT ["/send-phrase-digest"]

@@ -120,6 +120,24 @@ type CreateRefreshTokenRequest struct {
 	UserID   string
 }
 
+// DigestPreferences holds a user's Phrase Digest email settings.
+type DigestPreferences struct {
+	UserID     string     `json:"user_id"`
+	Frequency  string     `json:"frequency"` // daily | weekly | monthly | disabled
+	LastSentAt *time.Time `json:"last_sent_at"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+}
+
+// DigestRecipient is returned by ListDigestRecipients and carries only what
+// the worker needs to decide whether to send and to whom.
+type DigestRecipient struct {
+	UserID     string
+	Email      string
+	Frequency  string
+	LastSentAt *time.Time
+}
+
 // Store is the interface all database implementations must satisfy.
 // Methods for each domain (phrases, collections, etc.) will be added here as we build them.
 type Store interface {
@@ -169,6 +187,12 @@ type Store interface {
 	// Called when the user explicitly denies a consent request to ensure the client
 	// loses access even if it already holds tokens from a prior authorization.
 	RevokeRefreshTokens(ctx context.Context, userID, clientID string) error
+
+	// Phrase Digest methods
+	GetDigestPreferences(ctx context.Context, userID string) (*DigestPreferences, error)
+	UpsertDigestPreferences(ctx context.Context, userID, frequency string) (*DigestPreferences, error)
+	ListDigestRecipients(ctx context.Context) ([]DigestRecipient, error)
+	MarkDigestSent(ctx context.Context, userID string, sentAt time.Time) error
 }
 
 type PostgresStore struct {
@@ -673,3 +697,76 @@ func (s *PostgresStore) ListPhrasesWithoutEmbedding(ctx context.Context) ([]Phra
 	return phrases, rows.Err()
 }
 
+
+// GetDigestPreferences fetches a user's Phrase Digest preferences.
+// Returns ErrNotFound if the user has never saved preferences.
+func (s *PostgresStore) GetDigestPreferences(ctx context.Context, userID string) (*DigestPreferences, error) {
+	var p DigestPreferences
+	err := s.Pool.QueryRow(ctx,
+		`SELECT user_id, frequency, last_sent_at, created_at, updated_at
+		 FROM digest_preferences WHERE user_id = $1`, userID,
+	).Scan(&p.UserID, &p.Frequency, &p.LastSentAt, &p.CreatedAt, &p.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get digest preferences: %w", err)
+	}
+	return &p, nil
+}
+
+// UpsertDigestPreferences creates or updates a user's Phrase Digest preferences.
+func (s *PostgresStore) UpsertDigestPreferences(ctx context.Context, userID, frequency string) (*DigestPreferences, error) {
+	var p DigestPreferences
+	err := s.Pool.QueryRow(ctx,
+		`INSERT INTO digest_preferences (user_id, frequency)
+		 VALUES ($1, $2)
+		 ON CONFLICT (user_id) DO UPDATE
+		     SET frequency = $2
+		 RETURNING user_id, frequency, last_sent_at, created_at, updated_at`,
+		userID, frequency,
+	).Scan(&p.UserID, &p.Frequency, &p.LastSentAt, &p.CreatedAt, &p.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("upsert digest preferences: %w", err)
+	}
+	return &p, nil
+}
+
+// ListDigestRecipients returns all users with a non-disabled Phrase Digest frequency.
+func (s *PostgresStore) ListDigestRecipients(ctx context.Context) ([]DigestRecipient, error) {
+	rows, err := s.Pool.Query(ctx,
+		`SELECT dp.user_id, u.email, dp.frequency, dp.last_sent_at
+		 FROM digest_preferences dp
+		 JOIN users u ON u.id = dp.user_id
+		 WHERE dp.frequency != 'disabled'`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list digest recipients: %w", err)
+	}
+	defer rows.Close()
+
+	var recipients []DigestRecipient
+	for rows.Next() {
+		var r DigestRecipient
+		if err := rows.Scan(&r.UserID, &r.Email, &r.Frequency, &r.LastSentAt); err != nil {
+			return nil, fmt.Errorf("scan digest recipient: %w", err)
+		}
+		recipients = append(recipients, r)
+	}
+	return recipients, rows.Err()
+}
+
+// MarkDigestSent records the time the Phrase Digest email was last sent to userID.
+func (s *PostgresStore) MarkDigestSent(ctx context.Context, userID string, sentAt time.Time) error {
+	tag, err := s.Pool.Exec(ctx,
+		`UPDATE digest_preferences SET last_sent_at = $1 WHERE user_id = $2`,
+		sentAt, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("mark digest sent: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

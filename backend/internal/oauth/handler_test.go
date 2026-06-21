@@ -102,6 +102,18 @@ func (m *mockStore) SearchPhrasesBySimilarity(_ context.Context, _ string, _ []f
 func (m *mockStore) GetRelatedPhrases(_ context.Context, _ string, _ string, _ float64, _ int) ([]db.Phrase, error) {
 	panic("not expected in oauth tests")
 }
+func (m *mockStore) GetDigestPreferences(_ context.Context, _ string) (*db.DigestPreferences, error) {
+	panic("not expected in oauth tests")
+}
+func (m *mockStore) UpsertDigestPreferences(_ context.Context, _ string, _ string) (*db.DigestPreferences, error) {
+	panic("not expected in oauth tests")
+}
+func (m *mockStore) ListDigestRecipients(_ context.Context) ([]db.DigestRecipient, error) {
+	panic("not expected in oauth tests")
+}
+func (m *mockStore) MarkDigestSent(_ context.Context, _ string, _ time.Time) error {
+	panic("not expected in oauth tests")
+}
 
 func callRevokeTokens(store db.Store, userID, clientID string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
