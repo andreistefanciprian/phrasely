@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.4.0...frontend-v0.5.0) (2026-06-21)
+
+
+### Features
+
+* **frontend:** client-side sibling and related phrase navigation ([be4598b](https://github.com/andreistefanciprian/phrasely/commit/be4598b084660fab10835cb1231d2770f5271e5d))
+
 ## [0.4.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.3.3...frontend-v0.4.0) (2026-06-20)
 
 
