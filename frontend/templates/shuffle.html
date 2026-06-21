@@ -16,21 +16,19 @@
 
   #siblings { margin-top: 2.5rem; max-width: 600px; width: 100%; animation: fadeUp 0.35s ease; }
   #siblings:empty { display: none; }
-  .siblings-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); text-align: center; margin-bottom: 1.25rem; }
-  .sibling-phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.8; text-align: center; color: var(--secondary); padding: 1rem 0; border-top: 1px solid var(--surface); }
-  .sibling-phrase .def { font-style: italic; color: var(--definition); }
-
   #related { margin-top: 2.5rem; max-width: 600px; width: 100%; }
   #related:empty { display: none; }
-  .related-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); text-align: center; margin-bottom: 1.25rem; }
-  .related-phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.8; text-align: center; color: var(--secondary); padding: 1rem 0; border-top: 1px solid var(--surface); cursor: pointer; transition: color 0.15s; text-decoration: none; display: block; }
-  .related-phrase:hover { color: var(--navy); }
-  .related-phrase .def { font-style: italic; color: var(--definition); }
+
+  .siblings-label, .related-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); text-align: center; margin-bottom: 1.25rem; }
+  .sibling-phrase, .related-phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.8; text-align: center; color: var(--secondary); padding: 1rem 0; border-top: 1px solid var(--surface); text-decoration: none; display: block; transition: color 0.15s; }
+  .sibling-phrase:hover, .related-phrase:hover { color: var(--navy); }
+  .sibling-phrase .def, .related-phrase .def { font-style: italic; color: var(--definition); }
 
   #main-content { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  #tap-hint { display: none; margin-top: 2.5rem; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-align: center; text-transform: uppercase; }
-  @media (hover: none) { #tap-hint { display: block; } }
-  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } .search-result { padding: 1rem 0; } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
+  .shuffle-hint { margin-bottom: 2rem; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-align: center; text-transform: uppercase; display: none; }
+  @media (hover: hover) { #click-hint { display: block; } }
+  @media (hover: none)  { #tap-hint  { display: block; } }
+  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 </style>
@@ -38,11 +36,12 @@
 
 {{define "content"}}
 <div id="main-content">
+  <p class="shuffle-hint" id="click-hint">Click to shuffle</p>
+  <p class="shuffle-hint" id="tap-hint">Tap to shuffle</p>
   <p id="phrase"></p>
   <div id="keyword"></div>
   <p id="note"></p>
   <div id="siblings"></div>
-  <p id="tap-hint">Tap to shuffle</p>
 </div>
 <div id="related"></div>
 
@@ -101,12 +100,20 @@
     const siblings = phrases.filter(p => (p.headwords || []).join(' vs ') === label && p.id !== item.id);
     siblingsEl.innerHTML = siblings.length > 0
       ? `<div class="siblings-label">Also with this headword</div>` +
-        siblings.map(s => `<div class="sibling-phrase">${format(s.phrase)}</div>`).join('')
+        siblings.map(s => `<a class="sibling-phrase" href="/shuffle?id=${escapeHtml(s.id)}" data-phrase-id="${escapeHtml(s.id)}">${format(s.phrase)}</a>`).join('')
       : '';
 
     const views = JSON.parse(localStorage.getItem('pf_views') || '{}');
     views[label] = (views[label] || 0) + 1;
     localStorage.setItem('pf_views', JSON.stringify(views));
+  }
+
+  function showById(id) {
+    const item = phrases.find(p => p.id === id);
+    if (!item) return;
+    history.pushState({}, '', `/shuffle?id=${encodeURIComponent(id)}`);
+    show(item);
+    fetchRelated(id, (item.headwords || []).join(' vs '));
   }
 
   async function fetchRelated(phraseId, siblingLabel) {
@@ -121,7 +128,7 @@
       if (filtered.length === 0) return;
       relatedEl.innerHTML =
         `<div class="related-label">You may also like</div>` +
-        filtered.map(p => `<a class="related-phrase" href="/shuffle?id=${escapeHtml(p.id)}">${format(p.phrase)}</a>`).join('');
+        filtered.map(p => `<a class="related-phrase" href="/shuffle?id=${escapeHtml(p.id)}" data-phrase-id="${escapeHtml(p.id)}">${format(p.phrase)}</a>`).join('');
     } catch (err) { console.error('fetchRelated', err); }
   }
 
@@ -142,13 +149,21 @@
   }
 
   document.getElementById('main-content').addEventListener('click', e => {
-    if (e.target.tagName === 'A') return;
+    const phraseLink = e.target.closest('[data-phrase-id]');
+    if (phraseLink) { e.preventDefault(); showById(phraseLink.dataset.phraseId); return; }
+    if (e.target.closest('a')) return;
     show();
     document.getElementById('related').innerHTML = '';
   });
 
+  document.getElementById('related').addEventListener('click', e => {
+    const phraseLink = e.target.closest('[data-phrase-id]');
+    if (phraseLink) { e.preventDefault(); showById(phraseLink.dataset.phraseId); }
+  });
+
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === ' ') {
+      if (document.activeElement?.closest('a')) return;
       e.preventDefault();
       show();
       document.getElementById('related').innerHTML = '';
