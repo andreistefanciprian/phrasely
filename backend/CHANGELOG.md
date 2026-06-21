@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.5.0...backend-v0.6.0) (2026-06-21)
+
+
+### Features
+
+* **backend,frontend:** add Phrase Digest email feature ([90d719f](https://github.com/andreistefanciprian/phrasely/commit/90d719f713f62c4654016fe62515012610dc773d))
+
+
+### Bug Fixes
+
+* **docs:** align phrase-digest worker schedule description with actual cron ([7707ccd](https://github.com/andreistefanciprian/phrasely/commit/7707ccd596fdebf11f9ce642fbe355f8da0cd7a8))
+
 ## [0.5.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.4.0...backend-v0.5.0) (2026-06-20)
 
 
