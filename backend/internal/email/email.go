@@ -16,10 +16,11 @@ var magicLinkTemplateStr string
 // parsed once at startup — panics on bad template syntax rather than silently failing at send time
 var magicLinkTmpl = template.Must(template.New("magic-link").Parse(magicLinkTemplateStr))
 
-// Sender is the interface for sending magic link emails.
+// Sender is the interface for sending transactional emails.
 // Implementations: ResendSender (production), LogSender (local dev).
 type Sender interface {
 	SendMagicLink(to, link string) error
+	SendPhraseDigest(to string, phrases []DigestPhrase) error
 }
 
 // ResendSender sends emails via the Resend API.

@@ -20,6 +20,7 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
 	"github.com/andreistefanciprian/phrasely/internal/oauth"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
+	"github.com/andreistefanciprian/phrasely/internal/settings"
 	"github.com/andreistefanciprian/phrasely/migrations"
 	"github.com/gorilla/mux"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver for database/sql, used by goose
@@ -132,6 +133,7 @@ func main() {
 
 	relatedMaxDist := floatEnv("RELATED_MAX_DISTANCE", 0.45)
 	phrases.NewHandler(store, embedder, relatedMaxDist).RegisterRoutes(r)
+	settings.NewHandler(store).RegisterRoutes(r)
 
 	// --- HTTP server ---
 	// Explicit timeouts prevent slow clients from holding connections open indefinitely.

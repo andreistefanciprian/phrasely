@@ -7,6 +7,7 @@ Production: [getphrasely.com](https://getphrasely.com)
 - **API** (`backend/`): Go + gorilla/mux, slog, pgx/v5
 - **Frontend** (`frontend/`): Go SSR server (html/template + plain CSS), port 3000
 - **MCP Server** (`mcp/`): Go Streamable HTTP (`github.com/modelcontextprotocol/go-sdk`), OAuth 2.1 proxy + `/mcp` endpoint, port 8081
+- **Phrase Digest worker** (`backend/cmd/send-phrase-digest/`): one-shot Go binary, runs as a Railway cron job (hourly), sends digest emails at 7am UTC
 - **DB**: PostgreSQL 17
 - **Infra**: Docker Compose (local), Railway (prod); DNS managed via Cloudflare
 
@@ -14,8 +15,12 @@ Production: [getphrasely.com](https://getphrasely.com)
 
 ```
 backend/cmd/api/main.go                 — route registration, env wiring, migrations on startup
+backend/cmd/send-phrase-digest/main.go  — cron worker entry point; builds DB + mailer, calls phrasedigest.SendDue
 backend/internal/db/db.go               — Store interface + all PostgresStore SQL implementations
 backend/internal/phrases/handler.go     — phrase CRUD handlers
+backend/internal/settings/handler.go    — GET/POST /api/v1/settings/email (digest preferences)
+backend/internal/phrasedigest/service.go — SendDue logic: hour guard, isDue check, email + mark-sent
+backend/internal/email/digest.go        — SendPhraseDigest on ResendSender and LogSender; HTML template
 backend/internal/embeddings/service.go  — OpenAI text-embedding-3-small wrapper; PhraseText() builds the string to embed
 backend/internal/oauth/handler.go       — OAuth 2.1 handlers (register, authorize, token)
 backend/internal/auth/handler.go        — magic link + JWT verify handlers
@@ -48,6 +53,7 @@ frontend/templates/                     — html/template files (base.html, base
 - **Frontend** (Go SSR, port 3000) — public, exposed directly via Railway ingress; no nginx
 - **API** (Go, port 8080) — private, only reachable from within the internal network
 - **MCP** (Go, port 8081) — public, exposed via Railway ingress
+- **Phrase Digest worker** — Railway cron service (`0 7 * * *`), separate Docker image (`Dockerfile.send-phrase-digest`); runs once, exits; only does work at 7am UTC (`sendHourUTC` in `phrasedigest/service.go`); needs `DATABASE_URL`, `RESEND_API_KEY`, `EMAIL_FROM`
 - Frontend proxies browser API calls: `/fd/*` → strips `/fd`, prepends `/api/v1`, forwards to private API with JWT from cookie
 - Internal API address configured via `API_HOST` env var — not hardcoded
 - All frontend HTML uses relative paths — no hardcoded API URL; CORS not needed (same-origin)
@@ -94,8 +100,8 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 | `BASE_URL` | backend | `http://localhost:3000` | Frontend origin for magic links |
 | `API_HOST` | frontend, mcp | `http://localhost:8080` | Private API address (overridden in prod) |
 | `OPENAI_API_KEY` | backend | — | Optional; embeddings and curate endpoint disabled if unset |
-| `RESEND_API_KEY` | backend | — | Optional; magic links logged to stdout if unset |
-| `EMAIL_FROM` | backend | — | Required when `RESEND_API_KEY` is set |
+| `RESEND_API_KEY` | backend, phrase-digest | — | Optional; emails logged to stdout if unset |
+| `EMAIL_FROM` | backend, phrase-digest | — | Required when `RESEND_API_KEY` is set |
 | `MCP_BASE_URL` | mcp | `http://localhost:8081` | Public MCP URL for OAuth discovery |
 | `FRONTEND_BASE_URL` | mcp | `http://localhost:3000` | Public frontend URL for OAuth discovery |
 | `LOG_LEVEL` | all | `INFO` | `DEBUG`, `INFO`, `WARN`, `ERROR` |
@@ -116,6 +122,8 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 | PATCH | `/api/v1/phrases/{id}` | JWT | Update a phrase (partial) |
 | DELETE | `/api/v1/phrases/{id}` | JWT | Delete a phrase |
 | POST | `/api/v1/phrases/curate` | JWT | Curate a raw phrase via OpenAI |
+| GET | `/api/v1/settings/email` | JWT | Get digest preferences (frequency) |
+| POST | `/api/v1/settings/email` | JWT | Save digest preferences |
 
 ## OAuth 2.1 (complete)
 

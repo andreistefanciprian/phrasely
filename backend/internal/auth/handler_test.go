@@ -101,6 +101,18 @@ func (m *mockStore) SearchPhrasesBySimilarity(_ context.Context, _ string, _ []f
 func (m *mockStore) GetRelatedPhrases(_ context.Context, _ string, _ string, _ float64, _ int) ([]db.Phrase, error) {
 	panic("not expected in auth tests")
 }
+func (m *mockStore) GetDigestPreferences(_ context.Context, _ string) (*db.DigestPreferences, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) UpsertDigestPreferences(_ context.Context, _ string, _ string) (*db.DigestPreferences, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) ListDigestRecipients(_ context.Context) ([]db.DigestRecipient, error) {
+	panic("not expected in auth tests")
+}
+func (m *mockStore) MarkDigestSent(_ context.Context, _ string, _ time.Time) error {
+	panic("not expected in auth tests")
+}
 
 // spySender records calls to SendMagicLink for assertions.
 type spySender struct {
@@ -114,6 +126,7 @@ func (s *spySender) SendMagicLink(to, _ string) error {
 	s.to = to
 	return s.err
 }
+func (s *spySender) SendPhraseDigest(_ string, _ []email.DigestPhrase) error { return nil }
 
 func newTestServer(store db.Store) *httptest.Server {
 	r := mux.NewRouter()

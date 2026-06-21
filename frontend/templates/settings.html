@@ -30,11 +30,48 @@
 
   .export-status { margin-top: 0.75rem; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
   .export-status.error { color: #e53e3e; }
+
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  .digest-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .digest-label { font-size: 0.8rem; color: var(--muted); min-width: 90px; }
+  .digest-select {
+    padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);
+    font-family: inherit; font-size: 0.8rem; color: var(--navy); background: none; cursor: pointer;
+  }
+  .btn-save {
+    padding: 0.3rem 0.75rem; border-radius: 6px; font-family: inherit;
+    font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); background: none; color: var(--navy);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-save:hover    { border-color: var(--blue); color: var(--blue); }
+  .btn-save:disabled { opacity: 0.5; cursor: default; }
+  .digest-status { margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
+  .digest-status.error   { color: #e53e3e; }
+  .digest-status.success { color: #2f855a; }
 </style>
 {{end}}
 
 {{define "content"}}
 <div class="container">
+
+  <h2 class="section-title">Phrase Digest</h2>
+  <p class="section-hint">Get a fresh phrase from your collection delivered to your inbox — daily, weekly, or monthly.</p>
+
+  <div class="digest-row">
+    <span class="digest-label">Frequency</span>
+    <select class="digest-select" id="digest-freq">
+      <option value="disabled">Disabled</option>
+      <option value="daily">Daily</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+    </select>
+  </div>
+  <button class="btn-save" id="btn-save-digest" onclick="saveDigest()">Save preferences</button>
+  <p class="digest-status" id="digest-status"></p>
+
+  <hr class="section-divider">
 
   <h2 class="section-title">Export phrases</h2>
   <p class="section-hint">A great phrase list takes years to build. Make sure you always have a copy.</p>
@@ -53,6 +90,47 @@
 </div>
 
 <script>
+// ── Phrase Digest ─────────────────────────────────────────────────────────────
+async function loadDigest() {
+  try {
+    const res = await fetch('/fd/settings/email');
+    if (!res.ok) return;
+    const prefs = await res.json();
+    document.getElementById('digest-freq').value = prefs.frequency || 'disabled';
+  } catch { /* silently ignore — defaults are already set */ }
+}
+
+async function saveDigest() {
+  const btn    = document.getElementById('btn-save-digest');
+  const status = document.getElementById('digest-status');
+  btn.disabled = true;
+  status.className = 'digest-status';
+  status.textContent = 'Saving…';
+
+  try {
+    const res = await fetch('/fd/settings/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frequency: document.getElementById('digest-freq').value }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to save.');
+    }
+    status.className = 'digest-status success';
+    status.textContent = 'Preferences saved.';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  } catch (e) {
+    status.className = 'digest-status error';
+    status.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+loadDigest();
+
+// ── Export phrases ────────────────────────────────────────────────────────────
 let selectedFmt = 'csv';
 
 function setFmt(fmt) {

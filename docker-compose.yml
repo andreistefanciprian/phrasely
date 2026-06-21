@@ -48,6 +48,22 @@ services:
       db:
         condition: service_healthy
 
+  phrase-digest:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.send-phrase-digest
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://phrasely:phrasely@db:5432/phrasely?sslmode=disable
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM}
+    depends_on:
+      api:
+        condition: service_started
+      db:
+        condition: service_healthy
+
   adminer:
     image: adminer
     ports:
