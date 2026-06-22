@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.5.0...frontend-v0.6.0) (2026-06-21)
+## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.5.0...frontend-v0.6.0) (2026-06-22)
 
 
 ### Features
