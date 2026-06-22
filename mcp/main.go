@@ -61,7 +61,7 @@ func main() {
 		// requireBearer guarantees the header is present before we reach here.
 		jwt := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.1.0"}, &mcp.ServerOptions{
-				Instructions: `Phrasely is a personal vocabulary learning app. The user saves English phrases and expressions they want to remember and study later. All data is private to the authenticated user.
+			Instructions: `Phrasely is a personal vocabulary learning app. The user saves English phrases and expressions they want to remember and study later. All data is private to the authenticated user.
 
 Tools:
 - list_phrases — retrieves the user's saved phrases, optionally filtered by headword. Use when the user wants to browse, find, or search their collection.
@@ -79,7 +79,7 @@ Whenever the user provides a raw phrase, fragment, or wants to save something th
 Skip step 1 ONLY if the user explicitly provides text that is already fully curated with headwords and meanings in parentheses.
 
 If the user learns or encounters an interesting expression during conversation, proactively offer to save it to their Phrasely collection. Always ask for confirmation before calling add_phrase — never save a phrase without the user explicitly agreeing.`,
-			})
+		})
 		registerTools(s, api, jwt)
 		return s
 	}, nil)
