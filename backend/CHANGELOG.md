@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.6.0...backend-v0.6.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* **phrasedigest:** remove fixed UTC hour gate ([c9a51c9](https://github.com/andreistefanciprian/phrasely/commit/c9a51c9362dd70c4d3b0e8f834718bd52c254126))
+
 ## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.5.0...backend-v0.6.0) (2026-06-21)
 
 
