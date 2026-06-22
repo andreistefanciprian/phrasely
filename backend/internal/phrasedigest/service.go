@@ -11,10 +11,6 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/email"
 )
 
-// sendHourUTC is the hour (UTC) at which the worker sends digests.
-// Runs once per hour; only fires when the current UTC hour matches this value.
-const sendHourUTC = 7
-
 // minElapsed is the minimum time that must have passed since the last send
 // for each frequency level.
 var minElapsed = map[string]time.Duration{
@@ -35,12 +31,9 @@ func NewService(store db.Store, mailer email.Sender) *Service {
 
 // SendDue iterates all recipients with a non-disabled frequency and sends
 // to those whose elapsed time exceeds their chosen interval.
-// It only runs at sendHourUTC to avoid sending at odd hours.
+// Invocation time is controlled externally by the scheduler.
 func (s *Service) SendDue(ctx context.Context) error {
 	now := time.Now().UTC()
-	if now.Hour() != sendHourUTC {
-		return nil
-	}
 
 	recipients, err := s.store.ListDigestRecipients(ctx)
 	if err != nil {

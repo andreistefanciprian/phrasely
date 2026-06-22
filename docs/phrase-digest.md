@@ -1,12 +1,12 @@
 # Phrase Digest
 
 A one-shot Go binary (`backend/cmd/send-phrase-digest`) that emails each opted-in user
-one random phrase from their collection. Runs as a Railway cron job once per day at 7am UTC.
+one random phrase from their collection. Run timing is controlled by the Railway cron schedule.
 
 ## Architecture
 
 ```
-Railway cron (0 7 * * *)
+Railway cron (configured schedule)
         │
         ▼
 ┌─────────────────────┐
@@ -39,9 +39,9 @@ runs goose migrations — the worker assumes the schema is already up to date.
 5. Sends the email via Resend (or logs to stdout in dev).
 6. Writes `last_sent_at = now` to `digest_preferences`.
 
-The hour guard (`sendHourUTC = 7`) means the worker returns early if invoked outside
-7am UTC. This makes the cron schedule fault-tolerant — running it hourly by accident
-is harmless, but the Railway schedule is `0 7 * * *` (once per day).
+The worker no longer enforces a fixed UTC hour in code. Railway is the source of truth
+for when runs happen; the worker only decides who is due based on `last_sent_at` and
+frequency thresholds.
 
 ## User settings
 
@@ -73,18 +73,11 @@ set so clients get a clean 400 rather than a constraint error.
 # Spin up all services
 docker compose up --build
 
-# Trigger the worker manually (bypasses the hour guard by commenting it out first)
+# Trigger the worker manually
 docker compose run --rm phrase-digest
 ```
 
-To test without waiting for 7am UTC, temporarily comment out the hour guard in
-`backend/internal/phrasedigest/service.go`:
-
-```go
-// if now.Hour() != sendHourUTC { return nil }
-```
-
-Rebuild (`docker compose build phrase-digest`), run, then revert.
+To test immediately, run the worker manually with `docker compose run --rm phrase-digest`.
 
 Without `RESEND_API_KEY` set in `.env`, emails are logged to stdout — no real sends occur.
 
@@ -92,7 +85,7 @@ Without `RESEND_API_KEY` set in `.env`, emails are logged to stdout — no real 
 
 1. Add a new service in the Railway project → Deploy from GitHub repo.
 2. Root directory: `backend/`, Dockerfile: `Dockerfile.send-phrase-digest`.
-3. Cron schedule: `0 7 * * *`.
+3. Cron schedule: set this in Railway (for example, once daily at your preferred time).
 4. Environment variables:
    - `DATABASE_URL` — copy from the Railway Postgres service.
    - `RESEND_API_KEY` — Resend API key.
