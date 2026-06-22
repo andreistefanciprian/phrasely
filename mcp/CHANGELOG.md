@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.0...mcp-v0.3.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* **mcp:** enforce strict tool contracts for curate/add_phrase workflow ([084e96e](https://github.com/andreistefanciprian/phrasely/commit/084e96ed8c28d3d5e0ba3c94e2dbcabc5a3bde28))
+
 ## [0.3.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.2.1...mcp-v0.3.0) (2026-06-22)
 
 
