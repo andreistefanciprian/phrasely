@@ -82,8 +82,8 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 	}, samplePhrasesHandler(api, jwt))
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "curate",
-		Description: "Return the curation rules for the assistant to apply locally before saving a phrase. This tool does not call OpenAI and does not persist data.",
+		Name: "curate",
+		Description: `Use this first for any raw phrase input from the user. When the user mentions a phrase, wants to save an expression they heard in conversation/podcast/movie/book, or provides a fragment or example sentence, you MUST call this tool to receive the curation rules. Apply those rules locally to transform the raw text into a fully curated phrase with meanings in parentheses, headwords, a usage note, and Merriam-Webster URLs. Only then call add_phrase with the finished, curated result. This tool does not call OpenAI and does not persist data.`,
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
@@ -92,7 +92,7 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "add_phrase",
-		Description: `Save a phrase that has already been curated by the assistant. If the user's text is still raw, call curate first, apply those rules locally, and only then call this tool with the polished phrase, headwords, note, and source URLs.`,
+		Description: `Save a phrase that has been fully curated by the assistant. CRITICAL: Never call this tool directly on raw user input. If the user provides a raw phrase, fragment, or example from speech, you MUST call curate first, receive the curation rules, apply them locally, and then call this tool with the finished result. Only skip curate if the user explicitly provides a fully curated phrase with headwords and their meanings already formatted in parentheses within the phrase text (e.g., 'She was conspicuous (easy to notice) in the crowd.').`,
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: pFalse,
 			OpenWorldHint:   pFalse,

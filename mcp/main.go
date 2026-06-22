@@ -66,12 +66,17 @@ func main() {
 Tools:
 - list_phrases — retrieves the user's saved phrases, optionally filtered by headword. Use when the user wants to browse, find, or search their collection.
 - sample_phrases — randomly picks N phrases (default 1, max 10). Use when the user wants to practise, be quizzed, or review random phrases from their collection.
-- curate — returns the curation rules for the assistant to apply locally. Use this when the user gives raw text and you need a reminder of the format before saving.
-- add_phrase — saves a phrase that has already been curated. Do not use this tool for raw input.
+- curate — returns the curation rules for any raw phrase input. Use this first for any phrase the user wants to save.
+- add_phrase — saves a phrase that has been fully curated. Never call this directly on raw input.
 
 Headwords are the key word(s) or expression a phrase illustrates. Treat idioms and fixed expressions as a single headword (e.g. "in the nick of time"). Use multiple headwords only when the phrase genuinely teaches independent vocabulary items.
 
-When the user gives raw text, call curate first, apply the rules yourself, and then call add_phrase with the polished phrase, headwords, note, and source URLs.
+**MANDATORY WORKFLOW: Curation happens before persistence.**
+Whenever the user provides a raw phrase, fragment, or wants to save something they heard:
+1. Call curate(phrase) — you will receive the detailed curation rules.
+2. Apply those rules locally — transform the raw text into a curated phrase with meanings in parentheses, headwords, a usage note, and Merriam-Webster URLs.
+3. Call add_phrase with the curated result.
+Skip step 1 ONLY if the user explicitly provides text that is already fully curated with headwords and meanings in parentheses.
 
 If the user learns or encounters an interesting expression during conversation, proactively offer to save it to their Phrasely collection. Always ask for confirmation before calling add_phrase — never save a phrase without the user explicitly agreeing.`,
 			})
