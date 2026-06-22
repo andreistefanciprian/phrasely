@@ -153,10 +153,21 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 
 ## MCP tools
 
-| Tool | Maps to |
-|---|---|
-| `list_phrases(headword?)` | `GET /api/v1/phrases` (optional `?headword=` filter) |
-| `add_phrase(...)` | `POST /api/v1/phrases` |
+| Tool | Purpose | Backend call |
+|---|---|---|
+| `list_phrases(headword?)` | List the user's saved phrases, optionally filtered by headword | `GET /api/v1/phrases` |
+| `sample_phrases(count?)` | Randomly pick N phrases (1–10) for practice or quizzing | `GET /api/v1/phrases/random` |
+| `curate(phrase)` | Return the curation rules for the assistant to apply locally — no backend call, no data persisted | — |
+| `add_phrase(phrase, headwords, note?, source_urls?)` | Save an already-curated phrase. Must be called after `curate` has been applied | `POST /api/v1/phrases` |
+
+### Curation flow
+
+Curation happens on the assistant side, not in the MCP server. When the user gives raw text:
+1. The assistant calls `curate(phrase)` to receive the curation rules.
+2. The assistant applies those rules locally: polishes the phrase, inserts headword meanings in parentheses, writes a usage note, and generates Merriam-Webster URLs.
+3. The assistant calls `add_phrase` with the finished, curated payload.
+
+`add_phrase` is persistence-only — it does not call OpenAI and does not curate.
 
 ## Local testing
 

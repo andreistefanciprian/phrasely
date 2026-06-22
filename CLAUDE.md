@@ -28,7 +28,7 @@ backend/internal/middleware/auth.go     — JWT middleware (injects user_id into
 backend/migrations/                     — goose SQL files (embedded into binary via embed.go)
 mcp/main.go                             — MCP server wiring, requireBearer middleware
 mcp/oauth.go                            — OAuth discovery + proxy routes
-mcp/tools.go                            — MCP tool definitions (list_phrases, add_phrase)
+mcp/tools.go                            — MCP tool definitions (list_phrases, sample_phrases, curate, add_phrase)
 mcp/api.go                              — typed API client used by tools
 frontend/main.go                        — route registration, render helpers, security headers
 frontend/handlers.go                    — all page handlers + apiProxy
