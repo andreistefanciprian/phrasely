@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.2.1...mcp-v0.3.0) (2026-06-22)
+
+
+### Features
+
+* **mcp:** add curate tool and make add_phrase save-only ([d2031fe](https://github.com/andreistefanciprian/phrasely/commit/d2031fe4819d6f16f81149e53fbc4d64c233e45f))
+
 ## [0.2.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.2.0...mcp-v0.2.1) (2026-06-20)
 
 
