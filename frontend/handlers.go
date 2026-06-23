@@ -214,6 +214,10 @@ func (app *application) storyPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (app *application) privacyPage(w http.ResponseWriter, _ *http.Request) {
+	app.render(w, "privacy.html", nil)
+}
+
 func (app *application) bubblePage(w http.ResponseWriter, r *http.Request) {
 	jwt := jwtFromContext(r.Context())
 	phrases, err := app.api.ListPhrases(jwt)

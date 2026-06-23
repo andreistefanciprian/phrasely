@@ -77,6 +77,7 @@ func main() {
 	mux.HandleFunc("/", app.homePage)
 	mux.HandleFunc("/login", app.loginPage)
 	mux.HandleFunc("/story", app.storyPage)
+	mux.HandleFunc("/privacy", app.privacyPage)
 	mux.HandleFunc("/auth/verify", app.authVerify) // API-side verify (internal)
 	mux.HandleFunc("/auth-verify", app.authVerify) // magic link landing (what the API emails)
 	mux.HandleFunc("/sign-out", app.signOut)
