@@ -67,6 +67,10 @@ func TestPrivacyPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 	for _, want := range []string{
 		`id="navbar"`,
 		`href="/bubble"`,
+		`id="account-menu"`,
+		`href="/settings"`,
+		`href="/story"`,
+		`href="/privacy"`,
 		`aria-label="Sign out"`,
 	} {
 		if !strings.Contains(body, want) {

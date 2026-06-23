@@ -38,11 +38,74 @@
 .nav-link:hover { color: var(--secondary); }
 .nav-link.active { color: var(--navy); font-weight: 700; }
 
-#signout-btn {
-  margin-left: 0.5rem;
-  display: flex;
-  align-items: center;
+#account-menu {
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
 }
+
+#account-menu summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+#account-menu summary::-webkit-details-marker { display: none; }
+#account-menu summary:hover,
+#account-menu[open] summary {
+  color: var(--secondary);
+  border-color: var(--teal);
+  background: var(--surface);
+}
+
+#account-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  min-width: 11rem;
+  padding: 0.45rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(45, 53, 97, 0.14);
+}
+
+#account-menu-panel form { margin: 0; }
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item.active {
+  color: var(--navy);
+  background: var(--surface);
+}
+
+.menu-button { color: var(--secondary); }
 
 /* ── Bottom tab bar (mobile) ── */
 #tab-bar { display: none; }
@@ -52,17 +115,13 @@
   #navbar-inner { padding: 0 1rem; }
   .nav-link { display: none; }
 
-  #top-signout-form { margin-left: auto; }
-  #signout-btn {
+  #account-menu summary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0.5rem;
-    color: var(--muted);
+    width: 44px;
+    height: 44px;
   }
-  #signout-btn:hover { color: var(--secondary); }
 
   #tab-bar {
     display: flex;
