@@ -32,6 +32,11 @@ func jwtFromContext(ctx context.Context) string {
 	return v
 }
 
+func hasAuthCookie(r *http.Request) bool {
+	cookie, err := r.Cookie(authCookieName)
+	return err == nil && strings.TrimSpace(cookie.Value) != ""
+}
+
 // isSafeLocalRedirect returns true when next is a safe same-origin path.
 // It must start with "/" but not "//" (which would be protocol-relative and
 // could redirect to an attacker-controlled host).
@@ -208,14 +213,27 @@ func (app *application) signOut(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) storyPage(w http.ResponseWriter, r *http.Request) {
 	sample := app.homePhraseSamples[rand.IntN(len(app.homePhraseSamples))]
-	app.render(w, "story.html", map[string]any{
-		"Quote":     sample.Phrase,
-		"QuoteMeta": sample.Keyword + " · captured from " + sample.Source,
-	})
+	authenticated := hasAuthCookie(r)
+	data := map[string]any{
+		"Authenticated": authenticated,
+		"Quote":         sample.Phrase,
+		"QuoteMeta":     sample.Keyword + " · captured from " + sample.Source,
+	}
+	if authenticated {
+		app.renderAuth(w, "story.html", data)
+		return
+	}
+	app.render(w, "story.html", data)
 }
 
-func (app *application) privacyPage(w http.ResponseWriter, _ *http.Request) {
-	app.render(w, "privacy.html", nil)
+func (app *application) privacyPage(w http.ResponseWriter, r *http.Request) {
+	authenticated := hasAuthCookie(r)
+	data := map[string]any{"Authenticated": authenticated}
+	if authenticated {
+		app.renderAuth(w, "privacy.html", data)
+		return
+	}
+	app.render(w, "privacy.html", data)
 }
 
 func (app *application) bubblePage(w http.ResponseWriter, r *http.Request) {

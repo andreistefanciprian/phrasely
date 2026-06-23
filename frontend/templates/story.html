@@ -5,16 +5,17 @@
 <style>
   body { color: #2D3561; }
 
-  nav {
+  .public-nav {
     position: sticky; top: 0;
     display: flex; align-items: center; justify-content: space-between;
     padding: 1rem 2rem; background: var(--white); border-bottom: 1px solid var(--border); z-index: 10;
   }
-  nav img { height: auto; width: auto; display: block; }
+  .public-nav img { height: auto; width: auto; display: block; }
   .nav-cta { font-size: 0.875rem; font-weight: 600; color: var(--blue); text-decoration: none; transition: opacity 0.15s; }
   .nav-cta:hover { opacity: 0.75; }
 
   .story { max-width: 640px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+  .story-auth { padding-top: 7rem; }
   .story h1 { font-family: 'Lora', Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 600; color: var(--navy); line-height: 1.25; margin-bottom: 2.5rem; }
   .story p { font-size: 1rem; line-height: 1.85; color: #2D3561; margin-bottom: 0.85rem; }
   .story p.emphasis { font-family: 'Lora', Georgia, serif; font-size: 1.1rem; font-style: italic; color: var(--navy); }
@@ -28,22 +29,28 @@
   .quote { font-family: 'Lora', Georgia, serif; font-size: clamp(1.1rem, 3vw, 1.4rem); line-height: 1.8; color: var(--navy); max-width: 560px; margin: 0 auto 1rem; }
   .quote-meta { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); }
 
-  footer { text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
+  footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.45rem; text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
+  footer a { color: inherit; text-decoration: underline; }
+  .github-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .github-link svg { flex: 0 0 auto; display: block; }
 
   @media (max-width: 600px) {
-    nav { padding: 1rem 1.25rem; }
+    .public-nav { padding: 1rem 1.25rem; }
     .story { padding: 2.5rem 1.25rem 4rem; }
+    .story-auth { padding-top: 5rem; }
   }
 </style>
 {{end}}
 
 {{define "content"}}
-<nav>
+{{if not .Authenticated}}
+<nav class="public-nav">
   <a href="/"><img src="/static/logo.png" alt="Phrasely"></a>
   <a href="/login" class="nav-cta">Sign in →</a>
 </nav>
+{{end}}
 
-<div class="story">
+<div class="story{{if .Authenticated}} story-auth{{end}}">
   <h1>Why I built Phrasely</h1>
 
   <p>I'm Cip (pronounced Chip), from Romania.</p>
@@ -61,7 +68,11 @@
   <p>I built it for myself. But it isn't just for people learning English. It's for anyone who's ever heard a great expression and thought: "I want that to be part of my vocabulary."</p>
 
   <div class="cta-row">
+    {{if .Authenticated}}
+    <a href="/bubble">Open Phrasely →</a>
+    {{else}}
     <a href="/login">Try Phrasely, it's free →</a>
+    {{end}}
   </div>
 </div>
 
@@ -70,5 +81,5 @@
   <p class="quote-meta">{{ .QuoteMeta }}</p>
 </div>
 
-<footer>&copy; 2026 Phrasely · <a href="/privacy" style="color:inherit;text-decoration:underline;">Privacy</a> · <a href="https://github.com/andreistefanciprian/phrasely" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;display:inline-flex;align-items:center;gap:0.35rem;"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.6 7.6 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>Source code on GitHub</a></footer>
+<footer><span>&copy; 2026 Phrasely</span><span aria-hidden="true">·</span><a href="/privacy">Privacy</a><span aria-hidden="true">·</span><a href="https://github.com/andreistefanciprian/phrasely" target="_blank" rel="noopener" class="github-link"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.6 7.6 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>Source code on GitHub</a></footer>
 {{end}}
