@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.6.0...frontend-v0.7.0) (2026-06-23)
+
+
+### Features
+
+* **frontend:** add privacy policy page ([8106eaf](https://github.com/andreistefanciprian/phrasely/commit/8106eafc97e66d3c4038286a51543e8b14ae36f7))
+
 ## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.5.0...frontend-v0.6.0) (2026-06-22)
 
 
