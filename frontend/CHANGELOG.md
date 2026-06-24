@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.7.0...frontend-v0.8.0) (2026-06-24)
+
+
+### Features
+
+* **frontend:** add account menu to navbar ([c6c22a4](https://github.com/andreistefanciprian/phrasely/commit/c6c22a4e595c83a834030d60fe0fb7f506b82a0f))
+
 ## [0.7.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.6.0...frontend-v0.7.0) (2026-06-23)
 
 
