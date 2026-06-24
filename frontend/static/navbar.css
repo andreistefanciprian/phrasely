@@ -61,7 +61,7 @@
   user-select: none;
   box-shadow: 0 2px 8px rgba(45, 53, 97, 0.04);
   transform: rotate(-2deg);
-  transition: color 0.15s, border-color 0.15s, transform 0.15s, background 0.15s, box-shadow 0.15s;
+  transition: color 0.15s, transform 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 #account-menu summary::-webkit-details-marker { display: none; }
@@ -77,20 +77,16 @@
   border-top-left-radius: 0.35rem;
   background: inherit;
   transform: rotate(-35deg);
-  transition: border-color 0.15s;
 }
 
 #account-menu summary:hover,
 #account-menu[open] summary {
   color: var(--secondary);
-  border-color: var(--teal);
   background: var(--surface);
   box-shadow: 0 6px 18px rgba(45, 53, 97, 0.08);
 }
 
 #account-menu summary:hover { transform: translateY(-1px) rotate(-2deg); }
-#account-menu summary:hover::after,
-#account-menu[open] summary::after { border-color: var(--teal); }
 
 #account-menu-panel {
   position: absolute;
