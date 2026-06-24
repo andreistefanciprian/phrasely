@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.0...frontend-v0.8.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **frontend:** remove account menu hover border ([0594c42](https://github.com/andreistefanciprian/phrasely/commit/0594c42b29aa9a3b88002ff7ba1d803aa109fa09))
+
 ## [0.8.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.7.0...frontend-v0.8.0) (2026-06-24)
 
 
