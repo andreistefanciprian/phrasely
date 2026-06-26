@@ -73,6 +73,7 @@ func (s *Service) sendToUser(ctx context.Context, r db.DigestRecipient, now time
 	phrases := make([]email.DigestPhrase, len(summaries))
 	for i, p := range summaries {
 		phrases[i] = email.DigestPhrase{
+			ID:       p.ID,
 			Headword: strings.Join(p.Headwords, " vs "),
 			Phrase:   p.Phrase,
 		}
