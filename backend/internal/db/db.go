@@ -46,7 +46,11 @@ type Phrase struct {
 // PhraseSummary is a lightweight projection of a phrase record containing only
 // the fields needed for listing — used by the MCP list_phrases tool to avoid
 // sending id, note and source_urls into the AI model's context window.
+// ID is tagged json:"-" so it never serializes over the API that MCP calls;
+// it's populated for in-process callers (e.g. the phrase digest, which needs
+// it to deep-link to the phrase) and is otherwise empty.
 type PhraseSummary struct {
+	ID        string   `json:"-"`
 	Phrase    string   `json:"phrase"`
 	Headwords []string `json:"headwords"`
 }
@@ -287,7 +291,7 @@ func (s *PostgresStore) ListPhrasesSummary(ctx context.Context, userID string, h
 // GetRandomPhrases returns count randomly selected phrases (phrase, headwords) for userID.
 func (s *PostgresStore) GetRandomPhrases(ctx context.Context, userID string, count int) ([]PhraseSummary, error) {
 	rows, err := s.Pool.Query(ctx,
-		`SELECT phrase, headwords FROM phrases WHERE user_id = $1 ORDER BY RANDOM() LIMIT $2`,
+		`SELECT id, phrase, headwords FROM phrases WHERE user_id = $1 ORDER BY RANDOM() LIMIT $2`,
 		userID, count,
 	)
 	if err != nil {
@@ -298,7 +302,7 @@ func (s *PostgresStore) GetRandomPhrases(ctx context.Context, userID string, cou
 	summaries := []PhraseSummary{}
 	for rows.Next() {
 		var p PhraseSummary
-		if err := rows.Scan(&p.Phrase, &p.Headwords); err != nil {
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords); err != nil {
 			return nil, fmt.Errorf("scan phrase summary: %w", err)
 		}
 		summaries = append(summaries, p)

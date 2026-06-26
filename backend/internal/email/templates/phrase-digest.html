@@ -17,7 +17,7 @@
             </td>
           </tr>
 
-          {{range .}}
+          {{range .Phrases}}
           <tr>
             <td style="background:#F8F9FF;border-radius:12px;padding:28px 32px;margin-bottom:12px;display:block;">
               <p style="margin:0 0 8px;font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#9DA3CC;">{{.Headword}}</p>
@@ -29,13 +29,21 @@
 
           <tr>
             <td style="padding-top:16px;">
-              <a href="https://getphrasely.com"
+              <a href="{{.OpenURL}}"
                  style="font-size:0.8rem;color:#9DA3CC;text-decoration:none;">
-                Open Phrasely →
+                Open this phrase in Phrasely →
               </a>
             </td>
           </tr>
 
+          <tr>
+            <td style="padding-top:16px;">
+              <p style="margin:0;font-size:0.8rem;color:#9DA3CC;">
+                You are receiving this email because you are subscribed to Phrasely.
+                <a href="https://getphrasely.com/settings" style="color:#9DA3CC;text-decoration:underline;">Manage your email settings</a>.
+              </p>
+            </td>
+          </tr>
         </table>
       </td>
     </tr>
