@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.6.1...backend-v0.7.0) (2026-06-26)
+
+
+### Features
+
+* **backend:** deep-link phrase digest email to the specific phrase ([b9645b2](https://github.com/andreistefanciprian/phrasely/commit/b9645b2b163e54d17bed98463aed0964c9a6ee02))
+
 ## [0.6.1](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.6.0...backend-v0.6.1) (2026-06-22)
 
 
