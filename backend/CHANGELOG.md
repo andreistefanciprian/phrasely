@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.0...backend-v0.7.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* **backend:** use ?? as the curate placeholder instead of (?) ([0169cf8](https://github.com/andreistefanciprian/phrasely/commit/0169cf8b21a18b94a5f42af0ea27768a34d12248))
+
 ## [0.7.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.6.1...backend-v0.7.0) (2026-06-26)
 
 
