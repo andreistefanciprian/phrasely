@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.1...frontend-v0.8.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* **frontend:** use ?? as the curate placeholder instead of (?) ([1ca43a0](https://github.com/andreistefanciprian/phrasely/commit/1ca43a0260d2100b1cf25a2238ffd54cd788089c))
+
 ## [0.8.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.0...frontend-v0.8.1) (2026-06-24)
 
 
