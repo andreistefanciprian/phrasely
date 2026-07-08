@@ -31,8 +31,8 @@ Rules:
 	- If multiple words form a single idiom or fixed expression, return only one headword.
 
 3. Insert a short meaning in parentheses immediately after each headword or expression.
-	- If the user wrote "(?)", replace it with the meaning.
-	- If there is no "(?)", add the meaning after the headword.
+	- If the user wrote "??", replace it with the meaning.
+	- If there is no "??", identify the headword and add the meaning after the headword.
 	- Meanings must be short, clear, natural, easy to understand, and specific to the context.
 	- Avoid long dictionary definitions.
 
