@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.1...mcp-v0.3.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* **mcp:** use ?? as the curate placeholder instead of (?) ([9cf0d48](https://github.com/andreistefanciprian/phrasely/commit/9cf0d4837b292b36fae52872ce7ec9c7437d6c05))
+
 ## [0.3.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.0...mcp-v0.3.1) (2026-06-22)
 
 
