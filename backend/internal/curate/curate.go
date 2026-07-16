@@ -47,7 +47,7 @@ func NewCurator(apiKey string) (*Curator, error) {
 // ready to be saved, with headwords, a usage note, and Merriam-Webster URLs.
 func (c *Curator) Curate(ctx context.Context, input string) (*CuratedPhrase, error) {
 	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: "luna",
+		Model: "gpt-5.6-luna",
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: c.systemPrompt},
 			{Role: openai.ChatMessageRoleUser, Content: input},
