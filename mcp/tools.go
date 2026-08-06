@@ -49,6 +49,12 @@ Rules:
 	- Mention tone, nuance, register, or etymology only if useful.
 	- Keep it to 1-3 short sentences.
 
+6. Never use Markdown formatting.
+	- Do not use **bold**, *italic*, backticks, headings, lists, links, or any other Markdown syntax in the phrase or note.
+	- Return plain UTF-8 text only, ready to store directly in a database.
+	- Correct: The proposition will not cower away (shrink back in fear or intimidation) in the face of criticism.
+	- Incorrect: The proposition will not **cower away (shrink back in fear or intimidation)** in the face of criticism.
+
 7. Generate one Merriam-Webster URL for each headword.
 	- Format: https://www.merriam-webster.com/dictionary/<lookup form>
 	- URL encode spaces as %20.
