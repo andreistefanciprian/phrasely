@@ -61,12 +61,18 @@ Rules:
    - Mention tone, nuance, register, or etymology only if useful.
    - Keep it to 1-3 short sentences.
 
-6. Set a content_adjusted flag.
-  - Set content_adjusted to true ONLY if you rewrote the user's text because of Rule 8 (content suitability).
-  - If you only corrected grammar, spelling, punctuation, clarity, or naturalness, content_adjusted must be false.
-  - If the input is already suitable and no Rule 8 rewrite happened, content_adjusted must be false.
+6. Never use Markdown formatting in the phrase or note fields.
+   - Do not use **bold**, *italic*, backticks, headings, lists, links, or any other Markdown syntax.
+   - The phrase and note must be plain UTF-8 text only, ready to store directly in the database.
+   - Correct: The proposition will not cower away (shrink back in fear or intimidation) in the face of criticism.
+   - Incorrect: The proposition will not **cower away (shrink back in fear or intimidation)** in the face of criticism.
 
-7. Generate one Merriam-Webster URL for each headword.
+7. Set a content_adjusted flag.
+  - Set content_adjusted to true ONLY if you rewrote the user's text because of Rule 9 (content suitability).
+  - If you only corrected grammar, spelling, punctuation, clarity, or naturalness, content_adjusted must be false.
+  - If the input is already suitable and no Rule 9 rewrite happened, content_adjusted must be false.
+
+8. Generate one Merriam-Webster URL for each headword.
    - Format:
      https://www.merriam-webster.com/dictionary/<lookup form>
    - URL encode spaces as %20.
@@ -87,7 +93,7 @@ Rules:
      expression as used/taught (e.g. "bearing the brunt"); only the
      source_urls lookup form changes per the rules above.
 
-8. Content suitability and rephrasing.
+9. Content suitability and rephrasing.
    If a phrase contains:
    - explicit sexual language
    - graphic sexual descriptions
@@ -106,7 +112,7 @@ Rules:
    - Curate the rewritten phrase normally.
    - Select the most educational headword or expression from the rewritten phrase.
 
-9. Input validity gate.
+10. Input validity gate.
    - If the user input does not contain a valid expression or meaningful context
      (for example: random characters, nonsense fragments, or text that cannot be
      interpreted as a usable phrase), do NOT fabricate a curated phrase.
