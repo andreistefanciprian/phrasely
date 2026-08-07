@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.4](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.3...frontend-v0.8.4) (2026-08-07)
+
+
+### Bug Fixes
+
+* **frontend:** reject backslash in isSafeLocalRedirect to close open-redirect ([ee940da](https://github.com/andreistefanciprian/phrasely/commit/ee940daffa892d184b308615756d2bdeeeec93dc))
+
 ## [0.8.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.2...frontend-v0.8.3) (2026-08-07)
 
 
