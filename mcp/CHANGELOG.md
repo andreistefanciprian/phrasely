@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.2...mcp-v0.3.3) (2026-08-07)
+
+
+### Bug Fixes
+
+* prevent curator from generating markdown in curated phrases ([04ec23c](https://github.com/andreistefanciprian/phrasely/commit/04ec23ceefab50e6083aa691925de39e3689c866)), closes [#173](https://github.com/andreistefanciprian/phrasely/issues/173)
+
 ## [0.3.2](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.1...mcp-v0.3.2) (2026-07-08)
 
 
