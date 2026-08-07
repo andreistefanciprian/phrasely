@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.2...frontend-v0.8.3) (2026-08-07)
+
+
+### Bug Fixes
+
+* **frontend:** proxy /fd/internal/* directly to API ([a6a0d35](https://github.com/andreistefanciprian/phrasely/commit/a6a0d3568248b85f00e2dd87774ac295c4e17098))
+* **frontend:** revert /fd/internal/* proxy after embed-backfill run ([e89f7e0](https://github.com/andreistefanciprian/phrasely/commit/e89f7e09c8e4c6fdb993cb8c343ad56aff750af2))
+
 ## [0.8.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.1...frontend-v0.8.2) (2026-07-08)
 
 
