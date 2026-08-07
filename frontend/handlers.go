@@ -38,10 +38,11 @@ func hasAuthCookie(r *http.Request) bool {
 }
 
 // isSafeLocalRedirect returns true when next is a safe same-origin path.
-// It must start with "/" but not "//" (which would be protocol-relative and
-// could redirect to an attacker-controlled host).
+// It must start with "/" but not "//" (protocol-relative) or contain "\"
+// (browsers normalize a leading "/\" to "//", making it authority-relative
+// too) — either would redirect to an attacker-controlled host.
 func isSafeLocalRedirect(next string) bool {
-	return strings.HasPrefix(next, "/") && !strings.HasPrefix(next, "//")
+	return strings.HasPrefix(next, "/") && !strings.HasPrefix(next, "//") && !strings.Contains(next, "\\")
 }
 
 // requireAuth wraps a handler and redirects unauthenticated requests to /login.
