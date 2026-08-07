@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.1...backend-v0.7.2) (2026-08-07)
+
+
+### Bug Fixes
+
+* prevent curator from generating markdown in curated phrases ([04ec23c](https://github.com/andreistefanciprian/phrasely/commit/04ec23ceefab50e6083aa691925de39e3689c866)), closes [#173](https://github.com/andreistefanciprian/phrasely/issues/173)
+
 ## [0.7.1](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.0...backend-v0.7.1) (2026-07-08)
 
 
