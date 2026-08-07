@@ -272,8 +272,13 @@ func (app *application) phrasesPage(w http.ResponseWriter, r *http.Request) {
 func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 	jwt := jwtFromContext(r.Context())
 
-	// Strip /fd prefix and map to /api/v1
-	path := "/api/v1" + r.URL.Path[len("/fd"):]
+	// Strip /fd prefix; /fd/internal/* routes go directly, everything else maps to /api/v1
+	var path string
+	if strings.HasPrefix(r.URL.Path, "/fd/internal/") {
+		path = r.URL.Path[len("/fd"):]
+	} else {
+		path = "/api/v1" + r.URL.Path[len("/fd"):]
+	}
 	if r.URL.RawQuery != "" {
 		path += "?" + r.URL.RawQuery
 	}
