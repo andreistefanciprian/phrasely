@@ -27,11 +27,14 @@
     ],
     "websiteURL": "https://getphrasely.com",
     "privacyPolicyURL": "https://getphrasely.com/privacy",
+    "termsOfServiceURL": "https://getphrasely.com/terms",
     "defaultPrompt": [
       "Explain this English expression and its nuance.",
       "Make this phrase memorable, then save it.",
       "Quiz me using phrases from my collection."
-    ]
+    ],
+    "composerIcon": "./assets/neon_glossy_logo_512_512.png",
+    "logo": "./assets/neon_glossy_logo_512_512.png"
   },
   "apps": "./.app.json"
 }

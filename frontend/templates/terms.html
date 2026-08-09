@@ -1,0 +1,94 @@
+{{define "title"}}Terms of Service — Phrasely{{end}}
+
+{{define "head"}}
+<meta name="description" content="The terms that apply when you use Phrasely and its integrations.">
+<link rel="canonical" href="https://getphrasely.com/terms">
+<style>
+  body { color: var(--text); }
+  .public-nav { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: var(--white); border-bottom: 1px solid var(--border); z-index: 10; }
+  .public-nav img { height: auto; width: auto; display: block; }
+  .nav-cta { font-size: 0.875rem; font-weight: 600; color: var(--blue); }
+  main { max-width: 720px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+  main.authenticated { padding-top: 7rem; }
+  h1 { font-family: 'Lora', Georgia, serif; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--navy); margin-bottom: 0.5rem; }
+  .effective { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.75rem; }
+  h2 { color: var(--navy); font-size: 1.1rem; margin: 2.25rem 0 0.75rem; }
+  p, li { font-size: 0.95rem; line-height: 1.75; }
+  p { margin-bottom: 0.85rem; }
+  ul { padding-left: 1.25rem; margin-bottom: 1rem; }
+  li { margin-bottom: 0.45rem; }
+  main a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
+  footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.45rem; text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
+  footer a { color: inherit; text-decoration: underline; }
+  @media (max-width: 600px) {
+    .public-nav { padding: 1rem 1.25rem; }
+    main { padding: 2.75rem 1.25rem 4rem; }
+    main.authenticated { padding-top: 5rem; }
+  }
+</style>
+{{end}}
+
+{{define "content"}}
+{{if not .Authenticated}}
+<nav class="public-nav">
+  <a href="/"><img src="/static/logo.png" alt="Phrasely"></a>
+  <a href="/login" class="nav-cta">Sign in →</a>
+</nav>
+{{end}}
+
+<main{{if .Authenticated}} class="authenticated"{{end}}>
+  <h1>Terms of Service</h1>
+  <p class="effective">Effective August 9, 2026</p>
+
+  <p>These terms govern your use of Phrasely, including its website, vocabulary tools, emails, and integrations. By using Phrasely, you agree to these terms and the <a href="/privacy">Privacy Policy</a>. If you do not agree, do not use the service.</p>
+
+  <h2>Who may use Phrasely</h2>
+  <p>You must be at least 13 years old to use Phrasely. If the law where you live requires a higher age for you to agree to online services, you may use Phrasely only with permission from a parent or legal guardian.</p>
+
+  <h2>Your account</h2>
+  <p>You are responsible for access to your email account, sign-in links, connected clients, and activity performed through your Phrasely account. Provide accurate account information and tell us promptly if you believe your account or an OAuth connection has been compromised.</p>
+
+  <h2>Your content</h2>
+  <p>You retain ownership of the phrases, notes, examples, and other content you submit. You give Phrasely permission to host, process, reproduce, and display that content only as needed to operate and improve the features you request. You are responsible for ensuring that you have the right to submit your content.</p>
+
+  <h2>AI-powered features</h2>
+  <p>Phrasely may use artificial intelligence to curate phrases, identify headwords, generate examples, create embeddings, or support search and practice. AI-generated results can be incomplete, inaccurate, or unsuitable for a particular context. Review important output before relying on it.</p>
+  <p>When you connect Phrasely to ChatGPT or another compatible MCP client, that client controls when it proposes or sends tool calls. Review requested actions and disconnect the integration if you no longer want it to access your Phrasely collection.</p>
+
+  <h2>Acceptable use</h2>
+  <p>Do not use Phrasely to:</p>
+  <ul>
+    <li>break the law or infringe another person's rights;</li>
+    <li>upload malicious code or attempt to compromise, probe, or disrupt the service;</li>
+    <li>access another person's account or data without permission;</li>
+    <li>circumvent usage limits, authentication, or security controls; or</li>
+    <li>use automated traffic in a way that unreasonably burdens the service.</li>
+  </ul>
+
+  <h2>Third-party services</h2>
+  <p>Phrasely relies on third-party services and may link to external websites, dictionaries, or clients. Their own terms and privacy policies apply to your use of those services. Phrasely is not responsible for third-party content or services outside its control.</p>
+
+  <h2>Service availability and changes</h2>
+  <p>Phrasely is provided on an evolving basis. Features may change, experience interruptions, or be discontinued. We will try to avoid unnecessary disruption, but we do not promise that every feature will always be available or error-free.</p>
+
+  <h2>Suspension and termination</h2>
+  <p>You may stop using Phrasely at any time. Access may be suspended or terminated when reasonably necessary to protect the service or its users, address unlawful or abusive activity, or respond to a material breach of these terms. You may request deletion of your account and associated data as described in the Privacy Policy.</p>
+
+  <h2>Disclaimers</h2>
+  <p>To the extent permitted by law, Phrasely is provided “as is” and “as available,” without warranties beyond those that cannot legally be excluded. Phrasely is a language-learning aid and does not provide professional, legal, medical, or financial advice.</p>
+
+  <h2>Limitation of liability</h2>
+  <p>To the extent permitted by law, Phrasely and its operator will not be liable for indirect, incidental, special, consequential, or punitive loss arising from your use of the service. This limitation does not apply where liability cannot legally be limited or excluded.</p>
+
+  <h2>Consumer rights</h2>
+  <p>Nothing in these terms excludes, restricts, or modifies any consumer guarantee, right, or remedy that cannot lawfully be excluded, including rights that may apply under the Australian Consumer Law.</p>
+
+  <h2>Changes to these terms</h2>
+  <p>These terms may be updated as Phrasely changes. The effective date above will be updated when changes are made. If a change materially affects your rights, we will take reasonable steps to provide notice.</p>
+
+  <h2>Contact</h2>
+  <p>For support, open a <a href="https://github.com/andreistefanciprian/phrasely/issues" target="_blank" rel="noopener">GitHub issue</a>.</p>
+</main>
+
+<footer><span>&copy; 2026 Phrasely</span><span aria-hidden="true">·</span><a href="/">Home</a><span aria-hidden="true">·</span><a href="/privacy">Privacy</a><span aria-hidden="true">·</span><a href="https://github.com/andreistefanciprian/phrasely" target="_blank" rel="noopener">Source code on GitHub</a></footer>
+{{end}}

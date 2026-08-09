@@ -71,6 +71,60 @@ func TestPrivacyPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 		`href="/settings"`,
 		`href="/story"`,
 		`href="/privacy"`,
+		`href="/terms"`,
+		`aria-label="Sign out"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("response does not contain %q", want)
+		}
+	}
+	if strings.Contains(body, "Sign in →") {
+		t.Error("response contains logged-out sign-in prompt")
+	}
+}
+
+func TestTermsPage(t *testing.T) {
+	app := &application{}
+	req := httptest.NewRequest(http.MethodGet, "/terms", nil)
+	w := httptest.NewRecorder()
+
+	app.termsPage(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	for _, want := range []string{
+		"Terms of Service",
+		"Effective August 9, 2026",
+		"AI-powered features",
+		"Your content",
+		"Consumer rights",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("response does not contain %q", want)
+		}
+	}
+}
+
+func TestTermsPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
+	app := &application{}
+	req := httptest.NewRequest(http.MethodGet, "/terms", nil)
+	req.AddCookie(&http.Cookie{Name: authCookieName, Value: "jwt"})
+	w := httptest.NewRecorder()
+
+	app.termsPage(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	for _, want := range []string{
+		`id="navbar"`,
+		`href="/bubble"`,
+		`id="account-menu"`,
+		`href="/privacy"`,
+		`href="/terms"`,
 		`aria-label="Sign out"`,
 	} {
 		if !strings.Contains(body, want) {
