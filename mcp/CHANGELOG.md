@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.3...mcp-v0.4.0) (2026-08-09)
+
+
+### Features
+
+* **mcp:** add Phrasely vocabulary companion plugin ([ae4d77e](https://github.com/andreistefanciprian/phrasely/commit/ae4d77e4a3d70f75868d94374b395b66e90935ff))
+
+
+### Bug Fixes
+
+* **mcp:** align curation context and release version ([bb1712f](https://github.com/andreistefanciprian/phrasely/commit/bb1712f015eada7671963e50576195488d89d818))
+
 ## [0.3.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.2...mcp-v0.3.3) (2026-08-07)
 
 
