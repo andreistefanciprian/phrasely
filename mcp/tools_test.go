@@ -23,7 +23,7 @@ func TestServerInstructionsPrioritizeSaveIntent(t *testing.T) {
 
 func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	ctx := context.Background()
-	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.3.3"}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, nil)
 	registerTools(server, newAPIClient("http://localhost:8080"), "test-token")
 
 	clientTransport, serverTransport := mcp.NewInMemoryTransports()
@@ -58,10 +58,19 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	for _, tool := range result.Tools {
 		byName[tool.Name] = tool
 	}
-	if !strings.Contains(byName["curate"].Description, "Do not call it merely") {
+	curateTool, ok := byName["curate"]
+	if !ok {
+		t.Fatal("curate tool is missing")
+	}
+	addPhraseTool, ok := byName["add_phrase"]
+	if !ok {
+		t.Fatal("add_phrase tool is missing")
+	}
+
+	if !strings.Contains(curateTool.Description, "Do not call it merely") {
 		t.Error("curate description does not distinguish discussion from save intent")
 	}
-	if !strings.Contains(byName["add_phrase"].Description, "do not ask again") {
+	if !strings.Contains(addPhraseTool.Description, "do not ask again") {
 		t.Error("add_phrase description does not recognize conversational confirmation")
 	}
 }

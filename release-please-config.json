@@ -16,7 +16,13 @@
       "release-type": "simple",
       "component": "mcp",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": false
+      "bump-patch-for-minor-pre-major": false,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "version.go"
+        }
+      ]
     }
   },
   "separate-pull-requests": true,
