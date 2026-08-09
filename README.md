@@ -18,6 +18,39 @@ Production: [getphrasely.com](https://getphrasely.com)
 
 The goal is simple: turn interesting words and expressions you hear in everyday life into part of your active vocabulary.
 
+## ChatGPT Plugin Flow
+
+The plugin bundles a vocabulary-companion skill with the existing Phrasely MCP app. The skill recognizes the user's intent and chooses the workflow; MCP tools provide authenticated access to the user's phrase collection.
+
+```mermaid
+flowchart TB
+    U["User in ChatGPT"] --> P["Phrasely plugin"]
+    P --> S["Vocabulary companion skill"]
+    S --> I{"User intent"}
+
+    I -->|"Understand / improve"| C["Explain or rewrite<br/>No save"]
+    C --> D{"What next?"}
+    D -->|"More"| C
+    D -->|"Done"| X["Continue<br/>No save"]
+    D -->|"Save"| Q
+
+    I -->|"Save now"| Q
+    Q --> E["Prepare final entry"]
+    E --> A
+
+    I -->|"Retrieve / practise"| R
+
+    subgraph MCP["Phrasely MCP tools"]
+        Q["curate<br/>Get rules"]
+        A["add_phrase"]
+        R["list_phrases<br/>sample_phrases"]
+    end
+
+    A --> API["Phrasely API"]
+    R --> API
+    API --> DB[("PostgreSQL")]
+```
+
 ## Documentation
 
 - [docs/local-development.md](docs/local-development.md) — local setup and day-to-day commands
