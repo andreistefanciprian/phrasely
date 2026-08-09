@@ -237,6 +237,16 @@ func (app *application) privacyPage(w http.ResponseWriter, r *http.Request) {
 	app.render(w, "privacy.html", data)
 }
 
+func (app *application) termsPage(w http.ResponseWriter, r *http.Request) {
+	authenticated := hasAuthCookie(r)
+	data := map[string]any{"Authenticated": authenticated}
+	if authenticated {
+		app.renderAuth(w, "terms.html", data)
+		return
+	}
+	app.render(w, "terms.html", data)
+}
+
 func (app *application) bubblePage(w http.ResponseWriter, r *http.Request) {
 	jwt := jwtFromContext(r.Context())
 	phrases, err := app.api.ListPhrases(jwt)
