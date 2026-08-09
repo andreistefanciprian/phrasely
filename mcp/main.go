@@ -84,7 +84,8 @@ func main() {
 		return s
 	}, nil)
 
-	mux.Handle("/mcp", requireBearer(mcpHandler))
+	protectedResourceMetadataURL := strings.TrimRight(mcpBaseURL, "/") + "/.well-known/oauth-protected-resource"
+	mux.Handle("/mcp", requireBearer(mcpHandler, protectedResourceMetadataURL))
 
 	slog.Info("mcp server listening", "port", port, "api", apiURL, "mcp_url", mcpBaseURL)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
@@ -112,14 +113,14 @@ func parseLogLevel(s string) slog.Level {
 // ChatGPT sends the OAuth access token here after completing the flow.
 // RFC 6750 §3: 401 responses must include WWW-Authenticate so clients know
 // which auth scheme is expected.
-func requireBearer(next http.Handler) http.Handler {
+func requireBearer(next http.Handler, protectedResourceMetadataURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Fields(r.Header.Get("Authorization"))
 		// Require exactly two fields: scheme + non-empty token.
 		// strings.Fields handles multiple spaces and normalises case-insensitive "bearer".
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
 			slog.Debug("requireBearer: rejected request", "remote_addr", r.RemoteAddr, "reason", "missing or invalid Bearer token")
-			w.Header().Set("WWW-Authenticate", `Bearer realm="mcp"`)
+			w.Header().Set("WWW-Authenticate", `Bearer resource_metadata="`+protectedResourceMetadataURL+`"`)
 			http.Error(w, "authorization required", http.StatusUnauthorized)
 			return
 		}

@@ -40,7 +40,8 @@ func TestRequireBearer(t *testing.T) {
 		capturedAuth = r.Header.Get("Authorization")
 		w.WriteHeader(http.StatusOK)
 	})
-	protected := requireBearer(inner)
+	const protectedResourceMetadataURL = "https://mcp.example.com/.well-known/oauth-protected-resource"
+	protected := requireBearer(inner, protectedResourceMetadataURL)
 
 	send := func(auth string) *httptest.ResponseRecorder {
 		capturedAuth = ""
@@ -58,8 +59,9 @@ func TestRequireBearer(t *testing.T) {
 		if w.Code != http.StatusUnauthorized {
 			t.Errorf("status = %d, want 401", w.Code)
 		}
-		if www := w.Header().Get("WWW-Authenticate"); !strings.HasPrefix(www, "Bearer") {
-			t.Errorf("WWW-Authenticate = %q, want Bearer realm", www)
+		wantChallenge := `Bearer resource_metadata="` + protectedResourceMetadataURL + `"`
+		if www := w.Header().Get("WWW-Authenticate"); www != wantChallenge {
+			t.Errorf("WWW-Authenticate = %q, want %q", www, wantChallenge)
 		}
 	})
 
