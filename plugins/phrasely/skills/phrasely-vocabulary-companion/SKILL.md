@@ -30,7 +30,7 @@ Resolve conversational references against the phrase currently in focus.
 
 For a confirmed save:
 
-1. Call the Phrasely MCP `curate` tool with the raw phrase and any useful surrounding context.
+1. Call the Phrasely MCP `curate` tool with one `phrase` argument containing the raw phrase and any useful surrounding context inline.
 2. Apply the returned rules to prepare the final phrase, headwords, note, and source URLs.
 3. Call the Phrasely MCP `add_phrase` tool once with that final entry.
 4. Briefly confirm what was saved.

@@ -20,7 +20,7 @@ Tools:
 - add_phrase — persist one fully curated entry to Phrasely.
 
 Save workflow:
-1. Call curate with the raw phrase and any useful context the user supplied.
+1. Call curate with one phrase argument containing the raw phrase and any useful context inline.
 2. Apply its rules to prepare the phrase, headwords, note, and Merriam-Webster URLs.
 3. Call add_phrase with the finished entry.
 
@@ -77,7 +77,7 @@ func main() {
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		// requireBearer guarantees the header is present before we reach here.
 		jwt := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.3.3"}, &mcp.ServerOptions{
+		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, &mcp.ServerOptions{
 			Instructions: serverInstructions,
 		})
 		registerTools(s, api, jwt)
