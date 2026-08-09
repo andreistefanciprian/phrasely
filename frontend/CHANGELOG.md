@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.4...frontend-v0.9.0) (2026-08-09)
+
+
+### Features
+
+* **frontend:** add terms page and plugin branding ([d5c5590](https://github.com/andreistefanciprian/phrasely/commit/d5c5590d36307a670b0694bcec6d46569395b0aa))
+
+
+### Bug Fixes
+
+* **mcp:** improve OAuth discovery and consent copy ([b675e54](https://github.com/andreistefanciprian/phrasely/commit/b675e5421762726555c54300c95bec7e8d2611a0))
+
 ## [0.8.4](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.3...frontend-v0.8.4) (2026-08-07)
 
 
