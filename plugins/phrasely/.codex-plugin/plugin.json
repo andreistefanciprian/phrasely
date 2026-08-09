@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "An AI-powered companion for understanding, curating, saving, retrieving, and practising English phrases from real life.",
   "author": {
-    "name": "Stefan Andrei",
+    "name": "Ciprian Andrei",
     "url": "https://github.com/andreistefanciprian"
   },
   "homepage": "https://getphrasely.com",
@@ -19,7 +19,7 @@
     "displayName": "Phrasely",
     "shortDescription": "Turn real-life English into active vocabulary.",
     "longDescription": "Understand expressions in context, turn rough notes into memorable entries, save them naturally, and practise them later with your private Phrasely collection.",
-    "developerName": "Stefan Andrei",
+    "developerName": "Ciprian Andrei",
     "category": "Education",
     "capabilities": [
       "Read",
