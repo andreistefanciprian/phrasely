@@ -1,0 +1,15 @@
+interface:
+  display_name: "Phrasely Vocabulary Companion"
+  short_description: "Understand, save, and practise English phrases"
+  default_prompt: "Use $phrasely-vocabulary-companion to explain and save an English expression."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "phrasely"
+      description: "Phrasely MCP tools for the user's private phrase collection"
+      transport: "streamable_http"
+      url: "https://mcp.getphrasely.com/mcp"
+
+policy:
+  allow_implicit_invocation: true

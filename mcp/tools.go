@@ -21,6 +21,7 @@ Rules:
 	- Preserve the target word or expression.
 	- If the phrase is incomplete, complete it naturally.
 	- If the phrase is too short, vague, or lacks context, enrich it with a realistic continuation.
+	- Preserve useful source or situational context supplied by the user when it improves memorability. Never invent provenance.
 	- Do not overexpand. Usually return one sentence.
 	- The final phrase should sound like something an articulate native speaker might actually say.
 	- Prefer vivid, memorable, podcast quality examples over dictionary style examples.
@@ -71,7 +72,8 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_phrases",
-		Description: "List the user's saved phrases (phrase and headwords only), optionally filtered by headword.",
+		Title:       "List Phrasely phrases",
+		Description: "List phrases in the user's Phrasely collection, newest first, optionally filtered by matching headword text. Use for recent phrases, browsing, or headword lookup.",
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
@@ -80,7 +82,8 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sample_phrases",
-		Description: "Randomly sample N phrases from the user's saved collection. Use this when the user asks to pick, show, quiz, or suggest a random phrase or a few random phrases — not when they want to list all phrases.",
+		Title:       "Sample Phrasely phrases",
+		Description: "Randomly select phrases from the user's Phrasely collection for review, quizzes, or speaking practice. Do not use when the user wants a complete or recent list.",
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
@@ -89,7 +92,8 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "curate",
-		Description: `Use this first for any raw phrase input from the user. When the user mentions a phrase, wants to save an expression they heard in conversation/podcast/movie/book, or provides a fragment or example sentence, you MUST call this tool to receive the curation rules. Apply those rules locally to transform the raw text into a fully curated phrase with meanings in parentheses, headwords, a usage note, and Merriam-Webster URLs. Only then call add_phrase with the finished, curated result. This tool does not call OpenAI and does not persist data.`,
+		Title:       "Curate a Phrasely entry",
+		Description: `Return Phrasely's detailed curation rules when the user wants to finalize or save a raw phrase, or explicitly asks for a Phrasely-ready entry. Apply the rules locally before calling add_phrase. This tool does not call OpenAI or persist data. Do not call it merely to explain, define, compare, or rewrite an expression unless the user is preparing to save it.`,
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
@@ -98,7 +102,8 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "add_phrase",
-		Description: `Save a phrase that has been fully curated by the assistant. CRITICAL: Never call this tool directly on raw user input. If the user provides a raw phrase, fragment, or example from speech, you MUST call curate first, receive the curation rules, apply them locally, and then call this tool with the finished result. Only skip curate if the user explicitly provides a fully curated phrase with headwords and their meanings already formatted in parentheses within the phrase text (e.g., 'She was conspicuous (easy to notice) in the crowd.').`,
+		Title:       "Add a phrase to Phrasely",
+		Description: `Save one fully curated entry to Phrasely. Call curate first for raw input, apply its rules, then call this tool with the finished result. A clear request such as "add it", "save it", or "save this" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation or rewrite. Ask which phrase if the reference is ambiguous.`,
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: pFalse,
 			OpenWorldHint:   pFalse,

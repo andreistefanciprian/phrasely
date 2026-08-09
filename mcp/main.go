@@ -9,6 +9,23 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+const serverInstructions = `When the user clearly wants to save an English phrase, call curate before add_phrase. Treat "add it", "save it", "add this", "save this", and similar unambiguous requests as confirmation; do not ask again. Never save from a request that only asks for an explanation, definition, comparison, or rewrite. If the referenced phrase is ambiguous, ask which one.
+
+Phrasely is a private, personal vocabulary companion for understanding, curating, saving, retrieving, and practising English expressions from real life.
+
+Tools:
+- list_phrases — list the user's Phrasely phrases, newest first, optionally filtered by matching headword text.
+- sample_phrases — randomly select phrases for review, quizzes, or speaking practice.
+- curate — return the detailed curation rules when preparing a phrase for saving; it does not persist data.
+- add_phrase — persist one fully curated entry to Phrasely.
+
+Save workflow:
+1. Call curate with the raw phrase and any useful context the user supplied.
+2. Apply its rules to prepare the phrase, headwords, note, and Merriam-Webster URLs.
+3. Call add_phrase with the finished entry.
+
+Skip curate only when the user explicitly supplies an entry already fully curated with headwords and meanings in parentheses. Do not call curate merely because a phrase is mentioned during explanation or improvement. After retrieving phrases, carry out the requested review or practice conversationally.`
+
 func main() {
 	// Configure structured JSON logging first so every subsequent log line
 	// is parseable by Railway's log viewer. Level defaults to INFO.
@@ -60,25 +77,8 @@ func main() {
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		// requireBearer guarantees the header is present before we reach here.
 		jwt := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.1.0"}, &mcp.ServerOptions{
-			Instructions: `Phrasely is a personal vocabulary learning app. The user saves English phrases and expressions they want to remember and study later. All data is private to the authenticated user.
-
-Tools:
-- list_phrases — retrieves the user's saved phrases, optionally filtered by headword. Use when the user wants to browse, find, or search their collection.
-- sample_phrases — randomly picks N phrases (default 1, max 10). Use when the user wants to practise, be quizzed, or review random phrases from their collection.
-- curate — returns the curation rules for any raw phrase input. Use this first for any phrase the user wants to save.
-- add_phrase — saves a phrase that has been fully curated. Never call this directly on raw input.
-
-Headwords are the key word(s) or expression a phrase illustrates. Treat idioms and fixed expressions as a single headword (e.g. "in the nick of time"). Use multiple headwords only when the phrase genuinely teaches independent vocabulary items.
-
-**MANDATORY WORKFLOW: Curation happens before persistence.**
-Whenever the user provides a raw phrase, fragment, or wants to save something they heard:
-1. Call curate(phrase) — you will receive the detailed curation rules.
-2. Apply those rules locally — transform the raw text into a curated phrase with meanings in parentheses, headwords, a usage note, and Merriam-Webster URLs.
-3. Call add_phrase with the curated result.
-Skip step 1 ONLY if the user explicitly provides text that is already fully curated with headwords and meanings in parentheses.
-
-If the user learns or encounters an interesting expression during conversation, proactively offer to save it to their Phrasely collection. Always ask for confirmation before calling add_phrase — never save a phrase without the user explicitly agreeing.`,
+		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: "0.3.3"}, &mcp.ServerOptions{
+			Instructions: serverInstructions,
 		})
 		registerTools(s, api, jwt)
 		return s
