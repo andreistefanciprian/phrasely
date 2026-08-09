@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.4.0...mcp-v0.4.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **mcp:** improve OAuth discovery and consent copy ([b675e54](https://github.com/andreistefanciprian/phrasely/commit/b675e5421762726555c54300c95bec7e8d2611a0))
+
 ## [0.4.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.3.3...mcp-v0.4.0) (2026-08-09)
 
 
