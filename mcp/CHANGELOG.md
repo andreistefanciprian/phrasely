@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.1...mcp-v0.5.2) (2026-08-15)
+
+
+### Bug Fixes
+
+* **mcp:** advertise public token authentication ([b3b07ea](https://github.com/andreistefanciprian/phrasely/commit/b3b07ea33b1ce42f3d5098b3191fee0e5e7bf3b3))
+
 ## [0.5.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.0...mcp-v0.5.1) (2026-08-15)
 
 
