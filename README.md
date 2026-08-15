@@ -28,20 +28,20 @@ flowchart TB
     P --> S["Vocabulary companion skill"]
     S --> I{"User intent"}
 
-    I -->|"Understand / improve"| C["Explain or rewrite<br/>No save"]
+    I -->|"Understand / improve"| Q
+    Q --> C["Apply learning guidance<br/>No save"]
     C --> D{"What next?"}
     D -->|"More"| C
     D -->|"Done"| X["Continue<br/>No save"]
-    D -->|"Save"| Q
 
-    I -->|"Save now"| Q
-    Q --> E["Prepare final entry"]
+    I -->|"Save now"| E["Prepare final entry locally"]
+    D -->|"Save"| E
     E --> A
 
     I -->|"Retrieve / practise"| R
 
     subgraph MCP["Phrasely MCP tools"]
-        Q["curate<br/>Get rules"]
+        Q["explore_phrase<br/>Get learning guidance"]
         A["add_phrase"]
         R["list_phrases<br/>sample_phrases"]
     end

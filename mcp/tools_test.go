@@ -9,11 +9,15 @@ import (
 )
 
 func TestServerInstructionsPrioritizeSaveIntent(t *testing.T) {
-	if !strings.Contains(serverInstructions, "do not ask again") {
-		t.Errorf("instructions do not contain %q", "do not ask again")
+	firstWindow := serverInstructions
+	if len(firstWindow) > 512 {
+		firstWindow = firstWindow[:512]
 	}
-	if !strings.Contains(serverInstructions, "Never save from a request that only asks") {
-		t.Errorf("instructions do not contain %q", "Never save from a request that only asks")
+
+	for _, want := range []string{"call add_phrase", "do not ask again", "Never save from a request that only asks"} {
+		if !strings.Contains(firstWindow, want) {
+			t.Errorf("first 512 instruction characters do not contain %q", want)
+		}
 	}
 }
 

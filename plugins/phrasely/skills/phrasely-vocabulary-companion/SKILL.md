@@ -11,6 +11,8 @@ Treat Phrasely as a language companion, not a passive notebook. Optimize for the
 
 ### Understand and/or improve
 
+- For each newly introduced word or expression, call the Phrasely MCP `explore_phrase` tool once with the raw phrase and any useful surrounding context inline, then apply its returned learning instructions conversationally.
+- For follow-up questions about the same expression, continue the conversation without calling `explore_phrase` again unless the user supplies materially different context or introduces a new target expression.
 - Explain meaning, nuance, register, natural usage, and useful contrasts.
 - Improve grammar or wording and create a vivid, realistic example when asked.
 - Preserve useful source or situational context supplied by the user. Never invent provenance.
@@ -30,12 +32,11 @@ Resolve conversational references against the phrase currently in focus.
 
 For a confirmed save:
 
-1. Call the Phrasely MCP `curate` tool with one `phrase` argument containing the raw phrase and any useful surrounding context inline.
-2. Apply the returned rules to prepare the final phrase, headwords, note, and source URLs.
-3. Call the Phrasely MCP `add_phrase` tool once with that final entry.
-4. Briefly confirm what was saved.
+1. Construct the finished phrase, headwords, note, and source URLs locally from the phrase the user supplied or selected, following the `add_phrase` field descriptions.
+2. Call the Phrasely MCP `add_phrase` tool once with that final entry.
+3. Briefly confirm what was saved.
 
-Do not duplicate the backend's full curation prompt here. The `curate` tool supplies the current detailed rules at the moment they are needed.
+Do not call `explore_phrase` solely to prepare a save. It is a learning tool, not a prerequisite for `add_phrase`.
 
 ### Retrieve and practise
 

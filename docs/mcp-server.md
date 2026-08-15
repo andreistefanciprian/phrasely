@@ -1,6 +1,6 @@
 # MCP Server
 
-Exposes `list_phrases` and `add_phrase` over MCP (Streamable HTTP), backed by the
+Exposes `list_phrases`, `sample_phrases`, `explore_phrase`, and `add_phrase` over MCP (Streamable HTTP), backed by the
 private `backend` API. Deployed as a separate public Railway service alongside `frontend`.
 
 ## Architecture
@@ -157,17 +157,17 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 |---|---|---|
 | `list_phrases(headword?)` | List the user's saved phrases, optionally filtered by headword | `GET /api/v1/phrases` |
 | `sample_phrases(count?)` | Randomly pick N phrases (1–10) for practice or quizzing | `GET /api/v1/phrases/random` |
-| `curate(phrase)` | Return the curation rules for the assistant to apply locally — no backend call, no data persisted | — |
-| `add_phrase(phrase, headwords, note?, source_urls?)` | Save an already-curated phrase. Must be called after `curate` has been applied | `POST /api/v1/phrases` |
+| `explore_phrase(phrase)` | Return learning instructions for understanding an expression and generating memorable contexts — no backend call, no data persisted | — |
+| `add_phrase(phrase, headwords, note?, source_urls?)` | Save a finished phrase constructed locally by the assistant | `POST /api/v1/phrases` |
 
-### Curation flow
+### Exploration and save flow
 
-Curation happens on the assistant side, not in the MCP server. When the user gives raw text:
-1. The assistant calls `curate(phrase)` to receive the curation rules.
-2. The assistant applies those rules locally: polishes the phrase, inserts headword meanings in parentheses, writes a usage note, and generates Merriam-Webster URLs.
-3. The assistant calls `add_phrase` with the finished, curated payload.
+Exploration and saving are separate workflows:
 
-`add_phrase` is persistence-only — it does not call OpenAI and does not curate.
+1. When the user wants to understand or explore an expression, the assistant calls `explore_phrase(phrase)` and applies the returned learning instructions conversationally. Nothing is persisted.
+2. When the user asks to save a supplied or selected phrase, the assistant constructs the finished phrase, headwords, note, and source URLs locally, then calls `add_phrase` directly. Calling `explore_phrase` first is not required.
+
+`add_phrase` is persistence-only — it does not call OpenAI or enrich the entry itself.
 
 ## Local testing
 
