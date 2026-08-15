@@ -33,8 +33,7 @@
       "Make this phrase memorable, then save it.",
       "Quiz me using phrases from my collection."
     ],
-    "composerIcon": "./assets/neon_glossy_logo_512_512.png",
-    "logo": "./assets/neon_glossy_logo_512_512.png"
-  },
-  "apps": "./.app.json"
+    "composerIcon": "./assets/phrasely-logo.png",
+    "logo": "./assets/phrasely-logo.png"
+  }
 }
