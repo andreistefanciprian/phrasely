@@ -151,6 +151,11 @@ func TestOAuthDiscovery(t *testing.T) {
 		if got := doc["registration_endpoint"]; got != cfg.mcpBaseURL+"/register" {
 			t.Errorf("registration_endpoint = %q, want %q", got, cfg.mcpBaseURL+"/register")
 		}
+		// ChatGPT exchanges its PKCE proof as a public client, without a secret.
+		tokenAuthMethods, _ := doc["token_endpoint_auth_methods_supported"].([]any)
+		if len(tokenAuthMethods) != 1 || tokenAuthMethods[0] != "none" {
+			t.Errorf("token_endpoint_auth_methods_supported = %v, want [none]", tokenAuthMethods)
+		}
 		// OAuth 2.1 mandates S256 only — "plain" must be absent.
 		methods, _ := doc["code_challenge_methods_supported"].([]any)
 		if len(methods) != 1 || methods[0] != "S256" {

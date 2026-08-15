@@ -31,6 +31,7 @@ func registerOAuthDiscovery(mux *http.ServeMux, cfg oauthConfig) {
 	//   - where to send the user to log in and consent (/authorize → frontend)
 	//   - where to exchange a code for tokens (/token → mcp)
 	//   - where to register as a client (/register → mcp)
+	//   - that token exchange uses a public client with no client secret
 	//   - which PKCE method we require (S256 only — plain is insecure)
 	mux.HandleFunc("/.well-known/oauth-authorization-server", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -48,6 +49,9 @@ func registerOAuthDiscovery(mux *http.ServeMux, cfg oauthConfig) {
 			// refresh_token allows the client to get new access tokens without
 			// re-prompting the user each time one expires.
 			"grant_types_supported": []string{"authorization_code", "refresh_token"},
+			// ChatGPT is a public OAuth client: it sends client_id + PKCE proof
+			// during token exchange, but no client secret.
+			"token_endpoint_auth_methods_supported": []string{"none"},
 			// S256 is mandatory in OAuth 2.1. "plain" is deliberately omitted —
 			// it provides no protection against code interception.
 			"code_challenge_methods_supported": []string{"S256"},
