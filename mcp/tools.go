@@ -7,62 +7,36 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const curateInstructions = `You are an English phrase curator for a personal phrase database.
+const explorePhraseInstructions = `You are an English vocabulary guide helping the user understand and remember a word, phrase, or expression they encountered in real life.
 
 The user gives you a rough phrase, sentence, or fragment they heard in a podcast, conversation, book, movie, article, social media post, or everyday speech.
 
-Your goal is to transform it into a memorable, natural phrase that teaches the target word or expression in context.
+Do this locally. Do not persist anything — saving is a separate step handled by add_phrase.
 
-Rules:
+1. Understand.
+	- Identify the likely target headword or fixed expression.
+	- Explain its meaning in the supplied context in simple English.
+	- Explain useful nuance where relevant: tone, register, connotation, or difference from a similar word.
+	- Treat idioms and fixed expressions as one headword.
 
-1. Curate the phrase.
-	- Correct grammar, spelling, punctuation, and awkward wording.
-	- Keep the user's original meaning, tone, and subject matter.
-	- Preserve the target word or expression.
-	- If the phrase is incomplete, complete it naturally.
-	- If the phrase is too short, vague, or lacks context, enrich it with a realistic continuation.
-	- Preserve useful source or situational context supplied by the user when it improves memorability. Never invent provenance.
-	- Do not overexpand. Usually return one sentence.
-	- The final phrase should sound like something an articulate native speaker might actually say.
-	- Prefer vivid, memorable, podcast quality examples over dictionary style examples.
+2. Preserve the real-world context.
+	- Refine the phrase or context the user actually heard: correct grammar and awkward wording.
+	- Preserve the user's original meaning, subject matter, tone, and provenance. Never invent provenance.
+	- If the source expresses an opinion, controversial claim, political argument, or religious argument, preserve it as the speaker's claim rather than silently converting it into an objective fact.
 
-2. Identify the headword or expression being illustrated.
-	- Treat idioms and fixed expressions as ONE headword.
-	- Return multiple headwords only when the phrase genuinely teaches multiple independent words or expressions.
-	- If multiple words form a single idiom or fixed expression, return only one headword.
+3. Explore memorable contexts.
+	- Generate 1-3 additional contexts using the same headword or expression.
+	- Make them easy to understand, vivid, memorable, and natural — the way someone would actually speak or write.
+	- Avoid dictionary-style examples. Cover useful, varied contexts where possible, and preferably include at least one simple everyday example.
+	- Preserve the exact expression where doing so is natural.
+	- The purpose is active vocabulary acquisition, not merely definition. For example, if the original context for "pernicious" is obscure or technical, also produce memorable examples such as misinformation slowly eroding trust or a toxic culture spreading through an organisation.
 
-3. Insert a short meaning in parentheses immediately after each headword or expression.
-	- If the user wrote "??", replace it with the meaning.
-	- If there is no "??", identify the headword and add the meaning after the headword.
-	- Meanings must be short, clear, natural, easy to understand, and specific to the context.
-	- Avoid long dictionary definitions.
+4. Teach useful usage patterns.
+	- When useful, mention common collocations or grammatical constructions, e.g. "conflate X with Y", "fret about/over", "pernicious effect/influence", "mete out punishment", "encroach on". Keep this concise.
 
-4. Generate the headwords field.
-	- The headwords field must contain ONLY the raw word or expression.
-	- Do NOT include definitions.
-	- Do NOT include parentheses.
-	- Do NOT include quotation marks inside the headword text.
-	- Do NOT include explanatory text.
-	- Do NOT include punctuation unless it is part of the expression.
-
-5. Write a concise note.
-	- Explain how the headword is used in this context.
-	- Mention tone, nuance, register, or etymology only if useful.
-	- Keep it to 1-3 short sentences.
-
-6. Never use Markdown formatting.
-	- Do not use **bold**, *italic*, backticks, headings, lists, links, or any other Markdown syntax in the phrase or note.
-	- Return plain UTF-8 text only, ready to store directly in a database.
-	- Correct: The proposition will not cower away (shrink back in fear or intimidation) in the face of criticism.
-	- Incorrect: The proposition will not **cower away (shrink back in fear or intimidation)** in the face of criticism.
-
-7. Generate one Merriam-Webster URL for each headword.
-	- Format: https://www.merriam-webster.com/dictionary/<lookup form>
-	- URL encode spaces as %20.
-	- The <lookup form> is the form that would appear as a Merriam-Webster dictionary entry title, which is often not identical to the headword text.
-	- If the headword is an idiom built around a verb, use the verb's base/infinitive form, not the inflected form from the phrase.
-	- For many such verb idioms, Merriam-Webster's actual entry is filed under the noun phrase without the verb. When the idiom centers on a noun preceded by a common light verb, prefer the lookup form without that verb.
-	- The headwords field should still contain the natural form of the expression as used or taught; only the source_urls lookup form changes per the rules above.`
+5. Do not persist.
+	- Never save anything from this tool. Do not produce source_urls, database-ready JSON, a strict headwords field, or a final persistence note — those belong to add_phrase.
+	- Offer the refined original context and the memorable alternatives, and let the user choose one. Do not force a choice if the user then gives a direct save instruction that clearly identifies a phrase — in that case, construct the entry and call add_phrase.`
 
 // registerTools attaches the phrasely tools to the MCP server.
 // jwt is the per-request OAuth access token forwarded to the backend.
@@ -91,19 +65,19 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 	}, samplePhrasesHandler(api, jwt))
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "curate",
-		Title:       "Curate a Phrasely entry",
-		Description: `Return Phrasely's detailed curation rules when the user wants to finalize or save a raw phrase, or explicitly asks for a Phrasely-ready entry. Apply the rules locally before calling add_phrase. This tool does not call OpenAI or persist data. Do not call it merely to explain, define, compare, or rewrite an expression unless the user is preparing to save it.`,
+		Name:        "explore_phrase",
+		Title:       "Explore a phrase with Phrasely",
+		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or find memorable examples using the same headword. Return Phrasely's learning instructions for the assistant to apply locally. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
 		},
-	}, curateHandler())
+	}, explorePhraseHandler())
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "add_phrase",
 		Title:       "Add a phrase to Phrasely",
-		Description: `Save one fully curated entry to Phrasely. Call curate first for raw input, apply its rules, then call this tool with the finished result. A clear request such as "add it", "save it", or "save this" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation or rewrite. Ask which phrase if the reference is ambiguous.`,
+		Description: `Save one finished phrase entry to Phrasely. Construct the phrase, headwords, note, and source_urls locally first — see each field's description for the construction rules — then call this tool. There is no need to call explore_phrase first if the user already supplied or chose a clear phrase. A clear request such as "add it", "save it", "add this one", or "add that to Phrasely" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation, definition, or rewrite. Ask which phrase only if the reference is genuinely ambiguous and cannot be resolved from conversation context.`,
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: pFalse,
 			OpenWorldHint:   pFalse,
@@ -111,21 +85,21 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 	}, addPhraseHandler(api, jwt))
 }
 
-// CurateInput is the input schema for the curate tool.
-type CurateInput struct {
-	Phrase string `json:"phrase" jsonschema:"raw phrase or expression to curate before saving"`
+// ExplorePhraseInput is the input schema for the explore_phrase tool.
+type ExplorePhraseInput struct {
+	Phrase string `json:"phrase" jsonschema:"raw phrase, expression, or context the user wants to explore"`
 }
 
-// CurateOutput is the output schema for the curate tool.
-type CurateOutput struct {
+// ExplorePhraseOutput is the output schema for the explore_phrase tool.
+type ExplorePhraseOutput struct {
 	Instructions string `json:"instructions"`
 	Phrase       string `json:"phrase,omitempty"`
 }
 
-func curateHandler() mcp.ToolHandlerFor[CurateInput, CurateOutput] {
-	return func(ctx context.Context, req *mcp.CallToolRequest, in CurateInput) (*mcp.CallToolResult, CurateOutput, error) {
-		slog.Debug("tool: curate", "phrase_len", len(in.Phrase))
-		return nil, CurateOutput{Instructions: curateInstructions, Phrase: in.Phrase}, nil
+func explorePhraseHandler() mcp.ToolHandlerFor[ExplorePhraseInput, ExplorePhraseOutput] {
+	return func(ctx context.Context, req *mcp.CallToolRequest, in ExplorePhraseInput) (*mcp.CallToolResult, ExplorePhraseOutput, error) {
+		slog.Debug("tool: explore_phrase", "phrase_len", len(in.Phrase))
+		return nil, ExplorePhraseOutput{Instructions: explorePhraseInstructions, Phrase: in.Phrase}, nil
 	}
 }
 
@@ -186,10 +160,10 @@ func listPhrasesHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[ListPhras
 
 // AddPhraseInput is the input schema for the add_phrase tool.
 type AddPhraseInput struct {
-	Phrase     string   `json:"phrase" jsonschema:"already curated phrase with each headword's meaning in parentheses immediately after it"`
-	Headwords  []string `json:"headwords" jsonschema:"raw headword or expression only; treat idioms as a single entry"`
-	Note       string   `json:"note,omitempty" jsonschema:"1-3 sentences on usage, tone, nuance, or register; include etymology if useful"`
-	SourceURLs []string `json:"source_urls,omitempty" jsonschema:"one Merriam-Webster URL per headword aligned by index"`
+	Phrase     string   `json:"phrase" jsonschema:"Polished, natural English, usually one memorable sentence, preserving the user's original meaning and context. Insert a short plain-English meaning in parentheses immediately after each headword or expression, e.g. 'We sat around the campfire, yapping away (chatting continuously) until midnight.' No Markdown formatting."`
+	Headwords  []string `json:"headwords" jsonschema:"Raw word or expression only, one per entry — no parentheses, no definitions, no quotation marks, no explanatory text. Treat an idiom or fixed expression as a single headword, using its natural taught form, e.g. ['yapping away']."`
+	Note       string   `json:"note,omitempty" jsonschema:"1-3 concise sentences on usage, nuance, tone, register, or collocations. Do not repeat the phrase unnecessarily."`
+	SourceURLs []string `json:"source_urls,omitempty" jsonschema:"One Merriam-Webster URL per headword, aligned by index: https://www.merriam-webster.com/dictionary/<lookup form>, URL-encoding spaces as %20. The lookup form is the actual dictionary entry title and is often not identical to the headword text: an inflected verb should normally resolve to its base/infinitive form, and an idiom built around a common light verb (make, take, give, etc.) often has its real Merriam-Webster entry filed under the noun phrase alone, with that light verb dropped — prefer that form when it applies. The headwords field itself keeps the natural taught form; only the source_urls lookup form changes. Example: headword 'yapping away' -> https://www.merriam-webster.com/dictionary/yap."`
 }
 
 // AddPhraseOutput is the output schema for the add_phrase tool.
