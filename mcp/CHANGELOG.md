@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.4.1...mcp-v0.5.0) (2026-08-15)
+
+
+### Features
+
+* **mcp:** split curate into explore_phrase and a self-sufficient add_phrase ([be7844b](https://github.com/andreistefanciprian/phrasely/commit/be7844b18c72228791bb5cffcf4d7cd250245498))
+
 ## [0.4.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.4.0...mcp-v0.4.1) (2026-08-09)
 
 
