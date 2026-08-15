@@ -11,9 +11,9 @@ import (
 
 const serverInstructions = `Phrasely supports this vocabulary-learning workflow: hear -> understand -> explore contexts -> choose -> save -> encounter again.
 
-When the user wants to understand a word or expression, refine the context they heard it in, or find memorable examples, call explore_phrase. It is pedagogical and conversational and never saves anything.
+When the user clearly wants to save a finished phrase, call add_phrase. Treat "add it", "save it", "add this", "save this", and similar unambiguous requests as confirmation; do not ask again. Never save from a request that only asks for an explanation, definition, comparison, or rewrite. If the referenced phrase is ambiguous, ask which one. Construct the phrase, headwords, note, and source_urls locally; there is no requirement to call explore_phrase first.
 
-When the user has a finished phrase — either supplied directly or chosen from an explore_phrase conversation — construct the phrase, headwords, note, and source_urls locally, then call add_phrase. There is no requirement to call explore_phrase first. Treat "add it", "save it", "add this", "save this", and similar unambiguous requests as confirmation; do not ask again. Never save from a request that only asks for an explanation, definition, comparison, or rewrite. If the referenced phrase is ambiguous, ask which one.
+When the user wants to understand a word or expression, refine the context they heard it in, or find memorable examples, call explore_phrase. It is pedagogical and conversational and never saves anything.
 
 Phrasely is a private, personal vocabulary companion for understanding, exploring, saving, retrieving, and practising English expressions from real life.
 

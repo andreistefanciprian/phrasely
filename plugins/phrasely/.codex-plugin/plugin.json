@@ -1,7 +1,7 @@
 {
   "name": "phrasely",
-  "version": "0.1.0",
-  "description": "An AI-powered companion for understanding, curating, saving, retrieving, and practising English phrases from real life.",
+  "version": "0.1.1",
+  "description": "An AI-powered companion for understanding, exploring, saving, retrieving, and practising English phrases from real life.",
   "author": {
     "name": "Ciprian Andrei",
     "url": "https://github.com/andreistefanciprian"

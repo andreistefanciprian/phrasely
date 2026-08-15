@@ -1,6 +1,6 @@
 # Phrasely MCP Server
 
-Exposes `list_phrases` and `add_phrase` over MCP (Streamable HTTP), backed by the
+Exposes `list_phrases`, `sample_phrases`, `explore_phrase`, and `add_phrase` over MCP (Streamable HTTP), backed by the
 private `backend` API.
 
 ## Auth
