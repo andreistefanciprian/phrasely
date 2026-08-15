@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.0...mcp-v0.5.1) (2026-08-15)
+
+
+### Bug Fixes
+
+* **mcp:** align plugin with explore workflow ([b818f22](https://github.com/andreistefanciprian/phrasely/commit/b818f2251acc75ac04f6767d1a7439c74ff8d2c4))
+
 ## [0.5.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.4.1...mcp-v0.5.0) (2026-08-15)
 
 
