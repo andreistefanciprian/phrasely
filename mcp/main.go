@@ -9,22 +9,21 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const serverInstructions = `When the user clearly wants to save an English phrase, call curate before add_phrase. Treat "add it", "save it", "add this", "save this", and similar unambiguous requests as confirmation; do not ask again. Never save from a request that only asks for an explanation, definition, comparison, or rewrite. If the referenced phrase is ambiguous, ask which one.
+const serverInstructions = `Phrasely supports this vocabulary-learning workflow: hear -> understand -> explore contexts -> choose -> save -> encounter again.
 
-Phrasely is a private, personal vocabulary companion for understanding, curating, saving, retrieving, and practising English expressions from real life.
+When the user wants to understand a word or expression, refine the context they heard it in, or find memorable examples, call explore_phrase. It is pedagogical and conversational and never saves anything.
+
+When the user has a finished phrase — either supplied directly or chosen from an explore_phrase conversation — construct the phrase, headwords, note, and source_urls locally, then call add_phrase. There is no requirement to call explore_phrase first. Treat "add it", "save it", "add this", "save this", and similar unambiguous requests as confirmation; do not ask again. Never save from a request that only asks for an explanation, definition, comparison, or rewrite. If the referenced phrase is ambiguous, ask which one.
+
+Phrasely is a private, personal vocabulary companion for understanding, exploring, saving, retrieving, and practising English expressions from real life.
 
 Tools:
 - list_phrases — list the user's Phrasely phrases, newest first, optionally filtered by matching headword text.
 - sample_phrases — randomly select phrases for review, quizzes, or speaking practice.
-- curate — return the detailed curation rules when preparing a phrase for saving; it does not persist data.
-- add_phrase — persist one fully curated entry to Phrasely.
+- explore_phrase — return Phrasely's learning instructions for understanding a word or expression and generating memorable contexts; it does not persist data.
+- add_phrase — persist one finished phrase entry to Phrasely.
 
-Save workflow:
-1. Call curate with one phrase argument containing the raw phrase and any useful context inline.
-2. Apply its rules to prepare the phrase, headwords, note, and Merriam-Webster URLs.
-3. Call add_phrase with the finished entry.
-
-Skip curate only when the user explicitly supplies an entry already fully curated with headwords and meanings in parentheses. Do not call curate merely because a phrase is mentioned during explanation or improvement. After retrieving phrases, carry out the requested review or practice conversationally.`
+After retrieving phrases, carry out the requested review or practice conversationally.`
 
 func main() {
 	// Configure structured JSON logging first so every subsequent log line

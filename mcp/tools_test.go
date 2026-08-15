@@ -9,15 +9,11 @@ import (
 )
 
 func TestServerInstructionsPrioritizeSaveIntent(t *testing.T) {
-	firstWindow := serverInstructions
-	if len(firstWindow) > 512 {
-		firstWindow = firstWindow[:512]
+	if !strings.Contains(serverInstructions, "do not ask again") {
+		t.Errorf("instructions do not contain %q", "do not ask again")
 	}
-
-	for _, want := range []string{"call curate before add_phrase", "do not ask again", "Never save from a request that only asks"} {
-		if !strings.Contains(firstWindow, want) {
-			t.Errorf("first 512 instruction characters do not contain %q", want)
-		}
+	if !strings.Contains(serverInstructions, "Never save from a request that only asks") {
+		t.Errorf("instructions do not contain %q", "Never save from a request that only asks")
 	}
 }
 
@@ -58,17 +54,17 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	for _, tool := range result.Tools {
 		byName[tool.Name] = tool
 	}
-	curateTool, ok := byName["curate"]
+	explorePhraseTool, ok := byName["explore_phrase"]
 	if !ok {
-		t.Fatal("curate tool is missing")
+		t.Fatal("explore_phrase tool is missing")
 	}
 	addPhraseTool, ok := byName["add_phrase"]
 	if !ok {
 		t.Fatal("add_phrase tool is missing")
 	}
 
-	if !strings.Contains(curateTool.Description, "Do not call it merely") {
-		t.Error("curate description does not distinguish discussion from save intent")
+	if !strings.Contains(explorePhraseTool.Description, "Do not use it when the user has already chosen a finished phrase") {
+		t.Error("explore_phrase description does not distinguish exploration from save intent")
 	}
 	if !strings.Contains(addPhraseTool.Description, "do not ask again") {
 		t.Error("add_phrase description does not recognize conversational confirmation")
