@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -31,75 +32,88 @@ func TestParseLogLevel(t *testing.T) {
 	}
 }
 
-// TestRequireBearer checks that /mcp rejects requests without a valid Bearer token
-// and that the header is normalised before passing downstream.
-func TestRequireBearer(t *testing.T) {
-	// Record the Authorization header as seen by the inner handler.
-	var capturedAuth string
-	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedAuth = r.Header.Get("Authorization")
-		w.WriteHeader(http.StatusOK)
-	})
-	const protectedResourceMetadataURL = "https://mcp.example.com/.well-known/oauth-protected-resource"
-	protected := requireBearer(inner, protectedResourceMetadataURL)
-
-	send := func(auth string) *httptest.ResponseRecorder {
-		capturedAuth = ""
-		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodPost, "/mcp", nil)
-		if auth != "" {
-			r.Header.Set("Authorization", auth)
-		}
-		protected.ServeHTTP(w, r)
-		return w
+func TestBearerToken(t *testing.T) {
+	tests := []struct {
+		name   string
+		header string
+		want   string
+	}{
+		{name: "missing", header: "", want: ""},
+		{name: "wrong scheme", header: "Basic dXNlcjpwYXNz", want: ""},
+		{name: "empty token", header: "Bearer ", want: ""},
+		{name: "valid", header: "Bearer some-jwt-here", want: "some-jwt-here"},
+		{name: "lowercase scheme", header: "bearer some-jwt-here", want: "some-jwt-here"},
+		{name: "extra whitespace", header: "Bearer  some-jwt-here", want: "some-jwt-here"},
 	}
 
-	t.Run("no Authorization header returns 401", func(t *testing.T) {
-		w := send("")
-		if w.Code != http.StatusUnauthorized {
-			t.Errorf("status = %d, want 401", w.Code)
-		}
-		wantChallenge := `Bearer resource_metadata="` + protectedResourceMetadataURL + `"`
-		if www := w.Header().Get("WWW-Authenticate"); www != wantChallenge {
-			t.Errorf("WWW-Authenticate = %q, want %q", www, wantChallenge)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := bearerToken(tt.header); got != tt.want {
+				t.Errorf("bearerToken(%q) = %q, want %q", tt.header, got, tt.want)
+			}
+		})
+	}
+}
 
-	t.Run("non-Bearer scheme returns 401", func(t *testing.T) {
-		if w := send("Basic dXNlcjpwYXNz"); w.Code != http.StatusUnauthorized {
-			t.Errorf("status = %d, want 401", w.Code)
-		}
-	})
+func TestAnonymousMCPDiscoveryAndAuthChallenge(t *testing.T) {
+	const protectedResourceMetadataURL = "https://mcp.example.com/.well-known/oauth-protected-resource"
+	server := httptest.NewServer(newMCPHandler(newAPIClient("http://127.0.0.1:1"), protectedResourceMetadataURL))
+	defer server.Close()
 
-	t.Run("Bearer with empty token returns 401", func(t *testing.T) {
-		if w := send("Bearer "); w.Code != http.StatusUnauthorized {
-			t.Errorf("status = %d, want 401", w.Code)
+	post := func(body, sessionID, token string) (*http.Response, string) {
+		t.Helper()
+		req, err := http.NewRequest(http.MethodPost, server.URL, strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
 		}
-	})
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json, text/event-stream")
+		if sessionID != "" {
+			req.Header.Set("Mcp-Session-Id", sessionID)
+		}
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return resp, string(responseBody)
+	}
 
-	t.Run("valid Bearer passes through", func(t *testing.T) {
-		w := send("Bearer some-jwt-here")
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want 200", w.Code)
-		}
-	})
+	initialize := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}`
+	resp, body := post(initialize, "", "")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("initialize status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	sessionID := resp.Header.Get("Mcp-Session-Id")
+	if sessionID == "" {
+		t.Fatal("initialize response has no Mcp-Session-Id")
+	}
 
-	t.Run("lowercase bearer scheme accepted", func(t *testing.T) {
-		if w := send("bearer some-jwt-here"); w.Code != http.StatusOK {
-			t.Errorf("status = %d, want 200", w.Code)
+	_, body = post(`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, sessionID, "")
+	for _, want := range []string{`"name":"list_phrases"`, `"name":"sample_phrases"`, `"name":"explore_phrase"`, `"name":"add_phrase"`, `"securitySchemes"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("anonymous tools/list response does not contain %s: %s", want, body)
 		}
-	})
+	}
 
-	t.Run("extra whitespace normalised before passing downstream", func(t *testing.T) {
-		w := send("Bearer  some-jwt-here") // two spaces
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want 200", w.Code)
+	_, body = post(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"explore_phrase","arguments":{"phrase":"test"}}}`, sessionID, "")
+	for _, want := range []string{`"isError":true`, `"mcp/www_authenticate"`, protectedResourceMetadataURL, `error=\"invalid_token\"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("unauthenticated tool response does not contain %q: %s", want, body)
 		}
-		// Inner handler must see canonical single-space form.
-		if capturedAuth != "Bearer some-jwt-here" {
-			t.Errorf("downstream Authorization = %q, want %q", capturedAuth, "Bearer some-jwt-here")
-		}
-	})
+	}
+
+	_, body = post(`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"explore_phrase","arguments":{"phrase":"test"}}}`, sessionID, "test-token")
+	if strings.Contains(body, `"isError":true`) || !strings.Contains(body, `"instructions"`) {
+		t.Errorf("authenticated tool call did not succeed on the anonymously initialized session: %s", body)
+	}
 }
 
 // newTestMux builds a plain http.ServeMux wired with the OAuth routes only,

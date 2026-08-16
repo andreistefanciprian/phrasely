@@ -61,8 +61,9 @@ type registerResponse struct {
 	// ClientID is the opaque identifier assigned to this client. The client
 	// includes it in every subsequent /authorize and /token request so the
 	// server knows which registration to validate against.
-	ClientID     string   `json:"client_id"`
-	RedirectURIs []string `json:"redirect_uris"`
+	ClientID                string   `json:"client_id"`
+	RedirectURIs            []string `json:"redirect_uris"`
+	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
 }
 
 // register handles POST /internal/oauth/register.
@@ -73,6 +74,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 
 	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Warn("oauth: client registration rejected", "reason", "invalid_request_body")
 		respondErr(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -81,6 +83,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	// for all client types, but ChatGPT's connector flow always provides one,
 	// and we need it to validate the /authorize redirect later.
 	if len(req.RedirectURIs) == 0 {
+		slog.Warn("oauth: client registration rejected", "reason", "missing_redirect_uri")
 		respondErr(w, http.StatusBadRequest, "at least one redirect_uri is required")
 		return
 	}
@@ -90,6 +93,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	// In production, ChatGPT always uses https://.
 	for _, raw := range req.RedirectURIs {
 		if err := validateRedirectURI(raw); err != nil {
+			slog.Warn("oauth: client registration rejected", "reason", "invalid_redirect_uri")
 			respondErr(w, http.StatusBadRequest, "invalid redirect_uri: "+err.Error())
 			return
 		}
@@ -102,10 +106,11 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("oauth: client registered", "client_id", client.ID)
+	slog.Info("oauth: client registered", "client_id", client.ID)
 	respond(w, http.StatusCreated, registerResponse{
-		ClientID:     client.ID,
-		RedirectURIs: client.RedirectURIs,
+		ClientID:                client.ID,
+		RedirectURIs:            client.RedirectURIs,
+		TokenEndpointAuthMethod: "none",
 	})
 }
 
@@ -124,6 +129,7 @@ func (h *Handler) getClient(w http.ResponseWriter, r *http.Request) {
 	client, err := h.store.GetOAuthClient(r.Context(), clientID)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
+			slog.Warn("oauth: client lookup rejected", "client_id", clientID, "reason", "unknown_client")
 			respondErr(w, http.StatusNotFound, "client not found")
 			return
 		}
@@ -181,17 +187,20 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 	// the frontend before they can reach the consent screen.
 	userID := middleware.UserIDFromContext(r.Context())
 	if userID == "" {
+		slog.Warn("oauth: authorization rejected", "reason", "authentication_required")
 		respondErr(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 
 	var req authorizeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Warn("oauth: authorization rejected", "reason", "invalid_request_body")
 		respondErr(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.ClientID == "" || req.RedirectURI == "" || req.CodeChallenge == "" {
+		slog.Warn("oauth: authorization rejected", "client_id", req.ClientID, "reason", "missing_required_field")
 		respondErr(w, http.StatusBadRequest, "client_id, redirect_uri, and code_challenge are required")
 		return
 	}
@@ -199,6 +208,7 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 	// code_challenge must be BASE64URL(SHA256(verifier)) — always 43 chars, no padding.
 	// Rejecting obviously wrong values early avoids storing garbage in the DB.
 	if !base64urlRE.MatchString(req.CodeChallenge) {
+		slog.Warn("oauth: authorization rejected", "client_id", req.ClientID, "reason", "invalid_code_challenge")
 		respondErr(w, http.StatusBadRequest, "code_challenge must be base64url-encoded SHA256 (43 chars, no padding)")
 		return
 	}
@@ -207,6 +217,7 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 	client, err := h.store.GetOAuthClient(r.Context(), req.ClientID)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
+			slog.Warn("oauth: authorization rejected", "client_id", req.ClientID, "reason", "unknown_client")
 			respondErr(w, http.StatusBadRequest, "unknown client_id")
 			return
 		}
@@ -219,6 +230,7 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 	// This is the open-redirect defence: an attacker cannot swap in their own URI
 	// at /authorize because it won't match what was pinned at /register.
 	if !redirectURIAllowed(req.RedirectURI, client.RedirectURIs) {
+		slog.Warn("oauth: authorization rejected", "client_id", req.ClientID, "reason", "redirect_uri_mismatch")
 		respondErr(w, http.StatusBadRequest, "redirect_uri not registered for this client")
 		return
 	}
@@ -236,7 +248,7 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("oauth: authorization code issued", "client_id", req.ClientID, "user_id", userID)
+	slog.Info("oauth: authorization code issued", "client_id", req.ClientID, "user_id", userID)
 	respond(w, http.StatusOK, authorizeResponse{Code: code.Code})
 }
 
@@ -343,16 +355,19 @@ func redirectURIAllowed(uri string, allowed []string) bool {
 func (h *Handler) token(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 4*1024)
 	if err := r.ParseForm(); err != nil {
+		slog.Warn("oauth: token request rejected", "reason", "invalid_request_body")
 		respondErr(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	switch r.PostForm.Get("grant_type") {
+	grantType := r.PostForm.Get("grant_type")
+	switch grantType {
 	case "authorization_code":
 		h.authCodeGrant(w, r)
 	case "refresh_token":
 		h.refreshTokenGrant(w, r)
 	default:
+		slog.Warn("oauth: token request rejected", "grant_type", grantType, "reason", "unsupported_grant_type")
 		respondErr(w, http.StatusBadRequest, "unsupported_grant_type")
 	}
 }
@@ -367,6 +382,7 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 	redirectURI := r.PostForm.Get("redirect_uri")
 
 	if code == "" || codeVerifier == "" || clientID == "" || redirectURI == "" {
+		slog.Warn("oauth: authorization code exchange rejected", "client_id", clientID, "reason", "missing_required_field")
 		respondErr(w, http.StatusBadRequest, "code, code_verifier, client_id, and redirect_uri are required")
 		return
 	}
@@ -377,10 +393,11 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 	authCode, err := h.store.ConsumeAuthorizationCode(r.Context(), code, clientID)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
+			slog.Warn("oauth: authorization code exchange rejected", "client_id", clientID, "reason", "invalid_expired_or_used_code")
 			respondErr(w, http.StatusBadRequest, "invalid_grant")
 			return
 		}
-		slog.Error("consume authorization code", "error", err)
+		slog.Error("consume authorization code", "client_id", clientID, "error", err)
 		respondErr(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -392,6 +409,7 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 	// be logged or intercepted. The code_verifier never leaves the client, so even
 	// with the code an attacker cannot complete the exchange without it.
 	if !verifyPKCES256(codeVerifier, authCode.CodeChallenge) {
+		slog.Warn("oauth: authorization code exchange rejected", "client_id", clientID, "reason", "pkce_verification_failed")
 		respondErr(w, http.StatusBadRequest, "invalid_grant")
 		return
 	}
@@ -399,6 +417,7 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 	// redirect_uri must exactly match the value used when the code was issued
 	// (RFC 6749 §4.1.3). Prevents a client from using a code with a different URI.
 	if redirectURI != authCode.RedirectURI {
+		slog.Warn("oauth: authorization code exchange rejected", "client_id", clientID, "reason", "redirect_uri_mismatch")
 		respondErr(w, http.StatusBadRequest, "invalid_grant")
 		return
 	}
@@ -408,12 +427,12 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 		UserID:   authCode.UserID,
 	})
 	if err != nil {
-		slog.Error("create refresh token", "error", err)
+		slog.Error("create refresh token", "client_id", clientID, "grant_type", "authorization_code", "error", err)
 		respondErr(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	h.writeTokenResponse(w, authCode.UserID, refreshToken.Token)
+	h.writeTokenResponse(w, authCode.UserID, refreshToken.Token, clientID, "authorization_code")
 }
 
 // refreshTokenGrant handles grant_type=refresh_token.
@@ -426,6 +445,7 @@ func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 	tokenStr := r.PostForm.Get("refresh_token")
 	clientID := r.PostForm.Get("client_id")
 	if tokenStr == "" || clientID == "" {
+		slog.Warn("oauth: refresh token exchange rejected", "client_id", clientID, "reason", "missing_required_field")
 		respondErr(w, http.StatusBadRequest, "refresh_token and client_id are required")
 		return
 	}
@@ -436,10 +456,11 @@ func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 	old, err := h.store.ConsumeRefreshToken(r.Context(), tokenStr, clientID)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
+			slog.Warn("oauth: refresh token exchange rejected", "client_id", clientID, "reason", "invalid_revoked_or_wrong_client_token")
 			respondErr(w, http.StatusBadRequest, "invalid_grant")
 			return
 		}
-		slog.Error("consume refresh token", "error", err)
+		slog.Error("consume refresh token", "client_id", clientID, "error", err)
 		respondErr(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -449,25 +470,25 @@ func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 		UserID:   old.UserID,
 	})
 	if err != nil {
-		slog.Error("create refresh token", "error", err)
+		slog.Error("create refresh token", "client_id", clientID, "grant_type", "refresh_token", "error", err)
 		respondErr(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	h.writeTokenResponse(w, old.UserID, newRefreshToken.Token)
+	h.writeTokenResponse(w, old.UserID, newRefreshToken.Token, clientID, "refresh_token")
 }
 
 // writeTokenResponse signs a JWT access token and writes the standard token
 // response body with no-store cache headers (RFC 6749 §5.1).
-func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken string) {
+func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken, clientID, grantType string) {
 	accessToken, err := auth.SignJWT(userID, h.jwtSecret, h.accessTokenTTL)
 	if err != nil {
-		slog.Error("sign access token", "error", err)
+		slog.Error("sign access token", "client_id", clientID, "grant_type", grantType, "error", err)
 		respondErr(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	slog.Debug("oauth: access token issued", "user_id", userID)
+	slog.Info("oauth: token exchange succeeded", "client_id", clientID, "user_id", userID, "grant_type", grantType)
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 	respond(w, http.StatusOK, map[string]any{

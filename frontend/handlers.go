@@ -410,7 +410,7 @@ func (app *application) authorizeGet(w http.ResponseWriter, r *http.Request) {
 	// consent form. This ensures that both the Allow and Deny paths can safely
 	// redirect to redirect_uri — it's already been verified as registered.
 	if err := app.api.ValidateOAuthClient(params.ClientID, params.RedirectURI); err != nil {
-		slog.Warn("oauth: client validation failed", "error", err)
+		slog.Warn("oauth: client validation failed", "client_id", params.ClientID, "error", err)
 		http.Error(w, "Invalid authorization request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -481,7 +481,7 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 	// the code_challenge for PKCE verification at /token time.
 	code, err := app.api.IssueAuthCode(jwt, params.ClientID, params.RedirectURI, params.CodeChallenge)
 	if err != nil {
-		slog.Error("oauth: issue auth code failed", "error", err)
+		slog.Error("oauth: issue auth code failed", "client_id", params.ClientID, "error", err)
 		http.Error(w, "Failed to issue authorization code. Please try again.", http.StatusInternalServerError)
 		return
 	}
