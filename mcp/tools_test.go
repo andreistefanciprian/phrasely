@@ -152,6 +152,10 @@ func TestPhraseChoicesResource(t *testing.T) {
 	if content.MIMEType != mcpAppHTMLMIMEType {
 		t.Fatalf("resource MIME type = %q, want %q", content.MIMEType, mcpAppHTMLMIMEType)
 	}
+	uiMeta, ok := content.Meta["ui"].(map[string]any)
+	if !ok || uiMeta["domain"] != phraseChoicesWidgetDomain {
+		t.Fatalf("resource ui metadata = %#v, want domain %q", content.Meta["ui"], phraseChoicesWidgetDomain)
+	}
 	for _, want := range []string{
 		"Choose a phrase to save",
 		`request("ui/initialize"`,
@@ -224,6 +228,18 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 		choice,
 	}}); err == nil {
 		t.Fatal("multiple recommended choices did not return an error")
+	}
+
+	blankHeadword := choice
+	blankHeadword.Headwords = []string{" "}
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{blankHeadword}}); err == nil {
+		t.Fatal("blank headword did not return an error")
+	}
+
+	misalignedSourceURLs := choice
+	misalignedSourceURLs.Headwords = []string{"pernicious", "effect"}
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{misalignedSourceURLs}}); err == nil {
+		t.Fatal("misaligned source_urls did not return an error")
 	}
 }
 

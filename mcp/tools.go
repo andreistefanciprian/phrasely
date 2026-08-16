@@ -225,6 +225,14 @@ func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, R
 			if len(choice.Headwords) == 0 {
 				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d requires at least one headword", i+1)
 			}
+			for _, headword := range choice.Headwords {
+				if strings.TrimSpace(headword) == "" {
+					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords cannot be blank", i+1)
+				}
+			}
+			if len(choice.SourceURLs) > 0 && len(choice.SourceURLs) != len(choice.Headwords) {
+				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d source_urls must align with headwords", i+1)
+			}
 			if choice.Recommended {
 				recommended++
 			}

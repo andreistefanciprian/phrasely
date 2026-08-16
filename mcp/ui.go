@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	phraseChoicesTemplateURI = "ui://phrasely/phrase-choices-v1.html"
-	mcpAppHTMLMIMEType       = "text/html;profile=mcp-app"
+	phraseChoicesTemplateURI  = "ui://phrasely/phrase-choices-v1.html"
+	phraseChoicesWidgetDomain = "https://mcp.getphrasely.com"
+	mcpAppHTMLMIMEType        = "text/html;profile=mcp-app"
 )
 
 // phraseChoicesHTML is kept as a single, dependency-free document so the MCP
@@ -34,6 +35,7 @@ func registerResources(server *mcp.Server) {
 				Text:     phraseChoicesHTML,
 				Meta: mcp.Meta{
 					"ui": map[string]any{
+						"domain":        phraseChoicesWidgetDomain,
 						"prefersBorder": true,
 						"csp": map[string]any{
 							"connectDomains":  []string{},
