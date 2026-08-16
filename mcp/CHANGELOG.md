@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.6.1...mcp-v0.7.0) (2026-08-16)
+
+
+### Features
+
+* **mcp:** improve phrase exploration experience ([86e98ae](https://github.com/andreistefanciprian/phrasely/commit/86e98ae64c2dd575403e0a8ddf980c6ead0af4e6))
+
+
+### Bug Fixes
+
+* **mcp:** add ChatGPT CSP compatibility metadata ([2257f17](https://github.com/andreistefanciprian/phrasely/commit/2257f175aa07a51bd4d8d30c9d6f26319c65ccd6))
+
 ## [0.6.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.6.0...mcp-v0.6.1) (2026-08-16)
 
 
