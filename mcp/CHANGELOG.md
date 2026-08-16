@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.5...mcp-v0.6.0) (2026-08-16)
+
+
+### Features
+
+* **mcp:** add interactive phrase choice UI ([13eeb48](https://github.com/andreistefanciprian/phrasely/commit/13eeb488e67452a7777f8529d6b2ecebe2384c8e))
+* **mcp:** allow etymology in phrase notes ([c676d3e](https://github.com/andreistefanciprian/phrasely/commit/c676d3e92019dc2d0d7b32e613c8f6a3d776f9eb))
+
+
+### Bug Fixes
+
+* **mcp:** improve phrase choice compatibility ([c0901ea](https://github.com/andreistefanciprian/phrasely/commit/c0901eacc2543f156ee08f3a4e0af66e227478b3))
+
 ## [0.5.5](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.4...mcp-v0.5.5) (2026-08-16)
 
 
