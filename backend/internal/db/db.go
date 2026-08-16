@@ -87,13 +87,14 @@ type OAuthClient struct {
 // matches the code_challenge stored here (PKCE S256 method).
 type OAuthAuthorizationCode struct {
 	ID            string     `json:"id"`
-	Code          string     `json:"code"`           // opaque value sent in redirect URL
+	Code          string     `json:"code"` // opaque value sent in redirect URL
 	ClientID      string     `json:"client_id"`
 	UserID        string     `json:"user_id"`
+	Resource      string     `json:"resource"`       // audience requested by the OAuth client
 	RedirectURI   string     `json:"redirect_uri"`   // pinned; re-validated at /token
 	CodeChallenge string     `json:"code_challenge"` // SHA256(code_verifier), base64url
 	ExpiresAt     time.Time  `json:"expires_at"`
-	UsedAt        *time.Time `json:"used_at"`        // nil = unused; set atomically on consume
+	UsedAt        *time.Time `json:"used_at"` // nil = unused; set atomically on consume
 	CreatedAt     time.Time  `json:"created_at"`
 }
 
@@ -102,9 +103,10 @@ type OAuthAuthorizationCode struct {
 // revoked, new one issued. Stored in DB so it can be revoked (unlike JWTs).
 type OAuthRefreshToken struct {
 	ID        string     `json:"id"`
-	Token     string     `json:"token"`      // opaque value sent to client
+	Token     string     `json:"token"` // opaque value sent to client
 	ClientID  string     `json:"client_id"`
 	UserID    string     `json:"user_id"`
+	Resource  string     `json:"resource"`   // audience carried across refresh rotation
 	RevokedAt *time.Time `json:"revoked_at"` // nil = active; set on rotation or revocation
 	CreatedAt time.Time  `json:"created_at"`
 }
@@ -113,6 +115,7 @@ type OAuthRefreshToken struct {
 type CreateAuthCodeRequest struct {
 	ClientID      string
 	UserID        string
+	Resource      string
 	RedirectURI   string
 	CodeChallenge string
 	ExpiresAt     time.Time
@@ -122,6 +125,7 @@ type CreateAuthCodeRequest struct {
 type CreateRefreshTokenRequest struct {
 	ClientID string
 	UserID   string
+	Resource string
 }
 
 // DigestPreferences holds a user's Phrase Digest email settings.
@@ -483,11 +487,11 @@ func (s *PostgresStore) CreateAuthorizationCode(ctx context.Context, req CreateA
 	var a OAuthAuthorizationCode
 	err := s.Pool.QueryRow(ctx,
 		`INSERT INTO oauth_authorization_codes
-		     (client_id, user_id, redirect_uri, code_challenge, expires_at)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, code, client_id, user_id, redirect_uri, code_challenge, expires_at, used_at, created_at`,
-		req.ClientID, req.UserID, req.RedirectURI, req.CodeChallenge, req.ExpiresAt,
-	).Scan(&a.ID, &a.Code, &a.ClientID, &a.UserID, &a.RedirectURI, &a.CodeChallenge, &a.ExpiresAt, &a.UsedAt, &a.CreatedAt)
+		     (client_id, user_id, resource, redirect_uri, code_challenge, expires_at)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id, code, client_id, user_id, resource, redirect_uri, code_challenge, expires_at, used_at, created_at`,
+		req.ClientID, req.UserID, req.Resource, req.RedirectURI, req.CodeChallenge, req.ExpiresAt,
+	).Scan(&a.ID, &a.Code, &a.ClientID, &a.UserID, &a.Resource, &a.RedirectURI, &a.CodeChallenge, &a.ExpiresAt, &a.UsedAt, &a.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create authorization code: %w", err)
 	}
@@ -511,9 +515,9 @@ func (s *PostgresStore) ConsumeAuthorizationCode(ctx context.Context, code, clie
 		   AND client_id = $2
 		   AND used_at IS NULL
 		   AND expires_at > NOW()
-		 RETURNING id, code, client_id, user_id, redirect_uri, code_challenge, expires_at, used_at, created_at`,
+		 RETURNING id, code, client_id, user_id, resource, redirect_uri, code_challenge, expires_at, used_at, created_at`,
 		code, clientID,
-	).Scan(&a.ID, &a.Code, &a.ClientID, &a.UserID, &a.RedirectURI, &a.CodeChallenge, &a.ExpiresAt, &a.UsedAt, &a.CreatedAt)
+	).Scan(&a.ID, &a.Code, &a.ClientID, &a.UserID, &a.Resource, &a.RedirectURI, &a.CodeChallenge, &a.ExpiresAt, &a.UsedAt, &a.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -527,11 +531,11 @@ func (s *PostgresStore) ConsumeAuthorizationCode(ctx context.Context, code, clie
 func (s *PostgresStore) CreateRefreshToken(ctx context.Context, req CreateRefreshTokenRequest) (*OAuthRefreshToken, error) {
 	var t OAuthRefreshToken
 	err := s.Pool.QueryRow(ctx,
-		`INSERT INTO oauth_refresh_tokens (client_id, user_id)
-		 VALUES ($1, $2)
-		 RETURNING id, token, client_id, user_id, revoked_at, created_at`,
-		req.ClientID, req.UserID,
-	).Scan(&t.ID, &t.Token, &t.ClientID, &t.UserID, &t.RevokedAt, &t.CreatedAt)
+		`INSERT INTO oauth_refresh_tokens (client_id, user_id, resource)
+		 VALUES ($1, $2, $3)
+		 RETURNING id, token, client_id, user_id, resource, revoked_at, created_at`,
+		req.ClientID, req.UserID, req.Resource,
+	).Scan(&t.ID, &t.Token, &t.ClientID, &t.UserID, &t.Resource, &t.RevokedAt, &t.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create refresh token: %w", err)
 	}
@@ -551,9 +555,9 @@ func (s *PostgresStore) ConsumeRefreshToken(ctx context.Context, token, clientID
 		 WHERE token = $1
 		   AND client_id = $2
 		   AND revoked_at IS NULL
-		 RETURNING id, token, client_id, user_id, revoked_at, created_at`,
+		 RETURNING id, token, client_id, user_id, resource, revoked_at, created_at`,
 		token, clientID,
-	).Scan(&t.ID, &t.Token, &t.ClientID, &t.UserID, &t.RevokedAt, &t.CreatedAt)
+	).Scan(&t.ID, &t.Token, &t.ClientID, &t.UserID, &t.Resource, &t.RevokedAt, &t.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -700,7 +704,6 @@ func (s *PostgresStore) ListPhrasesWithoutEmbedding(ctx context.Context) ([]Phra
 	}
 	return phrases, rows.Err()
 }
-
 
 // GetDigestPreferences fetches a user's Phrase Digest preferences.
 // Returns ErrNotFound if the user has never saved preferences.

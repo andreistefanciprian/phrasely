@@ -318,6 +318,7 @@ func (app *application) settingsPage(w http.ResponseWriter, r *http.Request) {
 // fields so POST /authorize can re-read them without server-side session state.
 type oauthParams struct {
 	ClientID            string
+	Resource            string
 	RedirectURI         string
 	CodeChallenge       string
 	CodeChallengeMethod string
@@ -334,8 +335,12 @@ var base64urlRE = regexp.MustCompile(`^[A-Za-z0-9_-]{43}$`)
 // correct. We do NOT validate client_id or redirect_uri here — that's the
 // backend's job at /internal/oauth/authorize where the DB check happens.
 func validateOAuthParams(p oauthParams) error {
-	if p.ClientID == "" || p.RedirectURI == "" || p.CodeChallenge == "" || p.State == "" {
-		return errors.New("client_id, redirect_uri, code_challenge, and state are required")
+	if p.ClientID == "" || p.Resource == "" || p.RedirectURI == "" || p.CodeChallenge == "" || p.State == "" {
+		return errors.New("client_id, resource, redirect_uri, code_challenge, and state are required")
+	}
+	resourceURL, err := url.ParseRequestURI(p.Resource)
+	if err != nil || strings.Contains(p.Resource, "#") || (resourceURL.Scheme != "http" && resourceURL.Scheme != "https") || resourceURL.Host == "" {
+		return errors.New("resource must be an absolute http or https URL without a fragment")
 	}
 	if p.ResponseType != "code" {
 		return errors.New("response_type must be 'code'")
@@ -391,6 +396,7 @@ func (app *application) authorizeGet(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	params := oauthParams{
 		ClientID:            q.Get("client_id"),
+		Resource:            q.Get("resource"),
 		RedirectURI:         q.Get("redirect_uri"),
 		CodeChallenge:       q.Get("code_challenge"),
 		CodeChallengeMethod: q.Get("code_challenge_method"),
@@ -430,6 +436,7 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 	// We re-validate on every POST — no server-side session state needed.
 	params := oauthParams{
 		ClientID:            r.PostForm.Get("client_id"),
+		Resource:            r.PostForm.Get("resource"),
 		RedirectURI:         r.PostForm.Get("redirect_uri"),
 		CodeChallenge:       r.PostForm.Get("code_challenge"),
 		CodeChallengeMethod: r.PostForm.Get("code_challenge_method"),
@@ -477,9 +484,9 @@ func (app *application) authorizePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call backend to issue the authorization code. The backend validates
-	// client_id and redirect_uri against the registered values and stores
-	// the code_challenge for PKCE verification at /token time.
-	code, err := app.api.IssueAuthCode(jwt, params.ClientID, params.RedirectURI, params.CodeChallenge)
+	// client_id and redirect_uri against the registered values and stores the
+	// resource and code_challenge for verification at /token time.
+	code, err := app.api.IssueAuthCode(jwt, params.ClientID, params.Resource, params.RedirectURI, params.CodeChallenge)
 	if err != nil {
 		slog.Error("oauth: issue auth code failed", "client_id", params.ClientID, "error", err)
 		http.Error(w, "Failed to issue authorization code. Please try again.", http.StatusInternalServerError)

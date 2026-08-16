@@ -111,12 +111,12 @@ func (c *apiClient) ValidateOAuthClient(clientID, redirectURI string) error {
 }
 
 // IssueAuthCode calls the internal backend endpoint to create an OAuth 2.1
-// authorization code. The backend validates client_id, redirect_uri, and
-// code_challenge, then stores a short-lived code and returns it.
+// authorization code. The backend validates client_id, resource, redirect_uri,
+// and code_challenge, then stores a short-lived code and returns it.
 // The user's JWT must be valid — the backend uses it to bind the code to the user.
-func (c *apiClient) IssueAuthCode(jwt, clientID, redirectURI, codeChallenge string) (string, error) {
-	body := fmt.Sprintf(`{"client_id":%q,"redirect_uri":%q,"code_challenge":%q}`,
-		clientID, redirectURI, codeChallenge)
+func (c *apiClient) IssueAuthCode(jwt, clientID, resource, redirectURI, codeChallenge string) (string, error) {
+	body := fmt.Sprintf(`{"client_id":%q,"resource":%q,"redirect_uri":%q,"code_challenge":%q}`,
+		clientID, resource, redirectURI, codeChallenge)
 	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/internal/oauth/authorize",
 		strings.NewReader(body))
 	if err != nil {
