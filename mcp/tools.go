@@ -41,7 +41,13 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the refined original context and memorable alternatives. Do not expose database-ready JSON or source_urls in prose.
 	- After generating the final choices, construct phrase, headwords, note, and source_urls for each one using the add_phrase field rules, then call render_phrase_choices once. Mark at most one best learning context as recommended. Avoid duplicating the full choices outside the UI.
 	- If render_phrase_choices or interactive UI is unavailable, present and number the alternatives conversationally so the user can select one.
-	- If the user instead gives a direct save instruction that clearly identifies a phrase, construct that entry and call add_phrase without rendering choices again.`
+	- If the user instead gives a direct save instruction that clearly identifies a phrase, construct that entry and call add_phrase without rendering choices again.
+
+6. Add one useful connection.
+	- Finish every exploration with exactly one compact teaching aside labelled "One useful connection:" after presenting the phrase choices.
+	- Choose the highest-value link for this expression, in this order: a likely confusable word; a meaningful opposite or contrast; a nuanced near-synonym; a register alternative; a common collocation or grammatical construction; a word-family link; a common learner mistake or meaning boundary; or, when none of those is genuinely useful, a memorable association.
+	- Explain the distinction or connection clearly in one or two short sentences. A single connection may mention a tightly related pair, such as a confusable word and the true opposite, when that materially improves understanding.
+	- Never force an unnatural opposite, invent a similarity, repeat the usage note, or turn the aside into a second lesson.`
 
 // registerTools attaches the Phrasely tools to the MCP server.
 func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadataURL string) {
@@ -74,7 +80,7 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Meta:        noAuthToolMeta(),
 		Name:        "explore_phrase",
 		Title:       "Explore a phrase with Phrasely",
-		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or find memorable examples using the same headword. Return Phrasely's learning instructions for the assistant to apply locally. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
+		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or find memorable examples using the same headword. Return Phrasely's learning instructions for the assistant to apply locally, including one concise high-value learning connection after the phrase choices. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,

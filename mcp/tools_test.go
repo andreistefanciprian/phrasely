@@ -23,6 +23,25 @@ func TestServerInstructionsPrioritizeSaveIntent(t *testing.T) {
 	}
 }
 
+func TestExplorationInstructionsRequireOneUsefulConnection(t *testing.T) {
+	for name, instructions := range map[string]string{
+		"server": serverInstructions,
+		"tool":   explorePhraseInstructions,
+	} {
+		for _, want := range []string{
+			`exactly one`,
+			`One useful connection:`,
+			`confusable word`,
+			`meaningful opposite or contrast`,
+			`Never force`,
+		} {
+			if !strings.Contains(instructions, want) {
+				t.Errorf("%s exploration instructions do not contain %q", name, want)
+			}
+		}
+	}
+}
+
 func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	ctx := context.Background()
 	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, nil)
@@ -97,6 +116,9 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	if !strings.Contains(explorePhraseTool.Description, "Do not use it when the user has already chosen a finished phrase") {
 		t.Error("explore_phrase description does not distinguish exploration from save intent")
 	}
+	if !strings.Contains(explorePhraseTool.Description, "one concise high-value learning connection") {
+		t.Error("explore_phrase description does not require a learning connection")
+	}
 	if !strings.Contains(addPhraseTool.Description, "do not ask again") {
 		t.Error("add_phrase description does not recognize conversational confirmation")
 	}
@@ -165,6 +187,7 @@ func TestPhraseChoicesResource(t *testing.T) {
 		`notify("ui/notifications/size-changed"`,
 		"window.openai.notifyIntrinsicHeight()",
 		"resizeObserver?.disconnect()",
+		"filter: brightness(0) saturate(100%) invert(93%)",
 	} {
 		if !strings.Contains(content.Text, want) {
 			t.Errorf("phrase choice UI does not contain %q", want)
