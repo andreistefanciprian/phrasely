@@ -42,6 +42,11 @@ func registerResources(server *mcp.Server) {
 							"resourceDomains": []string{},
 						},
 					},
+					// Compatibility for ChatGPT hosts that have not adopted ui.csp yet.
+					"openai/widgetCSP": map[string]any{
+						"connect_domains":  []string{},
+						"resource_domains": []string{},
+					},
 				},
 			},
 		}}, nil
