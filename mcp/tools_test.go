@@ -178,6 +178,19 @@ func TestPhraseChoicesResource(t *testing.T) {
 	if !ok || uiMeta["domain"] != phraseChoicesWidgetDomain {
 		t.Fatalf("resource ui metadata = %#v, want domain %q", content.Meta["ui"], phraseChoicesWidgetDomain)
 	}
+	legacyCSP, ok := content.Meta["openai/widgetCSP"].(map[string]any)
+	if !ok {
+		t.Fatalf("resource CSP compatibility metadata = %#v, want object", content.Meta["openai/widgetCSP"])
+	}
+	for _, field := range []string{"connect_domains", "resource_domains"} {
+		domainsJSON, err := json.Marshal(legacyCSP[field])
+		if err != nil {
+			t.Fatalf("marshal resource CSP compatibility %s: %v", field, err)
+		}
+		if string(domainsJSON) != "[]" {
+			t.Errorf("resource CSP compatibility %s = %#v, want empty string array", field, legacyCSP[field])
+		}
+	}
 	for _, want := range []string{
 		"Choose a phrase to save",
 		`request("ui/initialize"`,
