@@ -20,7 +20,7 @@ The goal is simple: turn interesting words and expressions you hear in everyday 
 
 ## ChatGPT Plugin Flow
 
-The plugin bundles a vocabulary-companion skill with the existing Phrasely MCP app. The skill recognizes the user's intent and chooses the workflow; MCP tools provide authenticated access to the user's phrase collection.
+The plugin bundles a vocabulary-companion skill with the existing Phrasely MCP app. The skill recognizes the user's intent and chooses the workflow; MCP tools provide authenticated access to the user's phrase collection. Clients that support MCP Apps also receive an inline phrase-choice UI, while other clients keep the numbered conversational fallback.
 
 ```mermaid
 flowchart TB
@@ -29,19 +29,22 @@ flowchart TB
     S --> I{"User intent"}
 
     I -->|"Understand / improve"| Q
-    Q --> C["Apply learning guidance<br/>No save"]
-    C --> D{"What next?"}
+    Q --> C["Apply learning guidance<br/>Generate final choices"]
+    C --> V["render_phrase_choices<br/>Inline Save buttons<br/>No save yet"]
+    V --> D{"What next?"}
     D -->|"More"| C
     D -->|"Done"| X["Continue<br/>No save"]
 
     I -->|"Save now"| E["Prepare final entry locally"]
-    D -->|"Save"| E
+    V -->|"Click Save"| A
+    D -->|"Conversational save"| E
     E --> A
 
     I -->|"Retrieve / practise"| R
 
     subgraph MCP["Phrasely MCP tools"]
         Q["explore_phrase<br/>Get learning guidance"]
+        V
         A["add_phrase"]
         R["list_phrases<br/>sample_phrases"]
     end

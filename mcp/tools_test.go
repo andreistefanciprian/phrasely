@@ -27,6 +27,7 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	ctx := context.Background()
 	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, nil)
 	const protectedResourceMetadataURL = "https://mcp.example.com/.well-known/oauth-protected-resource"
+	registerResources(server)
 	registerTools(server, newAPIClient("http://localhost:8080"), protectedResourceMetadataURL)
 
 	clientTransport, serverTransport := mcp.NewInMemoryTransports()
@@ -44,8 +45,8 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Tools) != 4 {
-		t.Fatalf("got %d tools, want 4", len(result.Tools))
+	if len(result.Tools) != 5 {
+		t.Fatalf("got %d tools, want 5", len(result.Tools))
 	}
 
 	for _, tool := range result.Tools {
@@ -71,7 +72,7 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 			t.Errorf("tool %q securitySchemes = %s, want exactly one scheme", tool.Name, rawSchemes)
 			continue
 		}
-		if tool.Name == "explore_phrase" {
+		if tool.Name == "explore_phrase" || tool.Name == "render_phrase_choices" {
 			if schemes[0].Type != "noauth" {
 				t.Errorf("tool %q securitySchemes = %s, want noauth", tool.Name, rawSchemes)
 			}
@@ -98,6 +99,96 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	}
 	if !strings.Contains(addPhraseTool.Description, "do not ask again") {
 		t.Error("add_phrase description does not recognize conversational confirmation")
+	}
+	renderTool, ok := byName["render_phrase_choices"]
+	if !ok {
+		t.Fatal("render_phrase_choices tool is missing")
+	}
+	uiMeta, ok := renderTool.Meta["ui"].(map[string]any)
+	if !ok || uiMeta["resourceUri"] != phraseChoicesTemplateURI {
+		t.Fatalf("render_phrase_choices ui metadata = %#v, want resource URI %q", renderTool.Meta["ui"], phraseChoicesTemplateURI)
+	}
+	addUIMeta, ok := addPhraseTool.Meta["ui"].(map[string]any)
+	if !ok {
+		t.Fatalf("add_phrase ui metadata = %#v, want app visibility", addPhraseTool.Meta["ui"])
+	}
+	visibilityJSON, err := json.Marshal(addUIMeta["visibility"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var visibility []string
+	if err := json.Unmarshal(visibilityJSON, &visibility); err != nil {
+		t.Fatal(err)
+	}
+	if len(visibility) != 2 || visibility[0] != "model" || visibility[1] != "app" {
+		t.Fatalf("add_phrase ui visibility = %#v, want [model app]", addUIMeta["visibility"])
+	}
+}
+
+func TestPhraseChoicesResource(t *testing.T) {
+	ctx := context.Background()
+	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, nil)
+	registerResources(server)
+
+	clientTransport, serverTransport := mcp.NewInMemoryTransports()
+	if _, err := server.Connect(ctx, serverTransport, nil); err != nil {
+		t.Fatal(err)
+	}
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "0.0.1"}, nil)
+	session, err := client.Connect(ctx, clientTransport, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: phraseChoicesTemplateURI})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Contents) != 1 {
+		t.Fatalf("got %d resource contents, want 1", len(result.Contents))
+	}
+	content := result.Contents[0]
+	if content.MIMEType != mcpAppHTMLMIMEType {
+		t.Fatalf("resource MIME type = %q, want %q", content.MIMEType, mcpAppHTMLMIMEType)
+	}
+	for _, want := range []string{"Choose a phrase to save", `request("ui/initialize"`, `request("tools/call"`, `name: "add_phrase"`} {
+		if !strings.Contains(content.Text, want) {
+			t.Errorf("phrase choice UI does not contain %q", want)
+		}
+	}
+}
+
+func TestRenderPhraseChoicesHandler(t *testing.T) {
+	handler := renderPhraseChoicesHandler()
+	choice := PhraseChoice{
+		Label:       "Everyday example",
+		Recommended: true,
+		Phrase:      "The delay had a pernicious (gradually harmful) effect on morale.",
+		Headwords:   []string{"pernicious"},
+		Note:        "Formal; often describes harm that develops gradually.",
+		SourceURLs:  []string{"https://www.merriam-webster.com/dictionary/pernicious"},
+	}
+
+	result, output, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil || len(result.Content) != 1 {
+		t.Fatalf("render result = %#v, want one text content item", result)
+	}
+	if len(output.Choices) != 1 || output.Choices[0].Phrase != choice.Phrase {
+		t.Fatalf("render output = %#v, want original choice", output)
+	}
+
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{}); err == nil {
+		t.Fatal("empty choices did not return an error")
+	}
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{
+		choice,
+		choice,
+	}}); err == nil {
+		t.Fatal("multiple recommended choices did not return an error")
 	}
 }
 

@@ -35,9 +35,12 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 4. Teach useful usage patterns.
 	- When useful, mention common collocations or grammatical constructions, e.g. "conflate X with Y", "fret about/over", "pernicious effect/influence", "mete out punishment", "encroach on". Keep this concise.
 
-5. Do not persist.
-	- Never save anything from this tool. Do not produce source_urls, database-ready JSON, a strict headwords field, or a final persistence note — those belong to add_phrase.
-	- Offer the refined original context and the memorable alternatives, and let the user choose one. Do not force a choice if the user then gives a direct save instruction that clearly identifies a phrase — in that case, construct the entry and call add_phrase.`
+5. Offer saveable choices without persisting.
+	- Never call add_phrase from exploration alone. The user must click Save in the phrase-choice UI or give a direct conversational save instruction.
+	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the refined original context and memorable alternatives. Do not expose database-ready JSON or source_urls in prose.
+	- After generating the final choices, construct phrase, headwords, note, and source_urls for each one using the add_phrase field rules, then call render_phrase_choices once. Mark at most one best learning context as recommended. Avoid duplicating the full choices outside the UI.
+	- If render_phrase_choices or interactive UI is unavailable, present and number the alternatives conversationally so the user can select one.
+	- If the user instead gives a direct save instruction that clearly identifies a phrase, construct that entry and call add_phrase without rendering choices again.`
 
 // registerTools attaches the Phrasely tools to the MCP server.
 func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadataURL string) {
@@ -78,7 +81,18 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 	}, explorePhraseHandler())
 
 	mcp.AddTool(server, &mcp.Tool{
-		Meta:        oauthToolMeta(),
+		Meta:        renderPhraseChoicesToolMeta(),
+		Name:        "render_phrase_choices",
+		Title:       "Show Phrasely phrase choices",
+		Description: `Render the final phrase candidates created after explore_phrase as an interactive Phrasely card. Call this once after explaining the expression and generating the refined original context plus memorable alternatives. Pass complete save-ready fields for every choice, following the add_phrase schemas. This tool only presents choices; it never saves them. The user can save any choice from the UI, or continue using conversational selection when UI is unavailable. Do not use this tool when the user already gave a direct, unambiguous save instruction.`,
+		Annotations: &mcp.ToolAnnotations{
+			ReadOnlyHint:  true,
+			OpenWorldHint: pFalse,
+		},
+	}, renderPhraseChoicesHandler())
+
+	mcp.AddTool(server, &mcp.Tool{
+		Meta:        oauthAppToolMeta(),
 		Name:        "add_phrase",
 		Title:       "Add a phrase to Phrasely",
 		Description: `Save one finished phrase entry to Phrasely. Construct the phrase, headwords, note, and source_urls locally first — see each field's description for the construction rules — then call this tool. There is no need to call explore_phrase first if the user already supplied or chose a clear phrase. A clear request such as "add it", "save it", "add this one", or "add that to Phrasely" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation, definition, or rewrite. Ask which phrase only if the reference is genuinely ambiguous and cannot be resolved from conversation context.`,
@@ -171,6 +185,57 @@ func explorePhraseHandler() mcp.ToolHandlerFor[ExplorePhraseInput, ExplorePhrase
 	return func(ctx context.Context, req *mcp.CallToolRequest, in ExplorePhraseInput) (*mcp.CallToolResult, ExplorePhraseOutput, error) {
 		slog.Debug("tool: explore_phrase", "phrase_len", len(in.Phrase))
 		return nil, ExplorePhraseOutput{Instructions: explorePhraseInstructions, Phrase: in.Phrase}, nil
+	}
+}
+
+// PhraseChoice is one complete candidate that the phrase-choice UI can pass
+// directly to add_phrase when the user clicks Save.
+type PhraseChoice struct {
+	Label       string   `json:"label,omitempty" jsonschema:"Short contextual label such as Original context or Everyday example."`
+	Recommended bool     `json:"recommended,omitempty" jsonschema:"True for at most one especially memorable or useful choice."`
+	Phrase      string   `json:"phrase" jsonschema:"Complete save-ready phrase following the add_phrase phrase field rules."`
+	Headwords   []string `json:"headwords" jsonschema:"Save-ready headwords following the add_phrase headwords field rules."`
+	Note        string   `json:"note,omitempty" jsonschema:"Save-ready usage note following the add_phrase note field rules."`
+	SourceURLs  []string `json:"source_urls,omitempty" jsonschema:"Save-ready Merriam-Webster URLs following the add_phrase source_urls field rules."`
+}
+
+// RenderPhraseChoicesInput is the input schema for render_phrase_choices.
+type RenderPhraseChoicesInput struct {
+	Choices []PhraseChoice `json:"choices" jsonschema:"One to four final phrase choices. Include the refined original context and useful memorable alternatives."`
+}
+
+// RenderPhraseChoicesOutput mirrors the render input as structured content for
+// the embedded MCP Apps component.
+type RenderPhraseChoicesOutput struct {
+	Choices []PhraseChoice `json:"choices"`
+}
+
+func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, RenderPhraseChoicesOutput] {
+	return func(ctx context.Context, req *mcp.CallToolRequest, in RenderPhraseChoicesInput) (*mcp.CallToolResult, RenderPhraseChoicesOutput, error) {
+		if len(in.Choices) < 1 || len(in.Choices) > 4 {
+			return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("render_phrase_choices requires between 1 and 4 choices")
+		}
+
+		recommended := 0
+		for i, choice := range in.Choices {
+			if choice.Phrase == "" {
+				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d requires a phrase", i+1)
+			}
+			if len(choice.Headwords) == 0 {
+				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d requires at least one headword", i+1)
+			}
+			if choice.Recommended {
+				recommended++
+			}
+		}
+		if recommended > 1 {
+			return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("render_phrase_choices accepts at most one recommended choice")
+		}
+
+		slog.Debug("tool: render_phrase_choices", "choice_count", len(in.Choices))
+		return &mcp.CallToolResult{Content: []mcp.Content{
+			&mcp.TextContent{Text: fmt.Sprintf("Showing %d phrase choices. No phrase has been saved yet.", len(in.Choices))},
+		}}, RenderPhraseChoicesOutput{Choices: in.Choices}, nil
 	}
 }
 

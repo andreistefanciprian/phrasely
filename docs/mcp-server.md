@@ -1,7 +1,6 @@
 # MCP Server
 
-Exposes `list_phrases`, `sample_phrases`, `explore_phrase`, and `add_phrase` over MCP (Streamable HTTP), backed by the
-private `backend` API. Deployed as a separate public Railway service alongside `frontend`.
+Exposes `list_phrases`, `sample_phrases`, `explore_phrase`, `render_phrase_choices`, and `add_phrase` over MCP (Streamable HTTP), backed by the private `backend` API. Deployed as a separate public Railway service alongside `frontend`.
 
 ## Architecture
 
@@ -34,7 +33,7 @@ internals beyond passing the header along.
 
 ## Auth: OAuth 2.1 + PKCE
 
-In production, access to a user's collection goes through OAuth 2.1. MCP initialization, `tools/list`, and the stateless `explore_phrase` tool are public; collection-backed tool calls require `Authorization: Bearer <access_token>` and return an `mcp/www_authenticate` challenge when the token is missing, invalid, or expired. For local ad-hoc testing, a magic-link JWT works directly as the Bearer token (see [mcp/README.md](../mcp/README.md)).
+In production, access to a user's collection goes through OAuth 2.1. MCP initialization, `tools/list`, the stateless `explore_phrase` and `render_phrase_choices` tools, and the phrase-choice UI resource are public; collection-backed tool calls require `Authorization: Bearer <access_token>` and return an `mcp/www_authenticate` challenge when the token is missing, invalid, or expired. For local ad-hoc testing, a magic-link JWT works directly as the Bearer token (see [mcp/README.md](../mcp/README.md)).
 
 OAuth *logic and storage* (tables, code generation, token minting) live in `backend`.
 The *endpoints that clients call directly* are hosted/proxied by `mcp` — calling `backend`
@@ -158,16 +157,48 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 | `list_phrases(headword?)` | List the user's saved phrases, optionally filtered by headword | `GET /api/v1/phrases` |
 | `sample_phrases(count?)` | Randomly pick N phrases (1–10) for practice or quizzing | `GET /api/v1/phrases/random` |
 | `explore_phrase(phrase)` | Return learning instructions for understanding an expression and generating memorable contexts — no backend call, no data persisted | — |
+| `render_phrase_choices(choices)` | Render 1–4 complete exploration candidates in the optional inline MCP Apps UI — no backend call, no data persisted | — |
 | `add_phrase(phrase, headwords, note?, source_urls?)` | Save a finished phrase constructed locally by the assistant | `POST /api/v1/phrases` |
 
 ### Exploration and save flow
 
-Exploration and saving are separate workflows:
+Exploration, presentation, and saving are separate stages:
 
 1. When the user wants to understand or explore an expression, the assistant calls `explore_phrase(phrase)` and applies the returned learning instructions conversationally. Nothing is persisted.
-2. When the user asks to save a supplied or selected phrase, the assistant constructs the finished phrase, headwords, note, and source URLs locally, then calls `add_phrase` directly. Calling `explore_phrase` first is not required.
+2. After generating the refined original context and memorable alternatives, the assistant constructs complete save-ready fields for every choice and calls `render_phrase_choices` once. The UI is the primary presentation of the full candidates, avoiding duplicate prose. Rendering does not express save intent and does not persist anything.
+3. In clients that support MCP Apps, the user can click Save on any choice. The component calls `add_phrase` through `tools/call`, then displays the authoritative success or error state. It never calls the private backend directly and never receives the OAuth token.
+4. In clients without UI support, choices remain numbered and the user can select one conversationally. The assistant then calls `add_phrase` as before.
+5. When the user's initial request already contains a direct, unambiguous save instruction, the assistant skips exploration and rendering, constructs the finished entry, and calls `add_phrase` directly.
 
 `add_phrase` is persistence-only — it does not call OpenAI or enrich the entry itself.
+
+## Phrase-choice MCP Apps UI
+
+The phrase-choice component is a versioned MCP resource:
+
+- URI: `ui://phrasely/phrase-choices-v1.html`
+- MIME type: `text/html;profile=mcp-app`
+- Source: `mcp/ui/phrase-choices.html`, embedded into the MCP binary with `go:embed`
+- Owner: only `render_phrase_choices` references the resource through `_meta.ui.resourceUri`
+
+The render tool returns the same `choices` object in `structuredContent` that
+the component consumes. Each choice contains `phrase`, `headwords`, optional
+`note`, optional `source_urls`, a short label, and an optional `recommended`
+flag. The component treats all structured content as untrusted and constructs
+the DOM with text nodes rather than injecting HTML.
+
+Save is an app-initiated call to `add_phrase`. The tool remains available to
+the model for conversational saves and is additionally visible to the MCP app.
+Its existing OAuth wrapper forwards the request Bearer token to the backend and
+returns `mcp/www_authenticate` for a missing or rejected token. UI state such as
+Saving, Saved, and Retry is ephemeral; PostgreSQL remains the source of truth.
+
+The component has no external scripts, styles, images, or API requests, so the
+resource CSP declares empty connection and resource-domain allowlists. Clients
+that ignore MCP Apps metadata still receive useful structured and text results.
+On load, the component completes the MCP Apps `ui/initialize` /
+`ui/notifications/initialized` handshake before using `tools/call`; ChatGPT's
+`window.openai.callTool` bridge is retained as a compatibility path.
 
 ## Local testing
 
