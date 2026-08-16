@@ -34,7 +34,7 @@ internals beyond passing the header along.
 
 ## Auth: OAuth 2.1 + PKCE
 
-In production, all auth goes through OAuth 2.1. `/mcp` requires `Authorization: Bearer <access_token>`. For local ad-hoc testing, a magic-link JWT works directly as the Bearer token (see [mcp/README.md](../mcp/README.md)).
+In production, all auth goes through OAuth 2.1. MCP initialization and `tools/list` are public so clients can discover per-tool OAuth metadata; actual tool calls require `Authorization: Bearer <access_token>` and return an `mcp/www_authenticate` challenge when it is missing. For local ad-hoc testing, a magic-link JWT works directly as the Bearer token (see [mcp/README.md](../mcp/README.md)).
 
 OAuth *logic and storage* (tables, code generation, token minting) live in `backend`.
 The *endpoints that clients call directly* are hosted/proxied by `mcp` — calling `backend`

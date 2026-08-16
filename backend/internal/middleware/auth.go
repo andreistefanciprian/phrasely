@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -30,6 +31,7 @@ func Authenticate(jwtSecret string) func(http.Handler) http.Handler {
 
 			header := r.Header.Get("Authorization")
 			if !strings.HasPrefix(header, "Bearer ") {
+				slog.Warn("auth: bearer rejected", "path", r.URL.Path, "reason", "missing_or_invalid_header")
 				respondUnauthorized(w)
 				return
 			}
@@ -39,6 +41,7 @@ func Authenticate(jwtSecret string) func(http.Handler) http.Handler {
 
 			userID, err := auth.ParseJWT(tokenStr, secretBytes)
 			if err != nil {
+				slog.Warn("auth: bearer rejected", "path", r.URL.Path, "reason", "jwt_validation_failed")
 				respondUnauthorized(w)
 				return
 			}

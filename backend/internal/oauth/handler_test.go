@@ -231,6 +231,9 @@ func TestRegister(t *testing.T) {
 				if body["client_id"] == "" {
 					t.Error("expected client_id in response")
 				}
+				if got := body["token_endpoint_auth_method"]; got != "none" {
+					t.Errorf("token_endpoint_auth_method = %v, want none", got)
+				}
 			}
 		})
 	}

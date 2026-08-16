@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -71,25 +72,53 @@ func main() {
 	})
 	registerOAuthProxy(mux, api)
 
-	// /mcp requires a Bearer token. The factory creates a per-request server so
-	// each caller's JWT is scoped to their own tool invocations — no shared state.
-	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
-		// requireBearer guarantees the header is present before we reach here.
-		jwt := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, &mcp.ServerOptions{
-			Instructions: serverInstructions,
-		})
-		registerTools(s, api, jwt)
-		return s
-	}, nil)
-
 	protectedResourceMetadataURL := strings.TrimRight(mcpBaseURL, "/") + "/.well-known/oauth-protected-resource"
-	mux.Handle("/mcp", requireBearer(mcpHandler, protectedResourceMetadataURL))
+
+	mux.Handle("/mcp", newMCPHandler(api, protectedResourceMetadataURL))
 
 	slog.Info("mcp server listening", "port", port, "api", apiURL, "mcp_url", mcpBaseURL)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)
+	}
+}
+
+// newMCPHandler leaves initialization and tools/list public so a fresh ChatGPT
+// connection can discover each tool's OAuth security scheme. Tool calls return
+// an mcp/www_authenticate challenge unless the request carries a Bearer token.
+func newMCPHandler(api *apiClient, protectedResourceMetadataURL string) http.Handler {
+	return mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
+		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, &mcp.ServerOptions{
+			Instructions: serverInstructions,
+		})
+		s.AddReceivingMiddleware(logMCPDiscovery)
+		registerTools(s, api, protectedResourceMetadataURL)
+		return s
+	}, nil)
+}
+
+// logMCPDiscovery records the two protocol milestones needed to diagnose a
+// connector that authenticates successfully but does not expose any tools.
+func logMCPDiscovery(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		result, err := next(ctx, method, req)
+
+		switch method {
+		case "initialize":
+			if err != nil {
+				slog.Warn("mcp: initialization failed", "error", err)
+			} else {
+				slog.Info("mcp: initialization succeeded")
+			}
+		case "tools/list":
+			if err != nil {
+				slog.Warn("mcp: tool discovery failed", "error", err)
+			} else if tools, ok := result.(*mcp.ListToolsResult); ok {
+				slog.Info("mcp: tool discovery succeeded", "tool_count", len(tools.Tools))
+			}
+		}
+
+		return result, err
 	}
 }
 
@@ -108,24 +137,12 @@ func parseLogLevel(s string) slog.Level {
 	}
 }
 
-// requireBearer rejects requests without a valid Authorization: Bearer <token> header.
-// ChatGPT sends the OAuth access token here after completing the flow.
-// RFC 6750 §3: 401 responses must include WWW-Authenticate so clients know
-// which auth scheme is expected.
-func requireBearer(next http.Handler, protectedResourceMetadataURL string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		parts := strings.Fields(r.Header.Get("Authorization"))
-		// Require exactly two fields: scheme + non-empty token.
-		// strings.Fields handles multiple spaces and normalises case-insensitive "bearer".
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
-			slog.Debug("requireBearer: rejected request", "remote_addr", r.RemoteAddr, "reason", "missing or invalid Bearer token")
-			w.Header().Set("WWW-Authenticate", `Bearer resource_metadata="`+protectedResourceMetadataURL+`"`)
-			http.Error(w, "authorization required", http.StatusUnauthorized)
-			return
-		}
-		// Normalise to canonical form so downstream (factory + tools) can rely on
-		// a simple strings.TrimPrefix("Bearer ") without worrying about whitespace.
-		r.Header.Set("Authorization", "Bearer "+parts[1])
-		next.ServeHTTP(w, r)
-	})
+// bearerToken extracts a syntactically valid Authorization: Bearer token.
+// Token signature and expiry validation remain the backend's responsibility.
+func bearerToken(header string) string {
+	parts := strings.Fields(header)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
+		return ""
+	}
+	return parts[1]
 }

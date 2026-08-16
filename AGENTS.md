@@ -26,7 +26,7 @@ backend/internal/oauth/handler.go       — OAuth 2.1 handlers (register, author
 backend/internal/auth/handler.go        — magic link + JWT verify handlers
 backend/internal/middleware/auth.go     — JWT middleware (injects user_id into context)
 backend/migrations/                     — goose SQL files (embedded into binary via embed.go)
-mcp/main.go                             — MCP server wiring, requireBearer middleware
+mcp/main.go                             — MCP server wiring and per-request Bearer extraction
 mcp/oauth.go                            — OAuth discovery + proxy routes
 mcp/tools.go                            — MCP tool definitions (list_phrases, sample_phrases, explore_phrase, add_phrase)
 mcp/api.go                              — typed API client used by tools
@@ -153,7 +153,7 @@ MCP server is the public OAuth face; backend handles the real work over the priv
 - **Refresh token rotation**: old token atomically revoked, new one issued on every `refresh_token` grant
 - **Revocation**: `POST /revoke` (MCP) → `POST /internal/oauth/revoke` (backend)
 - **Access token TTL**: 1 hour (JWT); refresh tokens are DB-persisted so they can be revoked
-- **`/mcp`**: requires `Authorization: Bearer <access_token>`; per-request server factory scopes each caller's JWT to their own tool invocations
+- **`/mcp`**: initialization and `tools/list` are public for OAuth discovery; every tool advertises OAuth and challenges unauthenticated calls via `mcp/www_authenticate`; the per-request server factory scopes each caller's Bearer token to their own tool invocations
 
 ## Auth (magic link — complete)
 

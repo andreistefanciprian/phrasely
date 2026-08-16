@@ -34,6 +34,7 @@ func registerOAuthDiscovery(mux *http.ServeMux, cfg oauthConfig) {
 	//   - that token exchange uses a public client with no client secret
 	//   - which PKCE method we require (S256 only — plain is insecure)
 	mux.HandleFunc("/.well-known/oauth-authorization-server", func(w http.ResponseWriter, r *http.Request) {
+		slog.Debug("oauth: authorization server metadata served")
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
 			"issuer":                 cfg.mcpBaseURL,
@@ -62,6 +63,7 @@ func registerOAuthDiscovery(mux *http.ServeMux, cfg oauthConfig) {
 	// Lets the client discover which authorization server protects this resource.
 	// MCP Inspector and some clients check this before the server metadata above.
 	mux.HandleFunc("/.well-known/oauth-protected-resource", func(w http.ResponseWriter, r *http.Request) {
+		slog.Debug("oauth: protected resource metadata served")
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
 			"resource":              cfg.mcpBaseURL,
@@ -148,7 +150,11 @@ func proxyToBackend(w http.ResponseWriter, r *http.Request, api *apiClient, back
 		return
 	}
 	defer resp.Body.Close()
-	slog.Debug("oauth: proxy: backend responded", "path", backendPath, "status", resp.StatusCode)
+	if resp.StatusCode >= http.StatusBadRequest {
+		slog.Warn("oauth: proxy: backend rejected request", "path", backendPath, "status", resp.StatusCode)
+	} else {
+		slog.Debug("oauth: proxy: backend responded", "path", backendPath, "status", resp.StatusCode)
+	}
 
 	// Copy backend response headers (Content-Type, Cache-Control, Pragma, etc.)
 	// while stripping hop-by-hop headers that proxies must not forward (RFC 7230 §6.1).

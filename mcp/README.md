@@ -5,16 +5,29 @@ private `backend` API.
 
 ## Auth
 
-`/mcp` requires `Authorization: Bearer <access_token>`. The access token is a
-short-lived JWT issued by the OAuth 2.1 + PKCE flow:
+MCP initialization and `tools/list` are public so clients can discover the
+tools and their OAuth security schemes. Every tool call requires
+`Authorization: Bearer <access_token>`; unauthenticated calls return an
+`mcp/www_authenticate` challenge. The access token is a short-lived JWT issued
+by the OAuth 2.1 + PKCE flow:
 
 1. Client fetches `/.well-known/oauth-authorization-server` to discover endpoints.
 2. Client registers via `POST /register` (Dynamic Client Registration, RFC 7591).
 3. User logs in and consents at `GET /authorize` on the frontend.
 4. Client exchanges the auth code for tokens at `POST /token` (PKCE S256).
-5. Client calls `/mcp` with the access token as a Bearer header.
+5. Client calls tools on `/mcp` with the access token as a Bearer header.
 
 `MCP_AUTH_TOKEN` no longer exists — all auth goes through the OAuth flow.
+
+### Railway debugging
+
+OAuth and MCP milestones are emitted as structured logs without tokens, auth
+codes, PKCE material, cookies, or request bodies. At the default `INFO` level,
+Railway shows successful registration, authorization, token exchange, MCP
+initialization, and tool discovery. Set `LOG_LEVEL=DEBUG` temporarily to also
+see discovery-document requests, successful proxy responses, and authenticated
+tool calls. Rejections include a safe `reason`, `client_id` where available,
+and the affected tool or internal path.
 
 ## Local testing
 

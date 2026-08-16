@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -38,13 +39,13 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 	- Never save anything from this tool. Do not produce source_urls, database-ready JSON, a strict headwords field, or a final persistence note — those belong to add_phrase.
 	- Offer the refined original context and the memorable alternatives, and let the user choose one. Do not force a choice if the user then gives a direct save instruction that clearly identifies a phrase — in that case, construct the entry and call add_phrase.`
 
-// registerTools attaches the phrasely tools to the MCP server.
-// jwt is the per-request OAuth access token forwarded to the backend.
-func registerTools(server *mcp.Server, api *apiClient, jwt string) {
+// registerTools attaches the Phrasely tools to the MCP server.
+func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadataURL string) {
 	// pFalse is a *bool pointing to false, used for pointer-typed ToolAnnotations fields.
 	pFalse := new(bool)
 
 	mcp.AddTool(server, &mcp.Tool{
+		Meta:        oauthToolMeta(),
 		Name:        "list_phrases",
 		Title:       "List Phrasely phrases",
 		Description: "List phrases in the user's Phrasely collection, newest first, optionally filtered by matching headword text. Use for recent phrases, browsing, or headword lookup.",
@@ -52,9 +53,10 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
 		},
-	}, listPhrasesHandler(api, jwt))
+	}, requireToolAuth("list_phrases", protectedResourceMetadataURL, listPhrasesHandler(api)))
 
 	mcp.AddTool(server, &mcp.Tool{
+		Meta:        oauthToolMeta(),
 		Name:        "sample_phrases",
 		Title:       "Sample Phrasely phrases",
 		Description: "Randomly select phrases from the user's Phrasely collection for review, quizzes, or speaking practice. Do not use when the user wants a complete or recent list.",
@@ -62,9 +64,10 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
 		},
-	}, samplePhrasesHandler(api, jwt))
+	}, requireToolAuth("sample_phrases", protectedResourceMetadataURL, samplePhrasesHandler(api)))
 
 	mcp.AddTool(server, &mcp.Tool{
+		Meta:        oauthToolMeta(),
 		Name:        "explore_phrase",
 		Title:       "Explore a phrase with Phrasely",
 		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or find memorable examples using the same headword. Return Phrasely's learning instructions for the assistant to apply locally. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
@@ -72,9 +75,10 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
 		},
-	}, explorePhraseHandler())
+	}, requireToolAuth("explore_phrase", protectedResourceMetadataURL, explorePhraseHandler()))
 
 	mcp.AddTool(server, &mcp.Tool{
+		Meta:        oauthToolMeta(),
 		Name:        "add_phrase",
 		Title:       "Add a phrase to Phrasely",
 		Description: `Save one finished phrase entry to Phrasely. Construct the phrase, headwords, note, and source_urls locally first — see each field's description for the construction rules — then call this tool. There is no need to call explore_phrase first if the user already supplied or chose a clear phrase. A clear request such as "add it", "save it", "add this one", or "add that to Phrasely" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation, definition, or rewrite. Ask which phrase only if the reference is genuinely ambiguous and cannot be resolved from conversation context.`,
@@ -82,7 +86,55 @@ func registerTools(server *mcp.Server, api *apiClient, jwt string) {
 			DestructiveHint: pFalse,
 			OpenWorldHint:   pFalse,
 		},
-	}, addPhraseHandler(api, jwt))
+	}, requireToolAuth("add_phrase", protectedResourceMetadataURL, addPhraseHandler(api)))
+}
+
+// oauthToolMeta declares that every Phrasely tool requires OAuth. Phrasely
+// currently grants one connector-wide permission, so the scopes array is empty.
+// ChatGPT reads securitySchemes from _meta for MCP SDK compatibility.
+func oauthToolMeta() mcp.Meta {
+	return mcp.Meta{
+		"securitySchemes": []map[string]any{
+			{"type": "oauth2", "scopes": []string{}},
+		},
+	}
+}
+
+// requireToolAuth lets initialize and tools/list remain public while ensuring
+// every actual tool call carries an OAuth access token. The backend performs
+// cryptographic validation for tools that access user data.
+func requireToolAuth[In, Out any](toolName, protectedResourceMetadataURL string, next mcp.ToolHandlerFor[In, Out]) mcp.ToolHandlerFor[In, Out] {
+	return func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, Out, error) {
+		if requestBearer(req) != "" {
+			slog.Debug("mcp: authenticated tool call", "tool", toolName)
+			return next(ctx, req, in)
+		}
+
+		slog.Info("mcp: tool authentication challenged", "tool", toolName, "reason", "missing_or_invalid_bearer")
+		var zero Out
+		challenge := fmt.Sprintf(
+			`Bearer resource_metadata="%s", error="invalid_token", error_description="Authentication required"`,
+			protectedResourceMetadataURL,
+		)
+		return &mcp.CallToolResult{
+			Meta: mcp.Meta{
+				"mcp/www_authenticate": []string{challenge},
+			},
+			Content: []mcp.Content{
+				&mcp.TextContent{Text: "Authentication required: no access token provided."},
+			},
+			IsError: true,
+		}, zero, nil
+	}
+}
+
+// requestBearer reads the current HTTP request rather than the initialization
+// request, because ChatGPT can add its OAuth token later on the same MCP session.
+func requestBearer(req *mcp.CallToolRequest) string {
+	if req == nil || req.Extra == nil {
+		return ""
+	}
+	return bearerToken(req.Extra.Header.Get("Authorization"))
 }
 
 // ExplorePhraseInput is the input schema for the explore_phrase tool.
@@ -114,8 +166,9 @@ type SamplePhrasesOutput struct {
 	Phrases []PhraseSummary `json:"phrases"`
 }
 
-func samplePhrasesHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[SamplePhrasesInput, SamplePhrasesOutput] {
+func samplePhrasesHandler(api *apiClient) mcp.ToolHandlerFor[SamplePhrasesInput, SamplePhrasesOutput] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in SamplePhrasesInput) (*mcp.CallToolResult, SamplePhrasesOutput, error) {
+		jwt := requestBearer(req)
 		count := in.Count
 		if count < 1 {
 			count = 1
@@ -145,8 +198,9 @@ type ListPhrasesOutput struct {
 	Phrases []PhraseSummary `json:"phrases"`
 }
 
-func listPhrasesHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[ListPhrasesInput, ListPhrasesOutput] {
+func listPhrasesHandler(api *apiClient) mcp.ToolHandlerFor[ListPhrasesInput, ListPhrasesOutput] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in ListPhrasesInput) (*mcp.CallToolResult, ListPhrasesOutput, error) {
+		jwt := requestBearer(req)
 		slog.Debug("tool: list_phrases", "headword", in.Headword)
 		phrases, err := api.ListPhrasesSummary(jwt, in.Headword)
 		if err != nil {
@@ -173,8 +227,9 @@ type AddPhraseOutput struct {
 	Phrase PhraseSummary `json:"phrase"`
 }
 
-func addPhraseHandler(api *apiClient, jwt string) mcp.ToolHandlerFor[AddPhraseInput, AddPhraseOutput] {
+func addPhraseHandler(api *apiClient) mcp.ToolHandlerFor[AddPhraseInput, AddPhraseOutput] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in AddPhraseInput) (*mcp.CallToolResult, AddPhraseOutput, error) {
+		jwt := requestBearer(req)
 		slog.Debug("tool: add_phrase", "headword_count", len(in.Headwords))
 		phrase, err := api.AddPhrase(jwt, AddPhraseRequest{
 			Phrase:     in.Phrase,
