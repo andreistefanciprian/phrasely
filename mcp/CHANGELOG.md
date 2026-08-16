@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.6.0...mcp-v0.6.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* **mcp:** validate phrase choice metadata ([49d9bb5](https://github.com/andreistefanciprian/phrasely/commit/49d9bb55e1468cf41cb634a27093bce0861178a7))
+
 ## [0.6.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.5...mcp-v0.6.0) (2026-08-16)
 
 
