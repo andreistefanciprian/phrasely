@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.2...mcp-v0.5.3) (2026-08-16)
+
+
+### Bug Fixes
+
+* **mcp:** challenge rejected OAuth tokens ([796087b](https://github.com/andreistefanciprian/phrasely/commit/796087b6c292674a3c0760f13bc90322a22e7362))
+* **mcp:** expose OAuth tools to ChatGPT ([68839f4](https://github.com/andreistefanciprian/phrasely/commit/68839f41be71470c1dd1eb4e83c608a31a579082))
+
 ## [0.5.2](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.1...mcp-v0.5.2) (2026-08-15)
 
 
