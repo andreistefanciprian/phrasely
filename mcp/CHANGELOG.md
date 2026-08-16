@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.5](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.4...mcp-v0.5.5) (2026-08-16)
+
+
+### Bug Fixes
+
+* **mcp:** enable stateless transport ([b544bfa](https://github.com/andreistefanciprian/phrasely/commit/b544bfa57c5e4ca3895c46286f89650fcf1fef9c))
+
 ## [0.5.4](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.3...mcp-v0.5.4) (2026-08-16)
 
 
