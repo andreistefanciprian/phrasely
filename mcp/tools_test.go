@@ -152,7 +152,16 @@ func TestPhraseChoicesResource(t *testing.T) {
 	if content.MIMEType != mcpAppHTMLMIMEType {
 		t.Fatalf("resource MIME type = %q, want %q", content.MIMEType, mcpAppHTMLMIMEType)
 	}
-	for _, want := range []string{"Choose a phrase to save", `request("ui/initialize"`, `request("tools/call"`, `name: "add_phrase"`} {
+	for _, want := range []string{
+		"Choose a phrase to save",
+		`request("ui/initialize"`,
+		`request("tools/call"`,
+		`name: "add_phrase"`,
+		"ResizeObserver",
+		`notify("ui/notifications/size-changed"`,
+		"window.openai.notifyIntrinsicHeight()",
+		"resizeObserver?.disconnect()",
+	} {
 		if !strings.Contains(content.Text, want) {
 			t.Errorf("phrase choice UI does not contain %q", want)
 		}
@@ -169,16 +178,42 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 		Note:        "Formal; often describes harm that develops gradually.",
 		SourceURLs:  []string{"https://www.merriam-webster.com/dictionary/pernicious"},
 	}
+	secondChoice := PhraseChoice{
+		Label:     "Original context",
+		Phrase:    "The article described the pernicious effect of misinformation.",
+		Headwords: []string{"pernicious"},
+	}
 
-	result, output, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice}})
+	result, output, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, secondChoice}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if result == nil || len(result.Content) != 1 {
 		t.Fatalf("render result = %#v, want one text content item", result)
 	}
-	if len(output.Choices) != 1 || output.Choices[0].Phrase != choice.Phrase {
-		t.Fatalf("render output = %#v, want original choice", output)
+	textContent, ok := result.Content[0].(*mcp.TextContent)
+	if !ok {
+		t.Fatalf("render content = %T, want *mcp.TextContent", result.Content[0])
+	}
+	for _, want := range []string{
+		"nothing has been saved yet",
+		"1. Recommended",
+		choice.Phrase,
+		"2. Original context",
+		secondChoice.Phrase,
+		"Headwords: pernicious",
+		choice.Note,
+		"choose a numbered option to save",
+	} {
+		if !strings.Contains(textContent.Text, want) {
+			t.Errorf("render fallback does not contain %q:\n%s", want, textContent.Text)
+		}
+	}
+	if strings.Contains(textContent.Text, choice.SourceURLs[0]) {
+		t.Error("render fallback exposes source_urls")
+	}
+	if len(output.Choices) != 2 || output.Choices[0].Phrase != choice.Phrase || output.Choices[1].Phrase != secondChoice.Phrase {
+		t.Fatalf("render output = %#v, want original choices", output)
 	}
 
 	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{}); err == nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -234,9 +235,31 @@ func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, R
 
 		slog.Debug("tool: render_phrase_choices", "choice_count", len(in.Choices))
 		return &mcp.CallToolResult{Content: []mcp.Content{
-			&mcp.TextContent{Text: fmt.Sprintf("Showing %d phrase choices. No phrase has been saved yet.", len(in.Choices))},
+			&mcp.TextContent{Text: phraseChoicesFallback(in.Choices)},
 		}}, RenderPhraseChoicesOutput{Choices: in.Choices}, nil
 	}
+}
+
+func phraseChoicesFallback(choices []PhraseChoice) string {
+	var b strings.Builder
+	b.WriteString("Phrase choices — nothing has been saved yet:")
+
+	for i, choice := range choices {
+		fmt.Fprintf(&b, "\n\n%d. ", i+1)
+		if choice.Recommended {
+			b.WriteString("Recommended — ")
+		} else if choice.Label != "" {
+			fmt.Fprintf(&b, "%s — ", choice.Label)
+		}
+		b.WriteString(choice.Phrase)
+		fmt.Fprintf(&b, "\n   Headwords: %s", strings.Join(choice.Headwords, ", "))
+		if choice.Note != "" {
+			fmt.Fprintf(&b, "\n   Note: %s", choice.Note)
+		}
+	}
+
+	b.WriteString("\n\nThe user can choose a numbered option to save.")
+	return b.String()
 }
 
 // SamplePhrasesInput is the input schema for the sample_phrases tool.

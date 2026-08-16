@@ -274,6 +274,12 @@
       const pendingRequests = new Map();
       let nextRequestId = 1;
       let latestChoices = [];
+      let standardConnectionReady = false;
+      let resizeObserver;
+      let resizeFrame;
+      let lastStandardWidth = 0;
+      let lastStandardHeight = 0;
+      let lastChatGPTHeight = 0;
 
       function send(message) {
         window.parent.postMessage(message, "*");
@@ -301,8 +307,56 @@
         appCapabilities: {}
       }, 5000).then((result) => {
         notify("ui/notifications/initialized");
+        standardConnectionReady = true;
+        scheduleSizeReport();
         return result;
       });
+
+      function scheduleSizeReport() {
+        if (resizeFrame !== undefined) return;
+        resizeFrame = window.requestAnimationFrame(() => {
+          resizeFrame = undefined;
+          const html = document.documentElement;
+          const originalHeight = html.style.height;
+          html.style.height = "max-content";
+          const height = Math.ceil(html.getBoundingClientRect().height);
+          html.style.height = originalHeight;
+          const width = Math.ceil(window.innerWidth);
+
+          if (standardConnectionReady &&
+              (width !== lastStandardWidth || height !== lastStandardHeight)) {
+            lastStandardWidth = width;
+            lastStandardHeight = height;
+            notify("ui/notifications/size-changed", { width, height });
+          }
+
+          if (typeof window.openai?.notifyIntrinsicHeight === "function" &&
+              height !== lastChatGPTHeight) {
+            lastChatGPTHeight = height;
+            window.openai.notifyIntrinsicHeight();
+          }
+        });
+      }
+
+      function startAutoResize() {
+        if (typeof ResizeObserver === "function") {
+          resizeObserver = new ResizeObserver(scheduleSizeReport);
+          resizeObserver.observe(document.documentElement);
+          resizeObserver.observe(document.body);
+        }
+        window.addEventListener("resize", scheduleSizeReport, { passive: true });
+        scheduleSizeReport();
+      }
+
+      function stopAutoResize() {
+        resizeObserver?.disconnect();
+        resizeObserver = undefined;
+        window.removeEventListener("resize", scheduleSizeReport);
+        if (resizeFrame !== undefined) {
+          window.cancelAnimationFrame(resizeFrame);
+          resizeFrame = undefined;
+        }
+      }
 
       function normalizeChoices(result) {
         const raw = Array.isArray(result?.choices) ? result.choices : [];
@@ -432,6 +486,7 @@
           article.append(copy, action);
           choicesElement.append(article);
         });
+        scheduleSizeReport();
       }
 
       window.addEventListener("message", (event) => {
@@ -449,6 +504,7 @@
         }
 
         if (message.method === "ui/resource-teardown" && message.id !== undefined) {
+          stopAutoResize();
           send({ jsonrpc: "2.0", id: message.id, result: {} });
           return;
         }
@@ -459,6 +515,8 @@
         }
       }, { passive: true });
 
+      startAutoResize();
+
       if (Array.isArray(window.openai?.toolOutput?.choices)) {
         render(window.openai.toolOutput);
       }
@@ -467,6 +525,7 @@
         if (latestChoices.length === 0 && Array.isArray(window.openai?.toolOutput?.choices)) {
           render(window.openai.toolOutput);
         }
+        scheduleSizeReport();
       }, { passive: true });
 
       // Legacy ChatGPT hosts may not implement ui/initialize; keep the rejected
