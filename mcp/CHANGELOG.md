@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.3...mcp-v0.5.4) (2026-08-16)
+
+
+### Bug Fixes
+
+* **oauth:** preserve MCP resource indicators ([2683a24](https://github.com/andreistefanciprian/phrasely/commit/2683a24d2d1dc4298d7e69d0cb564ed245697568))
+
 ## [0.5.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.5.2...mcp-v0.5.3) (2026-08-16)
 
 
