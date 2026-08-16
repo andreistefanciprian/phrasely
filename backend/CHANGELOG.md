@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.2...backend-v0.7.3) (2026-08-16)
+
+
+### Bug Fixes
+
+* **mcp:** expose OAuth tools to ChatGPT ([68839f4](https://github.com/andreistefanciprian/phrasely/commit/68839f41be71470c1dd1eb4e83c608a31a579082))
+
 ## [0.7.2](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.1...backend-v0.7.2) (2026-08-07)
 
 
