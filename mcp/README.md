@@ -26,6 +26,13 @@ memorable alternatives as complete save-ready entries, then calls
 `render_phrase_choices`. That read-only tool returns structured choices and is
 associated with `ui://phrasely/phrase-choices-v1.html`.
 
+Every exploration then ends with one short **One useful connection:** aside.
+The assistant selects the most useful available link, prioritising confusable
+words, meaningful opposites or contrasts, and nuanced near-synonyms before
+falling back to register, usage patterns, word families, common mistakes, or a
+memory association. It does not force a weak connection or add several competing
+mini-lessons.
+
 Supporting clients render the resource as an inline MCP Apps component. Each
 Save button calls the existing OAuth-protected `add_phrase` tool through the
 standard `tools/call` bridge; the component never calls the backend directly
