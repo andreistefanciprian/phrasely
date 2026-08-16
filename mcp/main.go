@@ -16,12 +16,15 @@ When the user clearly wants to save a finished phrase, call add_phrase. Treat "a
 
 When the user wants to understand a word or expression, refine the context they heard it in, or find memorable examples, call explore_phrase. It is pedagogical and conversational and never saves anything.
 
+After applying explore_phrase and generating final examples, call render_phrase_choices once with complete save-ready fields for the refined original context and memorable alternatives. The render tool only displays choices; the user decides whether to save one. Do not render choices when the user already gave a direct, unambiguous save instruction — call add_phrase instead. If UI is unavailable, keep the numbered conversational fallback.
+
 Phrasely is a private, personal vocabulary companion for understanding, exploring, saving, retrieving, and practising English expressions from real life.
 
 Tools:
 - list_phrases — list the user's Phrasely phrases, newest first, optionally filtered by matching headword text.
 - sample_phrases — randomly select phrases for review, quizzes, or speaking practice.
 - explore_phrase — return Phrasely's learning instructions for understanding a word or expression and generating memorable contexts; it does not persist data.
+- render_phrase_choices — display final exploration candidates in an optional inline UI with Save actions; it does not persist data.
 - add_phrase — persist one finished phrase entry to Phrasely.
 
 After retrieving phrases, carry out the requested review or practice conversationally.`
@@ -94,6 +97,7 @@ func newMCPHandler(api *apiClient, protectedResourceMetadataURL string) http.Han
 			Instructions: serverInstructions,
 		})
 		s.AddReceivingMiddleware(logMCPDiscovery)
+		registerResources(s)
 		registerTools(s, api, protectedResourceMetadataURL)
 		return s
 	}, &mcp.StreamableHTTPOptions{Stateless: true})

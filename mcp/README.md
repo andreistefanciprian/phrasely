@@ -1,12 +1,12 @@
 # Phrasely MCP Server
 
-Exposes `list_phrases`, `sample_phrases`, `explore_phrase`, and `add_phrase` over MCP (Streamable HTTP), backed by the
-private `backend` API.
+Exposes `list_phrases`, `sample_phrases`, `explore_phrase`, `render_phrase_choices`, and `add_phrase` over MCP (Streamable HTTP), backed by the private `backend` API. `render_phrase_choices` owns an optional MCP Apps component with one-click Save actions.
 
 ## Auth
 
-MCP initialization, `tools/list`, and the stateless `explore_phrase` learning
-tool are public. Tools that read or write a user's collection require
+MCP initialization, `tools/list`, and the stateless `explore_phrase` and
+`render_phrase_choices` tools are public. Reading the phrase-choice UI resource
+is also public. Tools that read or write a user's collection require
 `Authorization: Bearer <access_token>`; missing, invalid, or expired tokens
 return an `mcp/www_authenticate` challenge. The access token is a short-lived
 JWT issued by the OAuth 2.1 + PKCE flow:
@@ -19,7 +19,29 @@ JWT issued by the OAuth 2.1 + PKCE flow:
 
 `MCP_AUTH_TOKEN` no longer exists — all auth goes through the OAuth flow.
 
-### Railway debugging
+## Phrase-choice UI
+
+After `explore_phrase`, the assistant prepares the refined original context and
+memorable alternatives as complete save-ready entries, then calls
+`render_phrase_choices`. That read-only tool returns structured choices and is
+associated with `ui://phrasely/phrase-choices-v1.html`.
+
+Supporting clients render the resource as an inline MCP Apps component. Each
+Save button calls the existing OAuth-protected `add_phrase` tool through the
+standard `tools/call` bridge; the component never calls the backend directly
+and never handles Bearer tokens. The button is the user's save instruction.
+Rendering choices alone does not persist anything.
+
+The component is plain HTML, CSS, and JavaScript embedded into the Go binary.
+It has no external runtime assets or build step. Clients without MCP Apps UI
+support continue with numbered conversational choices and direct `add_phrase`
+calls after the user selects one.
+
+The component performs the MCP Apps `ui/initialize` / `ui/notifications/initialized`
+handshake before using the standard `tools/call` bridge. It also supports
+ChatGPT's `window.openai.callTool` compatibility API.
+
+## Railway debugging
 
 OAuth and MCP milestones are emitted as structured logs without tokens, auth
 codes, PKCE material, cookies, or request bodies. At the default `INFO` level,
@@ -74,6 +96,10 @@ npx @modelcontextprotocol/inspector --cli http://localhost:8081/mcp \
   --header "Authorization: Bearer <jwt>" \
   --method tools/list
 ```
+
+MCP Inspector can verify the resource and structured render result. The final
+visual and click-to-save flow must also be checked in a client that implements
+MCP Apps UI and OAuth tool calls, such as ChatGPT.
 
 ### Claude Desktop
 

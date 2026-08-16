@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phrasely phrase choices</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --navy: #0f1b6e;
+      --blue: #5a54ff;
+      --teal: #08aaa5;
+      --definition: #7a80d4;
+      --secondary: #6170b8;
+      --muted: #7b82a9;
+      --surface: #eeeeff;
+      --white: #ffffff;
+      --border: #dde1f5;
+      --text: #2d3561;
+      --success: #079b91;
+      --error: #c24a4a;
+      --shadow: 0 10px 30px rgba(15, 27, 110, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-width: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .widget {
+      width: 100%;
+      padding: 18px;
+      background: var(--white);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      display: block;
+      width: 145px;
+      height: 44px;
+      flex: 0 0 auto;
+      object-fit: contain;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(20px, 3.2vw, 27px);
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      margin: 7px 0 18px;
+      color: var(--secondary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+    }
+
+    .choice {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 17px 18px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--white);
+      box-shadow: 0 1px 0 rgba(15, 27, 110, 0.02);
+    }
+
+    .choice.recommended {
+      border-color: rgba(90, 84, 255, 0.78);
+      background: linear-gradient(110deg, rgba(238, 238, 255, 0.72), rgba(255, 255, 255, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .choice-copy { min-width: 0; }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 100%;
+      margin-bottom: 9px;
+      padding: 4px 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(31, 211, 204, 0.13);
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .recommended .label {
+      background: rgba(90, 84, 255, 0.1);
+      color: var(--blue);
+    }
+
+    .label-star { font-size: 12px; }
+
+    .phrase {
+      margin: 0;
+      color: var(--navy);
+      font-family: Lora, Georgia, "Times New Roman", serif;
+      font-size: clamp(17px, 2.7vw, 21px);
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .headwords {
+      display: flex;
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .headword {
+      padding: 5px 9px;
+      border-radius: 8px;
+      background: rgba(90, 84, 255, 0.1);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .note {
+      margin: 1px 0 0;
+      color: var(--secondary);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .action {
+      display: grid;
+      justify-items: stretch;
+      gap: 5px;
+      width: 118px;
+    }
+
+    .save-button {
+      min-height: 42px;
+      padding: 9px 15px;
+      border: 1px solid var(--blue);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--blue);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 750;
+      transition: background 150ms ease, color 150ms ease, transform 150ms ease, opacity 150ms ease;
+    }
+
+    .save-button:hover:not(:disabled) {
+      background: var(--surface);
+      transform: translateY(-1px);
+    }
+
+    .save-button:focus-visible {
+      outline: 3px solid rgba(90, 84, 255, 0.24);
+      outline-offset: 2px;
+    }
+
+    .save-button:disabled { cursor: default; }
+
+    .save-button.pending { opacity: 0.65; }
+
+    .save-button.saved {
+      border-color: var(--success);
+      background: rgba(31, 211, 204, 0.08);
+      color: var(--success);
+    }
+
+    .status {
+      min-height: 16px;
+      color: var(--secondary);
+      font-size: 10px;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .status.error { color: var(--error); }
+
+    .empty {
+      padding: 26px 18px;
+      border: 1px dashed var(--border);
+      border-radius: 13px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    @media (max-width: 580px) {
+      .widget { padding: 14px; }
+      .choice {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 15px;
+      }
+      .meta { flex-direction: column; }
+      .action { width: 100%; }
+      .status { text-align: left; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --navy: #f0f1ff;
+        --blue: #a9a6ff;
+        --teal: #66e5df;
+        --secondary: #b4b9e5;
+        --muted: #969dc8;
+        --surface: #262849;
+        --white: #17182c;
+        --border: #383b64;
+        --text: #e4e6ff;
+        --success: #66e5df;
+        --error: #ffaaaa;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+      }
+      .choice.recommended {
+        background: linear-gradient(110deg, rgba(53, 52, 95, 0.9), rgba(23, 24, 44, 0.96));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .save-button { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="widget" aria-labelledby="title">
+    <div class="brand">
+      <img class="logo" src="data:image/png;base64,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" alt="Phrasely">
+    </div>
+
+    <h1 id="title">Choose a phrase to save</h1>
+    <p class="subtitle">Pick the context you’ll be most likely to remember.</p>
+    <section id="choices" class="choices" aria-live="polite">
+      <div class="empty">Preparing phrase choices…</div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const choicesElement = document.getElementById("choices");
+      const pendingRequests = new Map();
+      let nextRequestId = 1;
+      let latestChoices = [];
+
+      function send(message) {
+        window.parent.postMessage(message, "*");
+      }
+
+      function notify(method, params = {}) {
+        send({ jsonrpc: "2.0", method, params });
+      }
+
+      function request(method, params, timeoutMs = 20000) {
+        const id = nextRequestId++;
+        send({ jsonrpc: "2.0", id, method, params });
+        return new Promise((resolve, reject) => {
+          const timeout = window.setTimeout(() => {
+            pendingRequests.delete(id);
+            reject(new Error("Phrasely did not respond. Please try again."));
+          }, timeoutMs);
+          pendingRequests.set(id, { resolve, reject, timeout });
+        });
+      }
+
+      const standardConnection = request("ui/initialize", {
+        protocolVersion: "2026-01-26",
+        appInfo: { name: "phrasely-phrase-choices", version: "1.0.0" },
+        appCapabilities: {}
+      }, 5000).then((result) => {
+        notify("ui/notifications/initialized");
+        return result;
+      });
+
+      function normalizeChoices(result) {
+        const raw = Array.isArray(result?.choices) ? result.choices : [];
+        return raw.filter((choice) =>
+          choice &&
+          typeof choice.phrase === "string" &&
+          choice.phrase.trim() !== "" &&
+          Array.isArray(choice.headwords) &&
+          choice.headwords.length > 0
+        ).slice(0, 4);
+      }
+
+      function textElement(tag, className, text) {
+        const element = document.createElement(tag);
+        element.className = className;
+        element.textContent = text;
+        return element;
+      }
+
+      function saveArguments(choice) {
+        return {
+          phrase: choice.phrase,
+          headwords: choice.headwords,
+          note: typeof choice.note === "string" ? choice.note : "",
+          source_urls: Array.isArray(choice.source_urls) ? choice.source_urls : []
+        };
+      }
+
+      async function callAddPhrase(choice) {
+        if (typeof window.openai?.callTool === "function") {
+          return window.openai.callTool("add_phrase", saveArguments(choice));
+        }
+
+        try {
+          await standardConnection;
+          return await request("tools/call", {
+            name: "add_phrase",
+            arguments: saveArguments(choice)
+          });
+        } catch (standardError) {
+          if (typeof window.openai?.callTool === "function") {
+            return window.openai.callTool("add_phrase", saveArguments(choice));
+          }
+          throw standardError;
+        }
+      }
+
+      function errorMessage(error) {
+        if (typeof error?.message === "string" && error.message.trim() !== "") {
+          return error.message;
+        }
+        return "Couldn’t save. Try again.";
+      }
+
+      function render(result) {
+        const choices = normalizeChoices(result);
+        if (choices.length === 0) return;
+        latestChoices = choices;
+        choicesElement.replaceChildren();
+
+        choices.forEach((choice, index) => {
+          const article = document.createElement("article");
+          article.className = `choice${choice.recommended ? " recommended" : ""}`;
+
+          const copy = document.createElement("div");
+          copy.className = "choice-copy";
+
+          const labelText = choice.recommended
+            ? "Recommended"
+            : (typeof choice.label === "string" && choice.label.trim() !== ""
+              ? choice.label
+              : `Option ${index + 1}`);
+          const label = textElement("div", "label", labelText);
+          if (choice.recommended) {
+            label.prepend(textElement("span", "label-star", "★"));
+          }
+          copy.append(label);
+          copy.append(textElement("p", "phrase", choice.phrase));
+
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          const headwords = document.createElement("div");
+          headwords.className = "headwords";
+          choice.headwords.forEach((headword) => {
+            if (typeof headword === "string" && headword.trim() !== "") {
+              headwords.append(textElement("span", "headword", headword));
+            }
+          });
+          meta.append(headwords);
+          if (typeof choice.note === "string" && choice.note.trim() !== "") {
+            meta.append(textElement("p", "note", choice.note));
+          }
+          copy.append(meta);
+
+          const action = document.createElement("div");
+          action.className = "action";
+          const button = textElement("button", "save-button", "♡ Save");
+          button.type = "button";
+          button.setAttribute("aria-label", `Save phrase ${index + 1} to Phrasely`);
+          const status = textElement("div", "status", "");
+
+          button.addEventListener("click", async () => {
+            button.disabled = true;
+            button.classList.add("pending");
+            button.textContent = "Saving…";
+            status.className = "status";
+            status.textContent = "";
+
+            try {
+              const response = await callAddPhrase(choice);
+              if (response?.isError) {
+                throw new Error("Couldn’t save. Check your Phrasely connection and try again.");
+              }
+              button.className = "save-button saved";
+              button.textContent = "✓ Saved";
+              status.textContent = "Saved privately to Phrasely";
+            } catch (error) {
+              button.disabled = false;
+              button.className = "save-button";
+              button.textContent = "♡ Retry";
+              status.className = "status error";
+              status.textContent = errorMessage(error);
+            }
+          });
+
+          action.append(button, status);
+          article.append(copy, action);
+          choicesElement.append(article);
+        });
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== window.parent) return;
+        const message = event.data;
+        if (!message || message.jsonrpc !== "2.0") return;
+
+        if (message.id !== undefined && pendingRequests.has(message.id)) {
+          const pending = pendingRequests.get(message.id);
+          pendingRequests.delete(message.id);
+          window.clearTimeout(pending.timeout);
+          if (message.error) pending.reject(message.error);
+          else pending.resolve(message.result);
+          return;
+        }
+
+        if (message.method === "ui/resource-teardown" && message.id !== undefined) {
+          send({ jsonrpc: "2.0", id: message.id, result: {} });
+          return;
+        }
+
+        if (message.method === "ui/notifications/tool-result") {
+          const result = message.params?.structuredContent;
+          if (Array.isArray(result?.choices)) render(result);
+        }
+      }, { passive: true });
+
+      if (Array.isArray(window.openai?.toolOutput?.choices)) {
+        render(window.openai.toolOutput);
+      }
+
+      window.addEventListener("openai:set_globals", () => {
+        if (latestChoices.length === 0 && Array.isArray(window.openai?.toolOutput?.choices)) {
+          render(window.openai.toolOutput);
+        }
+      }, { passive: true });
+
+      // Legacy ChatGPT hosts may not implement ui/initialize; keep the rejected
+      // background promise from surfacing as an unhandled error in that case.
+      standardConnection.catch(() => {});
+    })();
+  </script>
+</body>
+</html>

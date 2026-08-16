@@ -28,7 +28,9 @@ backend/internal/middleware/auth.go     — JWT middleware (injects user_id into
 backend/migrations/                     — goose SQL files (embedded into binary via embed.go)
 mcp/main.go                             — MCP server wiring and per-request Bearer extraction
 mcp/oauth.go                            — OAuth discovery + proxy routes
-mcp/tools.go                            — MCP tool definitions (list_phrases, sample_phrases, explore_phrase, add_phrase)
+mcp/tools.go                            — MCP tool definitions (list_phrases, sample_phrases, explore_phrase, render_phrase_choices, add_phrase)
+mcp/ui.go                               — embedded MCP Apps resource registration + UI tool metadata
+mcp/ui/phrase-choices.html              — inline phrase-choice component; calls add_phrase through tools/call
 mcp/api.go                              — typed API client used by tools
 plugins/phrasely/                       — ChatGPT plugin manifest, vocabulary-companion skill, and branding
 frontend/main.go                        — route registration, render helpers, security headers
@@ -136,9 +138,10 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 - `list_phrases` — list saved phrases newest first, optionally filtered by headword text
 - `sample_phrases` — randomly select saved phrases for review, quizzes, or practice
 - `explore_phrase` — return learning instructions for understanding an expression and generating memorable contexts; never persists data
+- `render_phrase_choices` — display 1–4 complete exploration candidates in an optional inline MCP Apps UI; never persists data
 - `add_phrase` — save one finished phrase entry assembled by the assistant
 
-There is no MCP `curate` tool. The backend `/api/v1/phrases/curate` endpoint remains available to the web frontend, but MCP exploration uses `explore_phrase`, and saves go directly through `add_phrase`.
+There is no MCP `curate` tool. The backend `/api/v1/phrases/curate` endpoint remains available to the web frontend, but MCP exploration uses `explore_phrase`, optional choice presentation uses `render_phrase_choices`, and saves go through `add_phrase` either conversationally or from the UI Save button.
 
 ## OAuth 2.1 (complete)
 
@@ -153,7 +156,7 @@ MCP server is the public OAuth face; backend handles the real work over the priv
 - **Refresh token rotation**: old token atomically revoked, new one issued on every `refresh_token` grant
 - **Revocation**: `POST /revoke` (MCP) → `POST /internal/oauth/revoke` (backend)
 - **Access token TTL**: 1 hour (JWT); refresh tokens are DB-persisted so they can be revoked
-- **`/mcp`**: initialization, `tools/list`, and stateless `explore_phrase` calls are public; collection-backed tools advertise OAuth and challenge missing or rejected tokens via `mcp/www_authenticate`; request Bearer tokens are forwarded only to the caller's tool invocation
+- **`/mcp`**: initialization, `tools/list`, stateless `explore_phrase` and `render_phrase_choices` calls, and the phrase-choice UI resource are public; collection-backed tools advertise OAuth and challenge missing or rejected tokens via `mcp/www_authenticate`; request Bearer tokens are forwarded only to the caller's tool invocation
 
 ## Auth (magic link — complete)
 
