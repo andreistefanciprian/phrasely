@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,6 +15,22 @@ import (
 type apiClient struct {
 	baseURL string
 	http    *http.Client
+}
+
+// apiStatusError preserves an unexpected backend status so tool wrappers can
+// distinguish authentication failures from ordinary API errors.
+type apiStatusError struct {
+	StatusCode int
+}
+
+func (e *apiStatusError) Error() string {
+	return fmt.Sprintf("API returned %d", e.StatusCode)
+}
+
+func isAPIAuthError(err error) bool {
+	var statusErr *apiStatusError
+	return errors.As(err, &statusErr) &&
+		(statusErr.StatusCode == http.StatusUnauthorized || statusErr.StatusCode == http.StatusForbidden)
 }
 
 func newAPIClient(baseURL string) *apiClient {
@@ -69,7 +86,7 @@ func (c *apiClient) AddPhrase(jwt string, in AddPhraseRequest) (Phrase, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
-		return Phrase{}, fmt.Errorf("API returned %d", resp.StatusCode)
+		return Phrase{}, &apiStatusError{StatusCode: resp.StatusCode}
 	}
 
 	var phrase Phrase
@@ -99,7 +116,7 @@ func (c *apiClient) ListPhrasesSummary(jwt, headword string) ([]PhraseSummary, e
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API returned %d", resp.StatusCode)
+		return nil, &apiStatusError{StatusCode: resp.StatusCode}
 	}
 
 	var summaries []PhraseSummary
@@ -124,7 +141,7 @@ func (c *apiClient) GetRandomPhrases(jwt string, count int) ([]PhraseSummary, er
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API returned %d", resp.StatusCode)
+		return nil, &apiStatusError{StatusCode: resp.StatusCode}
 	}
 
 	var summaries []PhraseSummary
@@ -153,7 +170,7 @@ func (c *apiClient) ListPhrases(jwt, headword string) ([]Phrase, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API returned %d", resp.StatusCode)
+		return nil, &apiStatusError{StatusCode: resp.StatusCode}
 	}
 
 	var phrases []Phrase

@@ -67,8 +67,16 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 		if err := json.Unmarshal(rawSchemes, &schemes); err != nil {
 			t.Fatalf("decode security schemes for %q: %v", tool.Name, err)
 		}
-		if len(schemes) != 1 || schemes[0].Type != "oauth2" || schemes[0].Scopes == nil || len(schemes[0].Scopes) != 0 {
-			t.Errorf("tool %q securitySchemes = %s, want one oauth2 scheme with empty scopes", tool.Name, rawSchemes)
+		if len(schemes) != 1 {
+			t.Errorf("tool %q securitySchemes = %s, want exactly one scheme", tool.Name, rawSchemes)
+			continue
+		}
+		if tool.Name == "explore_phrase" {
+			if schemes[0].Type != "noauth" {
+				t.Errorf("tool %q securitySchemes = %s, want noauth", tool.Name, rawSchemes)
+			}
+		} else if schemes[0].Type != "oauth2" || schemes[0].Scopes == nil || len(schemes[0].Scopes) != 0 {
+			t.Errorf("tool %q securitySchemes = %s, want oauth2 with empty scopes", tool.Name, rawSchemes)
 		}
 	}
 
@@ -142,6 +150,28 @@ func TestRequireToolAuth(t *testing.T) {
 		}
 		if !called || output.Instructions != "ok" {
 			t.Fatalf("authenticated handler result = %#v, called = %v", output, called)
+		}
+	})
+
+	t.Run("backend auth rejection returns ChatGPT OAuth challenge", func(t *testing.T) {
+		next := func(context.Context, *mcp.CallToolRequest, ExplorePhraseInput) (*mcp.CallToolResult, ExplorePhraseOutput, error) {
+			return nil, ExplorePhraseOutput{}, &apiStatusError{StatusCode: http.StatusUnauthorized}
+		}
+		handler := requireToolAuth("list_phrases", protectedResourceMetadataURL, next)
+		req := &mcp.CallToolRequest{Extra: &mcp.RequestExtra{Header: http.Header{
+			"Authorization": []string{"Bearer expired-token"},
+		}}}
+
+		result, _, err := handler(context.Background(), req, ExplorePhraseInput{Phrase: "test"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result == nil || !result.IsError {
+			t.Fatal("backend auth rejection did not return a tool error")
+		}
+		challenges, ok := result.Meta["mcp/www_authenticate"].([]string)
+		if !ok || len(challenges) != 1 || !strings.Contains(challenges[0], `error="invalid_token"`) {
+			t.Fatalf("mcp/www_authenticate = %#v, want invalid_token challenge", result.Meta["mcp/www_authenticate"])
 		}
 	})
 }
