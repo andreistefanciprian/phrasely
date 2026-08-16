@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -8,6 +9,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // TestParseLogLevel checks that LOG_LEVEL strings map to the correct slog levels.
@@ -106,8 +109,8 @@ func TestAnonymousMCPDiscoveryAndAuthChallenge(t *testing.T) {
 		t.Fatalf("initialize status = %d, want 200; body = %s", resp.StatusCode, body)
 	}
 	sessionID := resp.Header.Get("Mcp-Session-Id")
-	if sessionID == "" {
-		t.Fatal("initialize response has no Mcp-Session-Id")
+	if sessionID != "" {
+		t.Fatalf("stateless initialize returned unexpected Mcp-Session-Id %q", sessionID)
 	}
 
 	_, body = post(`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, sessionID, "")
@@ -140,6 +143,43 @@ func TestAnonymousMCPDiscoveryAndAuthChallenge(t *testing.T) {
 	_, body = post(`{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"list_phrases","arguments":{}}}`, sessionID, "test-token")
 	if strings.Contains(body, `"isError":true`) || !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"A test phrase"`) {
 		t.Errorf("authenticated tool call did not succeed on the anonymously initialized session: %s", body)
+	}
+}
+
+func TestMCPCurrentProtocolDiscoveryListsTools(t *testing.T) {
+	server := httptest.NewServer(newMCPHandler(newAPIClient("http://unused"), "https://mcp.example.com/.well-known/oauth-protected-resource"))
+	defer server.Close()
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1.0"}, nil)
+	session, err := client.Connect(context.Background(), &mcp.StreamableClientTransport{Endpoint: server.URL}, nil)
+	if err != nil {
+		t.Fatalf("connect with current protocol: %v", err)
+	}
+	defer session.Close()
+
+	initializeResult := session.InitializeResult()
+	if initializeResult == nil {
+		t.Fatal("current protocol discovery returned no initialization result")
+	}
+	if initializeResult.ProtocolVersion != "2026-07-28" {
+		t.Fatalf("negotiated protocol = %q, want 2026-07-28", initializeResult.ProtocolVersion)
+	}
+	if session.ID() != "" {
+		t.Fatalf("stateless connection returned unexpected session ID %q", session.ID())
+	}
+
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("list tools with current protocol: %v", err)
+	}
+	got := make(map[string]bool, len(tools.Tools))
+	for _, tool := range tools.Tools {
+		got[tool.Name] = true
+	}
+	for _, want := range []string{"list_phrases", "sample_phrases", "explore_phrase", "add_phrase"} {
+		if !got[want] {
+			t.Errorf("current protocol tools/list is missing %q: %v", want, got)
+		}
 	}
 }
 
