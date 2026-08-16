@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.9.0...frontend-v0.9.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* **mcp:** expose OAuth tools to ChatGPT ([68839f4](https://github.com/andreistefanciprian/phrasely/commit/68839f41be71470c1dd1eb4e83c608a31a579082))
+
 ## [0.9.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.8.4...frontend-v0.9.0) (2026-08-09)
 
 
