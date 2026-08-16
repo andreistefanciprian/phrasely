@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -163,5 +165,108 @@ func TestStoryPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 	}
 	if strings.Contains(body, "Sign in →") || strings.Contains(body, "Try Phrasely, it's free →") {
 		t.Error("response contains logged-out story prompt")
+	}
+}
+
+func TestAuthorizePreservesOAuthResource(t *testing.T) {
+	const resource = "https://mcp.example.com"
+	const redirectURI = "https://chatgpt.com/callback"
+	const challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/internal/oauth/clients/"):
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]any{"redirect_uris": []string{redirectURI}})
+		case r.Method == http.MethodPost && r.URL.Path == "/internal/oauth/authorize":
+			var body struct {
+				Resource string `json:"resource"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode authorize body: %v", err)
+			}
+			if body.Resource != resource {
+				t.Errorf("resource = %q, want %q", body.Resource, resource)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"code": "code-123"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer backend.Close()
+
+	app := &application{api: newAPIClient(backend.URL)}
+	params := url.Values{
+		"client_id":             {"client-123"},
+		"resource":              {resource},
+		"redirect_uri":          {redirectURI},
+		"code_challenge":        {challenge},
+		"code_challenge_method": {"S256"},
+		"state":                 {"state-123"},
+		"response_type":         {"code"},
+	}
+
+	t.Run("GET keeps resource in consent forms", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/authorize?"+params.Encode(), nil)
+		req.AddCookie(&http.Cookie{Name: authCookieName, Value: "jwt"})
+		w := httptest.NewRecorder()
+		app.authorizePage(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200; body = %s", w.Code, w.Body.String())
+		}
+		if got := strings.Count(w.Body.String(), `name="resource"`); got != 2 {
+			t.Errorf("resource hidden field count = %d, want 2", got)
+		}
+		if got := strings.Count(w.Body.String(), `value="`+resource+`"`); got != 2 {
+			t.Errorf("resource hidden value count = %d, want 2", got)
+		}
+	})
+
+	t.Run("POST forwards resource to backend", func(t *testing.T) {
+		params.Set("action", "allow")
+		req := httptest.NewRequest(http.MethodPost, "/authorize", strings.NewReader(params.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.AddCookie(&http.Cookie{Name: authCookieName, Value: "jwt"})
+		w := httptest.NewRecorder()
+		app.authorizePage(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("status = %d, want 303; body = %s", w.Code, w.Body.String())
+		}
+		location, err := url.Parse(w.Header().Get("Location"))
+		if err != nil {
+			t.Fatalf("parse Location: %v", err)
+		}
+		if location.Query().Get("code") != "code-123" || location.Query().Get("state") != "state-123" {
+			t.Errorf("unexpected redirect query: %s", location.RawQuery)
+		}
+	})
+}
+
+func TestValidateOAuthParamsRequiresResource(t *testing.T) {
+	p := oauthParams{
+		ClientID:            "client-123",
+		RedirectURI:         "https://chatgpt.com/callback",
+		CodeChallenge:       "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+		CodeChallengeMethod: "S256",
+		State:               "state-123",
+		ResponseType:        "code",
+	}
+	if err := validateOAuthParams(p); err == nil {
+		t.Fatal("missing resource was accepted")
+	}
+	p.Resource = "not-a-url"
+	if err := validateOAuthParams(p); err == nil {
+		t.Fatal("invalid resource was accepted")
+	}
+	p.Resource = "https://mcp.example.com#fragment"
+	if err := validateOAuthParams(p); err == nil {
+		t.Fatal("resource with fragment was accepted")
+	}
+	p.Resource = "https://mcp.example.com"
+	if err := validateOAuthParams(p); err != nil {
+		t.Fatalf("valid resource was rejected: %v", err)
 	}
 }

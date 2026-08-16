@@ -110,6 +110,7 @@
     {{/* Deny: POST with action=deny — redirects to redirect_uri?error=access_denied */}}
     <form method="POST" action="/authorize">
       <input type="hidden" name="client_id"             value="{{.ClientID}}">
+      <input type="hidden" name="resource"              value="{{.Resource}}">
       <input type="hidden" name="redirect_uri"          value="{{.RedirectURI}}">
       <input type="hidden" name="code_challenge"        value="{{.CodeChallenge}}">
       <input type="hidden" name="code_challenge_method" value="{{.CodeChallengeMethod}}">
@@ -122,6 +123,7 @@
     {{/* Allow: POST with action=allow (default) — calls backend, redirects with code */}}
     <form method="POST" action="/authorize">
       <input type="hidden" name="client_id"             value="{{.ClientID}}">
+      <input type="hidden" name="resource"              value="{{.Resource}}">
       <input type="hidden" name="redirect_uri"          value="{{.RedirectURI}}">
       <input type="hidden" name="code_challenge"        value="{{.CodeChallenge}}">
       <input type="hidden" name="code_challenge_method" value="{{.CodeChallengeMethod}}">

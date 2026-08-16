@@ -320,6 +320,12 @@ func TestTokenProxy(t *testing.T) {
 			if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
 				t.Errorf("backend Content-Type = %q, want application/x-www-form-urlencoded", ct)
 			}
+			if err := r.ParseForm(); err != nil {
+				t.Fatalf("parse backend form: %v", err)
+			}
+			if got := r.PostForm.Get("resource"); got != "https://mcp.example.com" {
+				t.Errorf("backend resource = %q, want https://mcp.example.com", got)
+			}
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Cache-Control", "no-store")
 			w.Header().Set("Pragma", "no-cache")
@@ -330,7 +336,7 @@ func TestTokenProxy(t *testing.T) {
 
 		mux := newTestMux(oauthConfig{}, backend.URL)
 		w := httptest.NewRecorder()
-		body := "grant_type=authorization_code&code=abc&code_verifier=xyz&client_id=cid&redirect_uri=https://example.com"
+		body := "grant_type=authorization_code&code=abc&code_verifier=xyz&client_id=cid&redirect_uri=https://example.com&resource=https://mcp.example.com"
 		r := httptest.NewRequest(http.MethodPost, "/token", strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		mux.ServeHTTP(w, r)

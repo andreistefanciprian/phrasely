@@ -149,6 +149,11 @@ type authorizeRequest struct {
 	// ClientID identifies the registered OAuth client (from /register).
 	ClientID string `json:"client_id"`
 
+	// Resource is the canonical URI of the MCP server the access token will be
+	// used with. It is carried through the code and refresh-token grants and
+	// becomes the access token audience (RFC 8707).
+	Resource string `json:"resource"`
+
 	// RedirectURI is the URI the code will be appended to. Must exactly match
 	// one of the URIs registered at /register — this prevents open redirect attacks.
 	RedirectURI string `json:"redirect_uri"`
@@ -199,9 +204,15 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ClientID == "" || req.RedirectURI == "" || req.CodeChallenge == "" {
+	if req.ClientID == "" || req.Resource == "" || req.RedirectURI == "" || req.CodeChallenge == "" {
 		slog.Warn("oauth: authorization rejected", "client_id", req.ClientID, "reason", "missing_required_field")
-		respondErr(w, http.StatusBadRequest, "client_id, redirect_uri, and code_challenge are required")
+		respondErr(w, http.StatusBadRequest, "client_id, resource, redirect_uri, and code_challenge are required")
+		return
+	}
+
+	if err := validateResourceURI(req.Resource); err != nil {
+		slog.Warn("oauth: authorization rejected", "client_id", req.ClientID, "reason", "invalid_resource")
+		respondErr(w, http.StatusBadRequest, "invalid resource: "+err.Error())
 		return
 	}
 
@@ -238,6 +249,7 @@ func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) {
 	code, err := h.store.CreateAuthorizationCode(r.Context(), db.CreateAuthCodeRequest{
 		ClientID:      req.ClientID,
 		UserID:        userID,
+		Resource:      req.Resource,
 		RedirectURI:   req.RedirectURI,
 		CodeChallenge: req.CodeChallenge,
 		ExpiresAt:     time.Now().Add(authCodeTTL),
@@ -380,10 +392,11 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 	codeVerifier := r.PostForm.Get("code_verifier")
 	clientID := r.PostForm.Get("client_id")
 	redirectURI := r.PostForm.Get("redirect_uri")
+	resource := r.PostForm.Get("resource")
 
-	if code == "" || codeVerifier == "" || clientID == "" || redirectURI == "" {
+	if code == "" || codeVerifier == "" || clientID == "" || redirectURI == "" || resource == "" {
 		slog.Warn("oauth: authorization code exchange rejected", "client_id", clientID, "reason", "missing_required_field")
-		respondErr(w, http.StatusBadRequest, "code, code_verifier, client_id, and redirect_uri are required")
+		respondErr(w, http.StatusBadRequest, "code, code_verifier, client_id, redirect_uri, and resource are required")
 		return
 	}
 
@@ -422,9 +435,19 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The token request must repeat the resource from the authorization request.
+	// This prevents a code granted for one audience from being exchanged for a
+	// token usable at another resource server (RFC 8707 §4.1).
+	if resource != authCode.Resource {
+		slog.Warn("oauth: authorization code exchange rejected", "client_id", clientID, "reason", "resource_mismatch")
+		respondErr(w, http.StatusBadRequest, "invalid_target")
+		return
+	}
+
 	refreshToken, err := h.store.CreateRefreshToken(r.Context(), db.CreateRefreshTokenRequest{
 		ClientID: authCode.ClientID,
 		UserID:   authCode.UserID,
+		Resource: authCode.Resource,
 	})
 	if err != nil {
 		slog.Error("create refresh token", "client_id", clientID, "grant_type", "authorization_code", "error", err)
@@ -432,7 +455,7 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.writeTokenResponse(w, authCode.UserID, refreshToken.Token, clientID, "authorization_code")
+	h.writeTokenResponse(w, authCode.UserID, refreshToken.Token, authCode.Resource, clientID, "authorization_code")
 }
 
 // refreshTokenGrant handles grant_type=refresh_token.
@@ -444,9 +467,10 @@ func (h *Handler) authCodeGrant(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 	tokenStr := r.PostForm.Get("refresh_token")
 	clientID := r.PostForm.Get("client_id")
-	if tokenStr == "" || clientID == "" {
+	resource := r.PostForm.Get("resource")
+	if tokenStr == "" || clientID == "" || resource == "" {
 		slog.Warn("oauth: refresh token exchange rejected", "client_id", clientID, "reason", "missing_required_field")
-		respondErr(w, http.StatusBadRequest, "refresh_token and client_id are required")
+		respondErr(w, http.StatusBadRequest, "refresh_token, client_id, and resource are required")
 		return
 	}
 
@@ -465,9 +489,16 @@ func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if resource != old.Resource {
+		slog.Warn("oauth: refresh token exchange rejected", "client_id", clientID, "reason", "resource_mismatch")
+		respondErr(w, http.StatusBadRequest, "invalid_target")
+		return
+	}
+
 	newRefreshToken, err := h.store.CreateRefreshToken(r.Context(), db.CreateRefreshTokenRequest{
 		ClientID: old.ClientID,
 		UserID:   old.UserID,
+		Resource: old.Resource,
 	})
 	if err != nil {
 		slog.Error("create refresh token", "client_id", clientID, "grant_type", "refresh_token", "error", err)
@@ -475,13 +506,13 @@ func (h *Handler) refreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.writeTokenResponse(w, old.UserID, newRefreshToken.Token, clientID, "refresh_token")
+	h.writeTokenResponse(w, old.UserID, newRefreshToken.Token, old.Resource, clientID, "refresh_token")
 }
 
 // writeTokenResponse signs a JWT access token and writes the standard token
 // response body with no-store cache headers (RFC 6749 §5.1).
-func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken, clientID, grantType string) {
-	accessToken, err := auth.SignJWT(userID, h.jwtSecret, h.accessTokenTTL)
+func (h *Handler) writeTokenResponse(w http.ResponseWriter, userID, refreshToken, resource, clientID, grantType string) {
+	accessToken, err := auth.SignOAuthJWT(userID, h.jwtSecret, resource, h.accessTokenTTL)
 	if err != nil {
 		slog.Error("sign access token", "client_id", clientID, "grant_type", grantType, "error", err)
 		respondErr(w, http.StatusInternalServerError, "internal error")
@@ -524,6 +555,23 @@ func validateRedirectURI(raw string) error {
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return errors.New("scheme must be http or https")
+	}
+	return nil
+}
+
+// validateResourceURI checks the RFC 8707 resource indicator before persisting
+// it. Resource identifiers must be absolute HTTP(S) URIs and cannot include a
+// fragment because fragments are not sent to resource servers.
+func validateResourceURI(raw string) error {
+	if strings.Contains(raw, "#") {
+		return errors.New("fragments not allowed")
+	}
+	u, err := url.ParseRequestURI(raw)
+	if err != nil {
+		return err
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return errors.New("must be an absolute http or https URL")
 	}
 	return nil
 }

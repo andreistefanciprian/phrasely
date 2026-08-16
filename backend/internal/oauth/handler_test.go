@@ -13,6 +13,7 @@ import (
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 )
 
@@ -301,6 +302,7 @@ func TestAuthorize(t *testing.T) {
 	const validChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
 	const validClientID = "client-abc"
 	const validRedirectURI = "https://chatgpt.com/callback"
+	const validResource = "https://mcp.example.com"
 
 	// okStore returns a registered client and successfully creates an auth code.
 	okStore := &mockStore{
@@ -310,12 +312,15 @@ func TestAuthorize(t *testing.T) {
 				RedirectURIs: []string{validRedirectURI},
 			}, nil
 		},
-		createAuthorizationCode: func(_ context.Context, _ db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error) {
+		createAuthorizationCode: func(_ context.Context, req db.CreateAuthCodeRequest) (*db.OAuthAuthorizationCode, error) {
+			if req.Resource != validResource {
+				return nil, fmt.Errorf("resource = %q, want %q", req.Resource, validResource)
+			}
 			return &db.OAuthAuthorizationCode{Code: "code-xyz"}, nil
 		},
 	}
 
-	validBody := `{"client_id":"` + validClientID + `","redirect_uri":"` + validRedirectURI + `","code_challenge":"` + validChallenge + `"}`
+	validBody := `{"client_id":"` + validClientID + `","resource":"` + validResource + `","redirect_uri":"` + validRedirectURI + `","code_challenge":"` + validChallenge + `"}`
 
 	tests := []struct {
 		name       string
@@ -355,7 +360,7 @@ func TestAuthorize(t *testing.T) {
 			// redirect_uri must exactly match a registered URI — prevents open redirect.
 			name:   "unregistered redirect_uri returns 400",
 			userID: "user-123",
-			body:   `{"client_id":"` + validClientID + `","redirect_uri":"https://evil.com/steal","code_challenge":"` + validChallenge + `"}`,
+			body:   `{"client_id":"` + validClientID + `","resource":"` + validResource + `","redirect_uri":"https://evil.com/steal","code_challenge":"` + validChallenge + `"}`,
 			store: &mockStore{
 				getOAuthClient: func(_ context.Context, _ string) (*db.OAuthClient, error) {
 					return &db.OAuthClient{
@@ -370,7 +375,14 @@ func TestAuthorize(t *testing.T) {
 			// code_challenge must be base64url SHA256 — 43 chars, no padding.
 			name:       "invalid code_challenge returns 400",
 			userID:     "user-123",
-			body:       `{"client_id":"` + validClientID + `","redirect_uri":"` + validRedirectURI + `","code_challenge":"not-a-valid-challenge"}`,
+			body:       `{"client_id":"` + validClientID + `","resource":"` + validResource + `","redirect_uri":"` + validRedirectURI + `","code_challenge":"not-a-valid-challenge"}`,
+			store:      okStore,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "invalid resource returns 400",
+			userID:     "user-123",
+			body:       `{"client_id":"` + validClientID + `","resource":"not-a-url","redirect_uri":"` + validRedirectURI + `","code_challenge":"` + validChallenge + `"}`,
 			store:      okStore,
 			wantStatus: http.StatusBadRequest,
 		},
@@ -404,6 +416,7 @@ func TestToken(t *testing.T) {
 	const challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
 	const clientID = "client-abc"
 	const redirectURI = "https://chatgpt.com/callback"
+	const resource = "https://mcp.example.com"
 	const userID = "user-123"
 
 	okStore := &mockStore{
@@ -412,17 +425,21 @@ func TestToken(t *testing.T) {
 				Code:          "the-code",
 				ClientID:      clientID,
 				UserID:        userID,
+				Resource:      resource,
 				RedirectURI:   redirectURI,
 				CodeChallenge: challenge,
 			}, nil
 		},
-		createRefreshToken: func(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+		createRefreshToken: func(_ context.Context, req db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
+			if req.Resource != resource {
+				return nil, fmt.Errorf("resource = %q, want %q", req.Resource, resource)
+			}
 			return &db.OAuthRefreshToken{Token: "refresh-xyz"}, nil
 		},
 	}
 
 	validForm := "grant_type=authorization_code&code=the-code&code_verifier=" + verifier +
-		"&client_id=" + clientID + "&redirect_uri=" + redirectURI
+		"&client_id=" + clientID + "&redirect_uri=" + redirectURI + "&resource=" + resource
 
 	callToken := func(store *mockStore, body string) *httptest.ResponseRecorder {
 		w := httptest.NewRecorder()
@@ -467,12 +484,12 @@ func TestToken(t *testing.T) {
 			// Wrong verifier → SHA256 hash doesn't match stored challenge.
 			name: "wrong code_verifier returns 400",
 			body: "grant_type=authorization_code&code=the-code&code_verifier=wrongverifier1234567890123456789012345678" +
-				"&client_id=" + clientID + "&redirect_uri=" + redirectURI,
+				"&client_id=" + clientID + "&redirect_uri=" + redirectURI + "&resource=" + resource,
 			store: &mockStore{
 				consumeAuthorizationCode: func(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
 					return &db.OAuthAuthorizationCode{
 						ClientID: clientID, UserID: userID,
-						RedirectURI: redirectURI, CodeChallenge: challenge,
+						Resource: resource, RedirectURI: redirectURI, CodeChallenge: challenge,
 					}, nil
 				},
 			},
@@ -482,15 +499,22 @@ func TestToken(t *testing.T) {
 			// redirect_uri in the request must match the one pinned on the code.
 			name: "redirect_uri mismatch returns 400",
 			body: "grant_type=authorization_code&code=the-code&code_verifier=" + verifier +
-				"&client_id=" + clientID + "&redirect_uri=https://other.com/cb",
+				"&client_id=" + clientID + "&redirect_uri=https://other.com/cb&resource=" + resource,
 			store: &mockStore{
 				consumeAuthorizationCode: func(_ context.Context, _, _ string) (*db.OAuthAuthorizationCode, error) {
 					return &db.OAuthAuthorizationCode{
 						ClientID: clientID, UserID: userID,
-						RedirectURI: redirectURI, CodeChallenge: challenge,
+						Resource: resource, RedirectURI: redirectURI, CodeChallenge: challenge,
 					}, nil
 				},
 			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name: "resource mismatch returns 400",
+			body: "grant_type=authorization_code&code=the-code&code_verifier=" + verifier +
+				"&client_id=" + clientID + "&redirect_uri=" + redirectURI + "&resource=https://other.example.com",
+			store:      okStore,
 			wantStatus: http.StatusBadRequest,
 		},
 	}
@@ -516,6 +540,13 @@ func TestToken(t *testing.T) {
 				}
 				if typ, ok := resp["token_type"].(string); !ok || typ != "Bearer" {
 					t.Errorf("token_type = %v, want Bearer", resp["token_type"])
+				}
+				accessToken := resp["access_token"].(string)
+				parsed, err := jwt.Parse(accessToken, func(token *jwt.Token) (any, error) {
+					return []byte(testJWTSecret), nil
+				}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithIssuer(resource), jwt.WithAudience(resource))
+				if err != nil || !parsed.Valid {
+					t.Errorf("access token is not bound to resource %q: %v", resource, err)
 				}
 			}
 		})
@@ -677,11 +708,12 @@ func TestRevoke(t *testing.T) {
 func TestRefreshToken(t *testing.T) {
 	const clientID = "client-abc"
 	const userID = "user-123"
+	const resource = "https://mcp.example.com"
 
 	okStore := &mockStore{
 		// ConsumeRefreshToken atomically revokes the old token and returns its record.
 		consumeRefreshToken: func(_ context.Context, token, _ string) (*db.OAuthRefreshToken, error) {
-			return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID}, nil
+			return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID, Resource: resource}, nil
 		},
 		// CreateRefreshToken issues the new rotated token.
 		createRefreshToken: func(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
@@ -699,7 +731,7 @@ func TestRefreshToken(t *testing.T) {
 		return w
 	}
 
-	validBody := "grant_type=refresh_token&refresh_token=old-refresh-token&client_id=" + clientID
+	validBody := "grant_type=refresh_token&refresh_token=old-refresh-token&client_id=" + clientID + "&resource=" + resource
 
 	tests := []struct {
 		name       string
@@ -729,13 +761,19 @@ func TestRefreshToken(t *testing.T) {
 		{
 			// Both fields are required — missing either returns 400 before hitting the DB.
 			name:       "missing refresh_token field returns 400",
-			body:       "grant_type=refresh_token&client_id=" + clientID,
+			body:       "grant_type=refresh_token&client_id=" + clientID + "&resource=" + resource,
 			store:      okStore,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "missing client_id field returns 400",
-			body:       "grant_type=refresh_token&refresh_token=old-refresh-token",
+			body:       "grant_type=refresh_token&refresh_token=old-refresh-token&resource=" + resource,
+			store:      okStore,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "resource mismatch returns 400",
+			body:       "grant_type=refresh_token&refresh_token=old-refresh-token&client_id=" + clientID + "&resource=https://other.example.com",
 			store:      okStore,
 			wantStatus: http.StatusBadRequest,
 		},
@@ -755,7 +793,7 @@ func TestRefreshToken(t *testing.T) {
 			body: validBody,
 			store: &mockStore{
 				consumeRefreshToken: func(_ context.Context, token, _ string) (*db.OAuthRefreshToken, error) {
-					return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID}, nil
+					return &db.OAuthRefreshToken{Token: token, ClientID: clientID, UserID: userID, Resource: resource}, nil
 				},
 				createRefreshToken: func(_ context.Context, _ db.CreateRefreshTokenRequest) (*db.OAuthRefreshToken, error) {
 					return nil, errors.New("db unavailable")
