@@ -173,7 +173,7 @@ MCP server is the public OAuth face; backend handles the real work over the priv
 ## Git workflow
 
 - Every change goes in a PR — never push directly to `main`
-- **Before pushing: show the full diff and ask the user to review — no exceptions**
+- **Before pushing: ask the user to review — no exceptions**
 - **Never push without explicit approval from the user**
 - Branch naming: `pr/<number>-<short-description>`
 - Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.) with scope when relevant, e.g. `feat(frontend): add shuffle button`
