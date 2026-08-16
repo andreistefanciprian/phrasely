@@ -57,7 +57,21 @@ func TestBearerToken(t *testing.T) {
 
 func TestAnonymousMCPDiscoveryAndAuthChallenge(t *testing.T) {
 	const protectedResourceMetadataURL = "https://mcp.example.com/.well-known/oauth-protected-resource"
-	server := httptest.NewServer(newMCPHandler(newAPIClient("http://127.0.0.1:1"), protectedResourceMetadataURL))
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/phrases/summary" {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `[{"phrase":"A test phrase","headwords":["test"]}]`)
+	}))
+	defer backend.Close()
+
+	server := httptest.NewServer(newMCPHandler(newAPIClient(backend.URL), protectedResourceMetadataURL))
 	defer server.Close()
 
 	post := func(body, sessionID, token string) (*http.Response, string) {
@@ -104,14 +118,27 @@ func TestAnonymousMCPDiscoveryAndAuthChallenge(t *testing.T) {
 	}
 
 	_, body = post(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"explore_phrase","arguments":{"phrase":"test"}}}`, sessionID, "")
-	for _, want := range []string{`"isError":true`, `"mcp/www_authenticate"`, protectedResourceMetadataURL, `error=\"invalid_token\"`} {
-		if !strings.Contains(body, want) {
-			t.Errorf("unauthenticated tool response does not contain %q: %s", want, body)
+	if strings.Contains(body, `"isError":true`) || !strings.Contains(body, `"instructions"`) {
+		t.Errorf("public explore_phrase call failed: %s", body)
+	}
+
+	assertAuthChallenge := func(body string) {
+		t.Helper()
+		for _, want := range []string{`"isError":true`, `"mcp/www_authenticate"`, protectedResourceMetadataURL, `error=\"invalid_token\"`} {
+			if !strings.Contains(body, want) {
+				t.Errorf("authentication error response does not contain %q: %s", want, body)
+			}
 		}
 	}
 
-	_, body = post(`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"explore_phrase","arguments":{"phrase":"test"}}}`, sessionID, "test-token")
-	if strings.Contains(body, `"isError":true`) || !strings.Contains(body, `"instructions"`) {
+	_, body = post(`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"list_phrases","arguments":{}}}`, sessionID, "")
+	assertAuthChallenge(body)
+
+	_, body = post(`{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"list_phrases","arguments":{}}}`, sessionID, "expired-token")
+	assertAuthChallenge(body)
+
+	_, body = post(`{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"list_phrases","arguments":{}}}`, sessionID, "test-token")
+	if strings.Contains(body, `"isError":true`) || !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"A test phrase"`) {
 		t.Errorf("authenticated tool call did not succeed on the anonymously initialized session: %s", body)
 	}
 }

@@ -5,11 +5,11 @@ private `backend` API.
 
 ## Auth
 
-MCP initialization and `tools/list` are public so clients can discover the
-tools and their OAuth security schemes. Every tool call requires
-`Authorization: Bearer <access_token>`; unauthenticated calls return an
-`mcp/www_authenticate` challenge. The access token is a short-lived JWT issued
-by the OAuth 2.1 + PKCE flow:
+MCP initialization, `tools/list`, and the stateless `explore_phrase` learning
+tool are public. Tools that read or write a user's collection require
+`Authorization: Bearer <access_token>`; missing, invalid, or expired tokens
+return an `mcp/www_authenticate` challenge. The access token is a short-lived
+JWT issued by the OAuth 2.1 + PKCE flow:
 
 1. Client fetches `/.well-known/oauth-authorization-server` to discover endpoints.
 2. Client registers via `POST /register` (Dynamic Client Registration, RFC 7591).

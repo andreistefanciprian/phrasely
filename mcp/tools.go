@@ -67,7 +67,7 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 	}, requireToolAuth("sample_phrases", protectedResourceMetadataURL, samplePhrasesHandler(api)))
 
 	mcp.AddTool(server, &mcp.Tool{
-		Meta:        oauthToolMeta(),
+		Meta:        noAuthToolMeta(),
 		Name:        "explore_phrase",
 		Title:       "Explore a phrase with Phrasely",
 		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or find memorable examples using the same headword. Return Phrasely's learning instructions for the assistant to apply locally. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
@@ -75,7 +75,7 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 			ReadOnlyHint:  true,
 			OpenWorldHint: pFalse,
 		},
-	}, requireToolAuth("explore_phrase", protectedResourceMetadataURL, explorePhraseHandler()))
+	}, explorePhraseHandler())
 
 	mcp.AddTool(server, &mcp.Tool{
 		Meta:        oauthToolMeta(),
@@ -100,32 +100,51 @@ func oauthToolMeta() mcp.Meta {
 	}
 }
 
-// requireToolAuth lets initialize and tools/list remain public while ensuring
-// every actual tool call carries an OAuth access token. The backend performs
-// cryptographic validation for tools that access user data.
+// noAuthToolMeta marks tools that do not access user data and can run without
+// an OAuth session.
+func noAuthToolMeta() mcp.Meta {
+	return mcp.Meta{
+		"securitySchemes": []map[string]any{
+			{"type": "noauth"},
+		},
+	}
+}
+
+// requireToolAuth protects collection-backed tools while leaving MCP discovery
+// public. The backend performs cryptographic validation of the supplied token.
 func requireToolAuth[In, Out any](toolName, protectedResourceMetadataURL string, next mcp.ToolHandlerFor[In, Out]) mcp.ToolHandlerFor[In, Out] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, Out, error) {
-		if requestBearer(req) != "" {
-			slog.Debug("mcp: authenticated tool call", "tool", toolName)
-			return next(ctx, req, in)
+		if requestBearer(req) == "" {
+			return toolAuthChallenge[Out](toolName, protectedResourceMetadataURL, "missing_or_invalid_bearer")
 		}
 
-		slog.Info("mcp: tool authentication challenged", "tool", toolName, "reason", "missing_or_invalid_bearer")
-		var zero Out
-		challenge := fmt.Sprintf(
-			`Bearer resource_metadata="%s", error="invalid_token", error_description="Authentication required"`,
-			protectedResourceMetadataURL,
-		)
-		return &mcp.CallToolResult{
-			Meta: mcp.Meta{
-				"mcp/www_authenticate": []string{challenge},
-			},
-			Content: []mcp.Content{
-				&mcp.TextContent{Text: "Authentication required: no access token provided."},
-			},
-			IsError: true,
-		}, zero, nil
+		result, out, err := next(ctx, req, in)
+		if isAPIAuthError(err) {
+			return toolAuthChallenge[Out](toolName, protectedResourceMetadataURL, "backend_rejected_bearer")
+		}
+		if err == nil {
+			slog.Debug("mcp: authenticated tool call", "tool", toolName)
+		}
+		return result, out, err
 	}
+}
+
+func toolAuthChallenge[Out any](toolName, protectedResourceMetadataURL, reason string) (*mcp.CallToolResult, Out, error) {
+	slog.Info("mcp: tool authentication challenged", "tool", toolName, "reason", reason)
+	var zero Out
+	challenge := fmt.Sprintf(
+		`Bearer resource_metadata="%s", error="invalid_token", error_description="Authentication required"`,
+		protectedResourceMetadataURL,
+	)
+	return &mcp.CallToolResult{
+		Meta: mcp.Meta{
+			"mcp/www_authenticate": []string{challenge},
+		},
+		Content: []mcp.Content{
+			&mcp.TextContent{Text: "Authentication required: access token missing or invalid."},
+		},
+		IsError: true,
+	}, zero, nil
 }
 
 // requestBearer reads the current HTTP request rather than the initialization
@@ -179,7 +198,9 @@ func samplePhrasesHandler(api *apiClient) mcp.ToolHandlerFor[SamplePhrasesInput,
 		slog.Debug("tool: sample_phrases", "count", count)
 		phrases, err := api.GetRandomPhrases(jwt, count)
 		if err != nil {
-			slog.Error("tool: sample_phrases failed", "error", err)
+			if !isAPIAuthError(err) {
+				slog.Error("tool: sample_phrases failed", "error", err)
+			}
 			return nil, SamplePhrasesOutput{}, err
 		}
 		slog.Debug("tool: sample_phrases returned", "count", len(phrases))
@@ -204,7 +225,9 @@ func listPhrasesHandler(api *apiClient) mcp.ToolHandlerFor[ListPhrasesInput, Lis
 		slog.Debug("tool: list_phrases", "headword", in.Headword)
 		phrases, err := api.ListPhrasesSummary(jwt, in.Headword)
 		if err != nil {
-			slog.Error("tool: list_phrases failed", "error", err)
+			if !isAPIAuthError(err) {
+				slog.Error("tool: list_phrases failed", "error", err)
+			}
 			return nil, ListPhrasesOutput{}, err
 		}
 		slog.Debug("tool: list_phrases returned", "count", len(phrases))
@@ -238,7 +261,9 @@ func addPhraseHandler(api *apiClient) mcp.ToolHandlerFor[AddPhraseInput, AddPhra
 			SourceURLs: in.SourceURLs,
 		})
 		if err != nil {
-			slog.Error("tool: add_phrase failed", "error", err)
+			if !isAPIAuthError(err) {
+				slog.Error("tool: add_phrase failed", "error", err)
+			}
 			return nil, AddPhraseOutput{}, err
 		}
 		slog.Debug("tool: add_phrase saved")

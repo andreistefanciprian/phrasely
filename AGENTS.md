@@ -153,7 +153,7 @@ MCP server is the public OAuth face; backend handles the real work over the priv
 - **Refresh token rotation**: old token atomically revoked, new one issued on every `refresh_token` grant
 - **Revocation**: `POST /revoke` (MCP) → `POST /internal/oauth/revoke` (backend)
 - **Access token TTL**: 1 hour (JWT); refresh tokens are DB-persisted so they can be revoked
-- **`/mcp`**: initialization and `tools/list` are public for OAuth discovery; every tool advertises OAuth and challenges unauthenticated calls via `mcp/www_authenticate`; the per-request server factory scopes each caller's Bearer token to their own tool invocations
+- **`/mcp`**: initialization, `tools/list`, and stateless `explore_phrase` calls are public; collection-backed tools advertise OAuth and challenge missing or rejected tokens via `mcp/www_authenticate`; request Bearer tokens are forwarded only to the caller's tool invocation
 
 ## Auth (magic link — complete)
 
