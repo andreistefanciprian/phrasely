@@ -83,9 +83,11 @@ func main() {
 	}
 }
 
-// newMCPHandler leaves initialization and tools/list public so a fresh ChatGPT
-// connection can discover each tool's OAuth security scheme. Tool calls return
-// an mcp/www_authenticate challenge unless the request carries a Bearer token.
+// newMCPHandler leaves discovery and tools/list public so a fresh ChatGPT
+// connection can discover each tool's OAuth security scheme. The transport is
+// stateless because Phrasely does not use server-initiated calls or resumability,
+// and MCP 2026-07-28 requires stateless Streamable HTTP. Tool calls return an
+// mcp/www_authenticate challenge unless the request carries a Bearer token.
 func newMCPHandler(api *apiClient, protectedResourceMetadataURL string) http.Handler {
 	return mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		s := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, &mcp.ServerOptions{
@@ -94,16 +96,22 @@ func newMCPHandler(api *apiClient, protectedResourceMetadataURL string) http.Han
 		s.AddReceivingMiddleware(logMCPDiscovery)
 		registerTools(s, api, protectedResourceMetadataURL)
 		return s
-	}, nil)
+	}, &mcp.StreamableHTTPOptions{Stateless: true})
 }
 
-// logMCPDiscovery records the two protocol milestones needed to diagnose a
+// logMCPDiscovery records the protocol milestones needed to diagnose a
 // connector that authenticates successfully but does not expose any tools.
 func logMCPDiscovery(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		result, err := next(ctx, method, req)
 
 		switch method {
+		case "server/discover":
+			if err != nil {
+				slog.Warn("mcp: server discovery failed", "error", err)
+			} else {
+				slog.Info("mcp: server discovery succeeded")
+			}
 		case "initialize":
 			if err != nil {
 				slog.Warn("mcp: initialization failed", "error", err)
