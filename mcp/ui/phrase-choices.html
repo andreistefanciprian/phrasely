@@ -275,6 +275,8 @@
 
       const standardConnection = request("ui/initialize", {
         protocolVersion: "2026-01-26",
+        // Identifies this embedded MCP Apps UI component to the host. It is
+        // independent of Phrasely's plugin and server release versions.
         appInfo: { name: "phrasely-phrase-choices", version: "1.0.0" },
         appCapabilities: {}
       }, 5000).then((result) => {
