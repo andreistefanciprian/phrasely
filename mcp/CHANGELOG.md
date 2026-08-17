@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.0...mcp-v0.7.1) (2026-08-17)
+
+
+### Bug Fixes
+
+* **mcp:** canonicalize phrase choice headwords ([b3bba2e](https://github.com/andreistefanciprian/phrasely/commit/b3bba2ea7d18385b31b5378d3d38f9a902b81794))
+* **mcp:** simplify phrase choice interface ([9c0f33e](https://github.com/andreistefanciprian/phrasely/commit/9c0f33ef858b3944d69c2d7e57dcf6d74328a4e8))
+
 ## [0.7.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.6.1...mcp-v0.7.0) (2026-08-16)
 
 
