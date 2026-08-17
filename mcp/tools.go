@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -17,6 +18,7 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 
 1. Understand.
 	- Identify the likely target headword or fixed expression.
+	- Use the canonical taught form: keep fixed particles or prepositions, but exclude the replaceable person, thing, or group that completes the construction. For example, "unbeknownst to me" and "unbeknownst to the engineering team" both use the headword "unbeknownst to".
 	- Explain its meaning in the supplied context in simple English.
 	- Explain useful nuance where relevant: tone, register, connotation, or difference from a similar word.
 	- Treat idioms and fixed expressions as one headword.
@@ -40,6 +42,7 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 	- Never call add_phrase from exploration alone. The user must click Save in the phrase-choice UI or give a direct conversational save instruction.
 	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the refined original context and memorable alternatives. Do not expose database-ready JSON or source_urls in prose.
 	- After generating the final choices, construct phrase, headwords, note, and source_urls for each one using the add_phrase field rules, then call render_phrase_choices once. Mark at most one best learning context as recommended. Avoid duplicating the full choices outside the UI.
+	- Every choice explores the same target expression. Reuse the exact same canonical headwords and aligned source_urls for every choice; only the surrounding context and replaceable parts of the construction may vary.
 	- If render_phrase_choices or interactive UI is unavailable, present and number the alternatives conversationally so the user can select one.
 	- If the user instead gives a direct save instruction that clearly identifies a phrase, construct that entry and call add_phrase without rendering choices again.
 
@@ -201,14 +204,14 @@ type PhraseChoice struct {
 	Label       string   `json:"label,omitempty" jsonschema:"Short contextual label such as Original context or Everyday example."`
 	Recommended bool     `json:"recommended,omitempty" jsonschema:"True for at most one especially memorable or useful choice."`
 	Phrase      string   `json:"phrase" jsonschema:"Complete save-ready phrase following the add_phrase phrase field rules."`
-	Headwords   []string `json:"headwords" jsonschema:"Save-ready headwords following the add_phrase headwords field rules."`
+	Headwords   []string `json:"headwords" jsonschema:"Save-ready canonical headwords following the add_phrase headwords field rules. Every choice in one render_phrase_choices call must use the exact same headword list."`
 	Note        string   `json:"note,omitempty" jsonschema:"Save-ready usage note following the add_phrase note field rules."`
 	SourceURLs  []string `json:"source_urls,omitempty" jsonschema:"Save-ready Merriam-Webster URLs following the add_phrase source_urls field rules."`
 }
 
 // RenderPhraseChoicesInput is the input schema for render_phrase_choices.
 type RenderPhraseChoicesInput struct {
-	Choices []PhraseChoice `json:"choices" jsonschema:"One to four final phrase choices. Include the refined original context and useful memorable alternatives."`
+	Choices []PhraseChoice `json:"choices" jsonschema:"One to four final phrase choices for the same target expression, all using the exact same canonical headword list. Include the refined original context and useful memorable alternatives."`
 }
 
 // RenderPhraseChoicesOutput mirrors the render input as structured content for
@@ -224,6 +227,7 @@ func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, R
 		}
 
 		recommended := 0
+		var canonicalHeadwords []string
 		for i, choice := range in.Choices {
 			if choice.Phrase == "" {
 				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d requires a phrase", i+1)
@@ -235,6 +239,11 @@ func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, R
 				if strings.TrimSpace(headword) == "" {
 					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords cannot be blank", i+1)
 				}
+			}
+			if i == 0 {
+				canonicalHeadwords = choice.Headwords
+			} else if !slices.Equal(choice.Headwords, canonicalHeadwords) {
+				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords must exactly match the first choice", i+1)
 			}
 			if len(choice.SourceURLs) > 0 && len(choice.SourceURLs) != len(choice.Headwords) {
 				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d source_urls must align with headwords", i+1)
@@ -340,7 +349,7 @@ func listPhrasesHandler(api *apiClient) mcp.ToolHandlerFor[ListPhrasesInput, Lis
 // AddPhraseInput is the input schema for the add_phrase tool.
 type AddPhraseInput struct {
 	Phrase     string   `json:"phrase" jsonschema:"Polished, natural English, usually one memorable sentence, preserving the user's original meaning and context. Insert a short plain-English meaning in parentheses immediately after each headword or expression, e.g. 'We sat around the campfire, yapping away (chatting continuously) until midnight.' No Markdown formatting."`
-	Headwords  []string `json:"headwords" jsonschema:"Raw word or expression only, one per entry — no parentheses, no definitions, no quotation marks, no explanatory text. Treat an idiom or fixed expression as a single headword, using its natural taught form, e.g. ['yapping away']."`
+	Headwords  []string `json:"headwords" jsonschema:"Raw word or expression only, one per entry — no parentheses, no definitions, no quotation marks, no explanatory text. Treat an idiom or fixed expression as a single headword, using its natural taught form. Keep fixed particles or prepositions but exclude replaceable complements: 'unbeknownst to me' and 'unbeknownst to the engineering team' both have headword ['unbeknownst to']. Example: ['yapping away']."`
 	Note       string   `json:"note,omitempty" jsonschema:"1-3 concise sentences on usage, nuance, tone, register, collocations, or — when genuinely interesting and well established — the word or expression's origin. Do not repeat the phrase unnecessarily, speculate, or invent etymology."`
 	SourceURLs []string `json:"source_urls,omitempty" jsonschema:"One Merriam-Webster URL per headword, aligned by index: https://www.merriam-webster.com/dictionary/<lookup form>, URL-encoding spaces as %20. The lookup form is the actual dictionary entry title and is often not identical to the headword text: an inflected verb should normally resolve to its base/infinitive form, and an idiom built around a common light verb (make, take, give, etc.) often has its real Merriam-Webster entry filed under the noun phrase alone, with that light verb dropped — prefer that form when it applies. The headwords field itself keeps the natural taught form; only the source_urls lookup form changes. Example: headword 'yapping away' -> https://www.merriam-webster.com/dictionary/yap."`
 }

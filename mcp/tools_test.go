@@ -42,6 +42,17 @@ func TestExplorationInstructionsRequireOneUsefulConnection(t *testing.T) {
 	}
 }
 
+func TestExplorationInstructionsRequireCanonicalHeadwordsAcrossChoices(t *testing.T) {
+	for _, want := range []string{
+		`"unbeknownst to me" and "unbeknownst to the engineering team" both use the headword "unbeknownst to"`,
+		`Reuse the exact same canonical headwords`,
+	} {
+		if !strings.Contains(explorePhraseInstructions, want) {
+			t.Errorf("exploration instructions do not contain %q", want)
+		}
+	}
+}
+
 func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 	ctx := context.Background()
 	server := mcp.NewServer(&mcp.Implementation{Name: "phrasely", Version: serverVersion}, nil)
@@ -279,6 +290,12 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 	misalignedSourceURLs.Headwords = []string{"pernicious", "effect"}
 	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{misalignedSourceURLs}}); err == nil {
 		t.Fatal("misaligned source_urls did not return an error")
+	}
+
+	differentHeadword := secondChoice
+	differentHeadword.Headwords = []string{"pernicious effect"}
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, differentHeadword}}); err == nil {
+		t.Fatal("different headwords across choices did not return an error")
 	}
 }
 
