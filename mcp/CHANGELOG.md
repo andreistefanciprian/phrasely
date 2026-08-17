@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.4...mcp-v0.7.5) (2026-08-17)
+
+
+### Bug Fixes
+
+* **mcp:** restore saved phrase choice state ([b3e4b8c](https://github.com/andreistefanciprian/phrasely/commit/b3e4b8cdb3e52e983f382c75dc85e275e5cc7ab3))
+
 ## [0.7.4](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.3...mcp-v0.7.4) (2026-08-17)
 
 
