@@ -228,6 +228,10 @@ func TestPhraseChoicesResource(t *testing.T) {
 		"ResizeObserver",
 		`notify("ui/notifications/size-changed"`,
 		"window.openai.notifyIntrinsicHeight()",
+		"window.openai?.toolResponseMetadata",
+		"window.openai?.toolInput",
+		"window.openai?.widgetState",
+		"window.openai.setWidgetState(state)",
 		"resizeObserver?.disconnect()",
 		"recommended-marker",
 	} {
