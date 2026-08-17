@@ -1,7 +1,7 @@
 interface:
-  display_name: "Phrasely Vocabulary Companion"
+  display_name: "Phrasely"
   short_description: "Understand, save, and practise English phrases"
-  default_prompt: "Use $phrasely-vocabulary-companion to explain and save an English expression."
+  default_prompt: "Use $phrasely to explain, save, or practise an English expression."
 
 dependencies:
   tools:

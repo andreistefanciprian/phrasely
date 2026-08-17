@@ -15,6 +15,7 @@
     "language-learning"
   ],
   "skills": "./skills/",
+  "apps": "./.app.json",
   "interface": {
     "displayName": "Phrasely",
     "shortDescription": "Turn real-life English into active vocabulary.",

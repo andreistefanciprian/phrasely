@@ -87,6 +87,24 @@ func TestToolsAdvertisePhraselyTitlesAndIntent(t *testing.T) {
 			t.Errorf("tool %q title %q does not mention Phrasely", tool.Name, tool.Title)
 		}
 
+		if tool.Annotations == nil {
+			t.Errorf("tool %q has no action annotations", tool.Name)
+		} else {
+			wantReadOnly := tool.Name != "add_phrase"
+			if tool.Annotations.ReadOnlyHint != wantReadOnly {
+				t.Errorf("tool %q readOnlyHint = %v, want %v", tool.Name, tool.Annotations.ReadOnlyHint, wantReadOnly)
+			}
+			if tool.Annotations.IdempotentHint != wantReadOnly {
+				t.Errorf("tool %q idempotentHint = %v, want %v", tool.Name, tool.Annotations.IdempotentHint, wantReadOnly)
+			}
+			if tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {
+				t.Errorf("tool %q destructiveHint = %v, want explicit false", tool.Name, tool.Annotations.DestructiveHint)
+			}
+			if tool.Annotations.OpenWorldHint == nil || *tool.Annotations.OpenWorldHint {
+				t.Errorf("tool %q openWorldHint = %v, want explicit false", tool.Name, tool.Annotations.OpenWorldHint)
+			}
+		}
+
 		rawSchemes, err := json.Marshal(tool.Meta["securitySchemes"])
 		if err != nil {
 			t.Fatalf("marshal security schemes for %q: %v", tool.Name, err)
