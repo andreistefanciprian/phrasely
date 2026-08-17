@@ -200,11 +200,14 @@ func TestPhraseChoicesResource(t *testing.T) {
 		`notify("ui/notifications/size-changed"`,
 		"window.openai.notifyIntrinsicHeight()",
 		"resizeObserver?.disconnect()",
-		"filter: brightness(0) saturate(100%) invert(93%)",
+		"recommended-marker",
 	} {
 		if !strings.Contains(content.Text, want) {
 			t.Errorf("phrase choice UI does not contain %q", want)
 		}
+	}
+	if strings.Contains(content.Text, `<img class="logo"`) {
+		t.Error("phrase choice UI repeats the Phrasely logo inside the widget")
 	}
 }
 
