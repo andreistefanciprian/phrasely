@@ -63,8 +63,10 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Title:       "List Phrasely phrases",
 		Description: "List phrases in the user's Phrasely collection, newest first, optionally filtered by matching headword text. Use for recent phrases, browsing, or headword lookup.",
 		Annotations: &mcp.ToolAnnotations{
-			ReadOnlyHint:  true,
-			OpenWorldHint: pFalse,
+			ReadOnlyHint:    true,
+			DestructiveHint: pFalse,
+			IdempotentHint:  true,
+			OpenWorldHint:   pFalse,
 		},
 	}, requireToolAuth("list_phrases", protectedResourceMetadataURL, listPhrasesHandler(api)))
 
@@ -74,8 +76,10 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Title:       "Sample Phrasely phrases",
 		Description: "Randomly select phrases from the user's Phrasely collection for review, quizzes, or speaking practice. Do not use when the user wants a complete or recent list.",
 		Annotations: &mcp.ToolAnnotations{
-			ReadOnlyHint:  true,
-			OpenWorldHint: pFalse,
+			ReadOnlyHint:    true,
+			DestructiveHint: pFalse,
+			IdempotentHint:  true,
+			OpenWorldHint:   pFalse,
 		},
 	}, requireToolAuth("sample_phrases", protectedResourceMetadataURL, samplePhrasesHandler(api)))
 
@@ -85,8 +89,10 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Title:       "Explore a phrase with Phrasely",
 		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or find memorable examples using the same headword. Return Phrasely's learning instructions for the assistant to apply locally, including one concise high-value learning connection after the phrase choices. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
 		Annotations: &mcp.ToolAnnotations{
-			ReadOnlyHint:  true,
-			OpenWorldHint: pFalse,
+			ReadOnlyHint:    true,
+			DestructiveHint: pFalse,
+			IdempotentHint:  true,
+			OpenWorldHint:   pFalse,
 		},
 	}, explorePhraseHandler())
 
@@ -96,8 +102,10 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Title:       "Show Phrasely phrase choices",
 		Description: `Render the final phrase candidates created after explore_phrase as an interactive Phrasely card. Call this once after explaining the expression and generating the refined original context plus memorable alternatives. Pass complete save-ready fields for every choice, following the add_phrase schemas. This tool only presents choices; it never saves them. The user can save any choice from the UI, or continue using conversational selection when UI is unavailable. Do not use this tool when the user already gave a direct, unambiguous save instruction.`,
 		Annotations: &mcp.ToolAnnotations{
-			ReadOnlyHint:  true,
-			OpenWorldHint: pFalse,
+			ReadOnlyHint:    true,
+			DestructiveHint: pFalse,
+			IdempotentHint:  true,
+			OpenWorldHint:   pFalse,
 		},
 	}, renderPhraseChoicesHandler())
 
@@ -107,7 +115,9 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Title:       "Add a phrase to Phrasely",
 		Description: `Save one finished phrase entry to Phrasely. Construct the phrase, headwords, note, and source_urls locally first — see each field's description for the construction rules — then call this tool. There is no need to call explore_phrase first if the user already supplied or chose a clear phrase. A clear request such as "add it", "save it", "add this one", or "add that to Phrasely" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation, definition, or rewrite. Ask which phrase only if the reference is genuinely ambiguous and cannot be resolved from conversation context.`,
 		Annotations: &mcp.ToolAnnotations{
+			ReadOnlyHint:    false,
 			DestructiveHint: pFalse,
+			IdempotentHint:  false,
 			OpenWorldHint:   pFalse,
 		},
 	}, requireToolAuth("add_phrase", protectedResourceMetadataURL, addPhraseHandler(api)))
