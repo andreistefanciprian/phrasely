@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.2...mcp-v0.7.3) (2026-08-17)
+
+
+### Bug Fixes
+
+* **plugin:** complete Phrasely app packaging ([076c582](https://github.com/andreistefanciprian/phrasely/commit/076c58294804856e2d55b04af6a9afafd2d98b13))
+
 ## [0.7.2](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.1...mcp-v0.7.2) (2026-08-17)
 
 
