@@ -232,6 +232,8 @@ func TestPhraseChoicesResource(t *testing.T) {
 		"window.openai?.toolInput",
 		"window.openai?.widgetState",
 		"window.openai.setWidgetState(state)",
+		"savedChoiceIndexes.add(index)",
+		"const isSaved = savedChoiceIndexes.has(index)",
 		"resizeObserver?.disconnect()",
 		"recommended-marker",
 	} {

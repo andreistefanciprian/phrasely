@@ -246,6 +246,7 @@
       const pendingRequests = new Map();
       let nextRequestId = 1;
       let latestChoices = [];
+      let savedChoiceIndexes = new Set();
       let standardConnectionReady = false;
       let resizeObserver;
       let resizeFrame;
@@ -357,14 +358,22 @@
         return undefined;
       }
 
-      function persistChoices(choices) {
+      function savedIndexesFromState() {
+        const indexes = window.openai?.widgetState?.savedChoiceIndexes;
+        if (!Array.isArray(indexes)) return new Set();
+        return new Set(indexes.filter((index) =>
+          Number.isInteger(index) && index >= 0 && index < 4
+        ));
+      }
+
+      function persistWidgetState() {
         if (typeof window.openai?.setWidgetState !== "function") return;
 
         // Cache the rendered snapshot for future mounts of this widget instance.
         const previous = window.openai.widgetState;
         const state = previous && typeof previous === "object" && !Array.isArray(previous)
-          ? { ...previous, choices }
-          : { choices };
+          ? { ...previous, choices: latestChoices, savedChoiceIndexes: [...savedChoiceIndexes] }
+          : { choices: latestChoices, savedChoiceIndexes: [...savedChoiceIndexes] };
         window.openai.setWidgetState(state);
       }
 
@@ -433,7 +442,8 @@
         const choices = normalizeChoices(result);
         if (choices.length === 0) return;
         latestChoices = choices;
-        persistChoices(choices);
+        savedChoiceIndexes = savedIndexesFromState();
+        persistWidgetState();
         choicesElement.replaceChildren();
 
         choices.forEach((choice, index) => {
@@ -476,6 +486,13 @@
           button.type = "button";
           button.setAttribute("aria-label", `Save phrase ${index + 1} to Phrasely`);
           const status = textElement("div", "status", "");
+          const isSaved = savedChoiceIndexes.has(index);
+          if (isSaved) {
+            button.disabled = true;
+            button.className = "save-button saved";
+            button.textContent = "✓ Saved";
+            status.textContent = "Saved privately to Phrasely";
+          }
 
           button.addEventListener("click", async () => {
             button.disabled = true;
@@ -492,6 +509,8 @@
               button.className = "save-button saved";
               button.textContent = "✓ Saved";
               status.textContent = "Saved privately to Phrasely";
+              savedChoiceIndexes.add(index);
+              persistWidgetState();
             } catch (error) {
               button.disabled = false;
               button.className = "save-button";
