@@ -343,6 +343,50 @@
         ).slice(0, 4);
       }
 
+      function resultFromMetadata(metadata) {
+        const results = [
+          metadata?.mcp_tool_result,
+          metadata?.call_tool_result
+        ];
+
+        for (const result of results) {
+          if (Array.isArray(result?.structuredContent?.choices)) {
+            return result.structuredContent;
+          }
+        }
+        return undefined;
+      }
+
+      function persistChoices(choices) {
+        if (typeof window.openai?.setWidgetState !== "function") return;
+
+        // Cache the rendered snapshot for future mounts of this widget instance.
+        const previous = window.openai.widgetState;
+        const state = previous && typeof previous === "object" && !Array.isArray(previous)
+          ? { ...previous, choices }
+          : { choices };
+        window.openai.setWidgetState(state);
+      }
+
+      function hydrateFromChatGPT() {
+        // Reopened chats may expose retained globals without replaying the live
+        // ui/notifications/tool-result event, so try each retained source.
+        const sources = [
+          window.openai?.toolOutput,
+          resultFromMetadata(window.openai?.toolResponseMetadata),
+          window.openai?.toolInput,
+          window.openai?.widgetState
+        ];
+
+        for (const source of sources) {
+          if (normalizeChoices(source).length > 0) {
+            render(source);
+            return true;
+          }
+        }
+        return false;
+      }
+
       function textElement(tag, className, text) {
         const element = document.createElement(tag);
         element.className = className;
@@ -389,6 +433,7 @@
         const choices = normalizeChoices(result);
         if (choices.length === 0) return;
         latestChoices = choices;
+        persistChoices(choices);
         choicesElement.replaceChildren();
 
         choices.forEach((choice, index) => {
@@ -491,14 +536,10 @@
 
       startAutoResize();
 
-      if (Array.isArray(window.openai?.toolOutput?.choices)) {
-        render(window.openai.toolOutput);
-      }
+      hydrateFromChatGPT();
 
       window.addEventListener("openai:set_globals", () => {
-        if (latestChoices.length === 0 && Array.isArray(window.openai?.toolOutput?.choices)) {
-          render(window.openai.toolOutput);
-        }
+        if (latestChoices.length === 0) hydrateFromChatGPT();
         scheduleSizeReport();
       }, { passive: true });
 
