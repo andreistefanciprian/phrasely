@@ -30,9 +30,9 @@
     "privacyPolicyURL": "https://getphrasely.com/privacy",
     "termsOfServiceURL": "https://getphrasely.com/terms",
     "defaultPrompt": [
-      "Explain this English expression and its nuance.",
-      "Make this phrase memorable, then save it.",
-      "Quiz me using phrases from my collection."
+      "Hey Phrasely, help me understand an expression I just heard in a podcast.",
+      "Hey Phrasely, let's chat. Weave in phrases from my collection and explain them subtly, but keep the conversation natural.",
+      "Hey Phrasely, pick a random expression from my collection and let's practise it."
     ],
     "composerIcon": "./assets/phrasely-logo.png",
     "logo": "./assets/phrasely-logo.png"
