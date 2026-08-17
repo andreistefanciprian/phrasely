@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.3...mcp-v0.7.4) (2026-08-17)
+
+
+### Bug Fixes
+
+* **mcp:** restore phrase choices in reopened chats ([496027b](https://github.com/andreistefanciprian/phrasely/commit/496027b3a890794f12d0e1d2c93c860a7532df97))
+
 ## [0.7.3](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.2...mcp-v0.7.3) (2026-08-17)
 
 
