@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.5...mcp-v0.8.0) (2026-08-18)
+
+
+### Features
+
+* **mcp:** add saveable connection card ([bfac93c](https://github.com/andreistefanciprian/phrasely/commit/bfac93c9041a40eaf09a8433a896233ff358ea3e))
+
 ## [0.7.5](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.4...mcp-v0.7.5) (2026-08-17)
 
 
