@@ -138,7 +138,7 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 - `list_phrases` — list saved phrases newest first, optionally filtered by headword text
 - `sample_phrases` — randomly select saved phrases for review, quizzes, or practice
 - `explore_phrase` — return learning instructions for understanding an expression and generating memorable contexts; never persists data
-- `render_phrase_choices` — display 1–4 complete exploration candidates in an optional inline MCP Apps UI; never persists data
+- `render_phrase_choices` — display two complete context candidates plus one learning connection as three save-ready cards in an optional inline MCP Apps UI; never persists data
 - `add_phrase` — save one finished phrase entry assembled by the assistant
 
 There is no MCP `curate` tool. The backend `/api/v1/phrases/curate` endpoint remains available to the web frontend, but MCP exploration uses `explore_phrase`, optional choice presentation uses `render_phrase_choices`, and saves go through `add_phrase` either conversationally or from the UI Save button.

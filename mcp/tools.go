@@ -29,7 +29,7 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 	- If the source expresses an opinion, controversial claim, political argument, or religious argument, preserve it as the speaker's claim rather than silently converting it into an objective fact.
 
 3. Explore memorable contexts.
-	- Generate 1-3 additional contexts using the same headword or expression.
+	- Generate one additional context using the same headword or expression, so the user receives exactly two saveable choices: the refined real-world context and one memorable alternative.
 	- Make them easy to understand, vivid, memorable, and natural — the way someone would actually speak or write.
 	- Avoid dictionary-style examples. Cover useful, varied contexts where possible, and preferably include at least one simple everyday example.
 	- Preserve the exact expression where doing so is natural.
@@ -41,15 +41,17 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 5. Offer saveable choices without persisting.
 	- Never call add_phrase from exploration alone. The user must click Save in the phrase-choice UI or give a direct conversational save instruction.
 	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the refined original context and memorable alternatives. Do not expose database-ready JSON or source_urls in prose.
-	- After generating the final choices, construct phrase, headwords, note, and source_urls for each one using the add_phrase field rules, then call render_phrase_choices once. Mark at most one best learning context as recommended. Avoid duplicating the full choices outside the UI.
-	- Every choice explores the same target expression. Reuse the exact same canonical headwords and aligned source_urls for every choice; only the surrounding context and replaceable parts of the construction may vary.
+	- After generating the first two choices, construct phrase, headwords, note, and source_urls for each one using the add_phrase field rules. Reuse the exact same canonical headwords and aligned source_urls for these two choices; only the surrounding context and replaceable parts may vary.
+	- Add the useful connection from step 6 as the third choice, then call render_phrase_choices once with all three save-ready choices. Mark at most one best learning context as recommended. Avoid duplicating the full choices outside the UI.
 	- If render_phrase_choices or interactive UI is unavailable, present and number the alternatives conversationally so the user can select one.
 	- If the user instead gives a direct save instruction that clearly identifies a phrase, construct that entry and call add_phrase without rendering choices again.
 
 6. Add one useful connection.
-	- Finish every exploration with exactly one compact teaching aside labelled "One useful connection:" after presenting the phrase choices.
+	- Include exactly one compact, save-ready teaching connection as the third render_phrase_choices choice; do not repeat it in conversational prose.
 	- Choose the highest-value link for this expression, in this order: a likely confusable word; a meaningful opposite or contrast; a nuanced near-synonym; a register alternative; a common collocation or grammatical construction; a word-family link; a common learner mistake or meaning boundary; or, when none of those is genuinely useful, a memorable association.
-	- Explain the distinction or connection clearly in one or two short sentences. A single connection may mention a tightly related pair, such as a confusable word and the true opposite, when that materially improves understanding.
+	- Use the selected category as the card title. Never title the card "One useful connection".
+	- Construct the connection's phrase, headwords, note, and source_urls using the add_phrase field rules. Make the phrase a memorable example worth saving. When the connection introduces a distinct word or expression, its headwords and source_urls must describe that connected expression rather than repeating the original target.
+	- Use the note to explain the distinction or connection clearly in one or two short sentences. A single connection may mention a tightly related pair, such as a confusable word and the true opposite, when that materially improves understanding.
 	- Never force an unnatural opposite, invent a similarity, repeat the usage note, or turn the aside into a second lesson.`
 
 // registerTools attaches the Phrasely tools to the MCP server.
@@ -100,7 +102,7 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Meta:        renderPhraseChoicesToolMeta(),
 		Name:        "render_phrase_choices",
 		Title:       "Show Phrasely phrase choices",
-		Description: `Render the final phrase candidates created after explore_phrase as an interactive Phrasely card. Call this once after explaining the expression and generating the refined original context plus memorable alternatives. Pass complete save-ready fields for every choice, following the add_phrase schemas. This tool only presents choices; it never saves them. The user can save any choice from the UI, or continue using conversational selection when UI is unavailable. Do not use this tool when the user already gave a direct, unambiguous save instruction.`,
+		Description: `Render the final exploration created after explore_phrase as three interactive, save-ready Phrasely cards. The first two choices are contexts for the target expression. The third is one compact learning connection and uses the selected connection category as its label, never "One useful connection". This tool only presents content; it never saves by itself. The user can save any card from the UI, or continue using conversational selection when UI is unavailable. Do not use this tool when the user already gave a direct, unambiguous save instruction.`,
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:    true,
 			DestructiveHint: pFalse,
@@ -211,17 +213,17 @@ func explorePhraseHandler() mcp.ToolHandlerFor[ExplorePhraseInput, ExplorePhrase
 // PhraseChoice is one complete candidate that the phrase-choice UI can pass
 // directly to add_phrase when the user clicks Save.
 type PhraseChoice struct {
-	Label       string   `json:"label,omitempty" jsonschema:"Short contextual label such as Original context or Everyday example."`
+	Label       string   `json:"label,omitempty" jsonschema:"Short card title. Use a contextual label such as Original context or Everyday example for choices 1 and 2. For choice 3, use the selected learning-connection category, such as A likely confusable word or A nuanced near-synonym; never use One useful connection."`
 	Recommended bool     `json:"recommended,omitempty" jsonschema:"True for at most one especially memorable or useful choice."`
 	Phrase      string   `json:"phrase" jsonschema:"Complete save-ready phrase following the add_phrase phrase field rules."`
-	Headwords   []string `json:"headwords" jsonschema:"Save-ready canonical headwords following the add_phrase headwords field rules. Every choice in one render_phrase_choices call must use the exact same headword list."`
-	Note        string   `json:"note,omitempty" jsonschema:"Save-ready usage note following the add_phrase note field rules."`
+	Headwords   []string `json:"headwords" jsonschema:"Save-ready canonical headwords following the add_phrase headwords field rules. Choices 1 and 2 must use the exact same headword list; choice 3 may use different headwords for its connected expression."`
+	Note        string   `json:"note,omitempty" jsonschema:"Save-ready usage note following the add_phrase note field rules. Choice 3 requires one or two short sentences explaining its connection to the original target."`
 	SourceURLs  []string `json:"source_urls,omitempty" jsonschema:"Save-ready Merriam-Webster URLs following the add_phrase source_urls field rules."`
 }
 
 // RenderPhraseChoicesInput is the input schema for render_phrase_choices.
 type RenderPhraseChoicesInput struct {
-	Choices []PhraseChoice `json:"choices" jsonschema:"One to four final phrase choices for the same target expression, all using the exact same canonical headword list. Include the refined original context and useful memorable alternatives."`
+	Choices []PhraseChoice `json:"choices" jsonschema:"Exactly three save-ready cards. Choices 1 and 2 are the refined original context and one memorable alternative for the same target expression and must use identical headwords. Choice 3 is one compact learning connection; it may use different headwords when it teaches a connected word or expression."`
 }
 
 // RenderPhraseChoicesOutput mirrors the render input as structured content for
@@ -232,14 +234,13 @@ type RenderPhraseChoicesOutput struct {
 
 func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, RenderPhraseChoicesOutput] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in RenderPhraseChoicesInput) (*mcp.CallToolResult, RenderPhraseChoicesOutput, error) {
-		if len(in.Choices) < 1 || len(in.Choices) > 4 {
-			return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("render_phrase_choices requires between 1 and 4 choices")
+		if len(in.Choices) != 3 {
+			return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("render_phrase_choices requires exactly 3 choices")
 		}
 
 		recommended := 0
-		var canonicalHeadwords []string
 		for i, choice := range in.Choices {
-			if choice.Phrase == "" {
+			if strings.TrimSpace(choice.Phrase) == "" {
 				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d requires a phrase", i+1)
 			}
 			if len(choice.Headwords) == 0 {
@@ -250,13 +251,19 @@ func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, R
 					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords cannot be blank", i+1)
 				}
 			}
-			if i == 0 {
-				canonicalHeadwords = choice.Headwords
-			} else if !slices.Equal(choice.Headwords, canonicalHeadwords) {
-				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords must exactly match the first choice", i+1)
-			}
 			if len(choice.SourceURLs) > 0 && len(choice.SourceURLs) != len(choice.Headwords) {
 				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d source_urls must align with headwords", i+1)
+			}
+			if i == 1 && !slices.Equal(choice.Headwords, in.Choices[0].Headwords) {
+				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords must exactly match the first choice", i+1)
+			}
+			if i == 2 {
+				if strings.TrimSpace(choice.Label) == "" || strings.EqualFold(strings.TrimSpace(choice.Label), "One useful connection") {
+					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice 3 requires a specific learning-connection label")
+				}
+				if strings.TrimSpace(choice.Note) == "" {
+					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice 3 requires a note explaining the learning connection")
+				}
 			}
 			if choice.Recommended {
 				recommended++
@@ -291,7 +298,7 @@ func phraseChoicesFallback(choices []PhraseChoice) string {
 		}
 	}
 
-	b.WriteString("\n\nThe user can choose a numbered option to save.")
+	b.WriteString("\n\nThe user can choose option 1, 2, or 3 to save.")
 	return b.String()
 }
 

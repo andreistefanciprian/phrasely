@@ -278,7 +278,7 @@
         protocolVersion: "2026-01-26",
         // Identifies this embedded MCP Apps UI component to the host. It is
         // independent of Phrasely's plugin and server release versions.
-        appInfo: { name: "phrasely-phrase-choices", version: "1.0.0" },
+        appInfo: { name: "phrasely-phrase-choices", version: "1.1.0" },
         appCapabilities: {}
       }, 5000).then((result) => {
         notify("ui/notifications/initialized");
@@ -341,7 +341,7 @@
           choice.phrase.trim() !== "" &&
           Array.isArray(choice.headwords) &&
           choice.headwords.length > 0
-        ).slice(0, 4);
+        ).slice(0, 3);
       }
 
       function resultFromMetadata(metadata) {
@@ -362,7 +362,7 @@
         const indexes = window.openai?.widgetState?.savedChoiceIndexes;
         if (!Array.isArray(indexes)) return new Set();
         return new Set(indexes.filter((index) =>
-          Number.isInteger(index) && index >= 0 && index < 4
+          Number.isInteger(index) && index >= 0 && index < 3
         ));
       }
 

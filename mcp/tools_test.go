@@ -30,7 +30,8 @@ func TestExplorationInstructionsRequireOneUsefulConnection(t *testing.T) {
 	} {
 		for _, want := range []string{
 			`exactly one`,
-			`One useful connection:`,
+			`third`,
+			`One useful connection`,
 			`confusable word`,
 			`meaningful opposite or contrast`,
 			`Never force`,
@@ -236,6 +237,7 @@ func TestPhraseChoicesResource(t *testing.T) {
 		"const isSaved = savedChoiceIndexes.has(index)",
 		"resizeObserver?.disconnect()",
 		"recommended-marker",
+		".slice(0, 3)",
 	} {
 		if !strings.Contains(content.Text, want) {
 			t.Errorf("phrase choice UI does not contain %q", want)
@@ -261,8 +263,16 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 		Phrase:    "The article described the pernicious effect of misinformation.",
 		Headwords: []string{"pernicious"},
 	}
+	connection := PhraseChoice{
+		Label:      "A nuanced near-synonym",
+		Phrase:     "The policy's insidious (gradually and subtly harmful) effects only became clear years later.",
+		Headwords:  []string{"insidious"},
+		Note:       "Insidious also describes gradual harm, but it more strongly suggests that the harm develops subtly or deceptively.",
+		SourceURLs: []string{"https://www.merriam-webster.com/dictionary/insidious"},
+	}
+	choices := []PhraseChoice{choice, secondChoice, connection}
 
-	result, output, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, secondChoice}})
+	result, output, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: choices})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -281,45 +291,61 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 		secondChoice.Phrase,
 		"Headwords: pernicious",
 		choice.Note,
-		"choose a numbered option to save",
+		"3. " + connection.Label,
+		connection.Phrase,
+		"Headwords: insidious",
+		connection.Note,
+		"choose option 1, 2, or 3 to save",
 	} {
 		if !strings.Contains(textContent.Text, want) {
 			t.Errorf("render fallback does not contain %q:\n%s", want, textContent.Text)
 		}
 	}
-	if strings.Contains(textContent.Text, choice.SourceURLs[0]) {
-		t.Error("render fallback exposes source_urls")
+	for _, sourceURL := range []string{choice.SourceURLs[0], connection.SourceURLs[0]} {
+		if strings.Contains(textContent.Text, sourceURL) {
+			t.Errorf("render fallback exposes source_url %q", sourceURL)
+		}
 	}
-	if len(output.Choices) != 2 || output.Choices[0].Phrase != choice.Phrase || output.Choices[1].Phrase != secondChoice.Phrase {
+	if len(output.Choices) != 3 || output.Choices[0].Phrase != choice.Phrase || output.Choices[2].Phrase != connection.Phrase {
 		t.Fatalf("render output = %#v, want original choices", output)
 	}
 
 	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{}); err == nil {
 		t.Fatal("empty choices did not return an error")
 	}
-	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{
-		choice,
-		choice,
-	}}); err == nil {
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: choices[:2]}); err == nil {
+		t.Fatal("two choices did not return an error")
+	}
+	secondRecommended := secondChoice
+	secondRecommended.Recommended = true
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, secondRecommended, connection}}); err == nil {
 		t.Fatal("multiple recommended choices did not return an error")
+	}
+	invalidConnection := connection
+	invalidConnection.Label = "One useful connection"
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, secondChoice, invalidConnection}}); err == nil {
+		t.Fatal("generic connection title did not return an error")
+	}
+	emptyConnection := connection
+	emptyConnection.Note = " "
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, secondChoice, emptyConnection}}); err == nil {
+		t.Fatal("empty connection note did not return an error")
 	}
 
 	blankHeadword := choice
 	blankHeadword.Headwords = []string{" "}
-	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{blankHeadword}}); err == nil {
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{blankHeadword, secondChoice, connection}}); err == nil {
 		t.Fatal("blank headword did not return an error")
 	}
-
 	misalignedSourceURLs := choice
 	misalignedSourceURLs.Headwords = []string{"pernicious", "effect"}
-	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{misalignedSourceURLs}}); err == nil {
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{misalignedSourceURLs, secondChoice, connection}}); err == nil {
 		t.Fatal("misaligned source_urls did not return an error")
 	}
-
 	differentHeadword := secondChoice
 	differentHeadword.Headwords = []string{"pernicious effect"}
-	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, differentHeadword}}); err == nil {
-		t.Fatal("different headwords across choices did not return an error")
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, differentHeadword, connection}}); err == nil {
+		t.Fatal("different headwords across the first two choices did not return an error")
 	}
 }
 

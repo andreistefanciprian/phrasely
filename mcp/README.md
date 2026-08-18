@@ -22,19 +22,20 @@ JWT issued by the OAuth 2.1 + PKCE flow:
 ## Phrase-choice UI
 
 After `explore_phrase`, the assistant prepares the refined original context and
-memorable alternatives as complete save-ready entries, then calls
-`render_phrase_choices`. That read-only tool returns structured choices and is
-associated with `ui://phrasely/phrase-choices-v1.html`.
+one memorable alternative as two complete save-ready entries, then calls
+`render_phrase_choices`. That read-only tool returns all three as structured,
+save-ready choices and is associated with
+`ui://phrasely/phrase-choices-v2.html`.
 
-Every exploration then ends with one short **One useful connection:** aside.
-The assistant selects the most useful available link, prioritising confusable
-words, meaningful opposites or contrasts, and nuanced near-synonyms before
-falling back to register, usage patterns, word families, common mistakes, or a
-memory association. It does not force a weak connection or add several competing
-mini-lessons.
+The UI displays the connection as the third saveable card. Its title names
+the selected category—for example, **A likely confusable word**, **A meaningful
+opposite or contrast**, or **A nuanced near-synonym**—rather than using the
+generic label “One useful connection.” The assistant falls back to register,
+usage patterns, word families, common mistakes, or a memory association only
+when those are more useful, and does not force a weak connection.
 
-Supporting clients render the resource as an inline MCP Apps component. Each
-Save button calls the existing OAuth-protected `add_phrase` tool through the
+Supporting clients render the resource as an inline MCP Apps component. Every
+card's Save button calls the existing OAuth-protected `add_phrase` tool through the
 standard `tools/call` bridge; the component never calls the backend directly
 and never handles Bearer tokens. The button is the user's save instruction.
 Rendering choices alone does not persist anything.
