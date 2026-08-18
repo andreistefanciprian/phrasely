@@ -157,7 +157,7 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 | `list_phrases(headword?)` | List the user's saved phrases, optionally filtered by headword | `GET /api/v1/phrases` |
 | `sample_phrases(count?)` | Randomly pick N phrases (1–10) for practice or quizzing | `GET /api/v1/phrases/random` |
 | `explore_phrase(phrase)` | Return learning instructions for understanding an expression and generating memorable contexts — no backend call, no data persisted | — |
-| `render_phrase_choices(choices)` | Render 1–4 complete exploration candidates in the optional inline MCP Apps UI — no backend call, no data persisted | — |
+| `render_phrase_choices(choices)` | Render three save-ready cards: two target-expression contexts and one learning connection — no backend call, no data persisted | — |
 | `add_phrase(phrase, headwords, note?, source_urls?)` | Save a finished phrase constructed locally by the assistant | `POST /api/v1/phrases` |
 
 ### Exploration and save flow
@@ -165,8 +165,8 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 Exploration, presentation, and saving are separate stages:
 
 1. When the user wants to understand or explore an expression, the assistant calls `explore_phrase(phrase)` and applies the returned learning instructions conversationally. Nothing is persisted.
-2. After generating the refined original context and memorable alternatives, the assistant constructs complete save-ready fields for every choice and calls `render_phrase_choices` once. The UI is the primary presentation of the full candidates, avoiding duplicate prose. Rendering does not express save intent and does not persist anything.
-3. In clients that support MCP Apps, the user can click Save on any choice. The component calls `add_phrase` through `tools/call`, then displays the authoritative success or error state. It never calls the private backend directly and never receives the OAuth token.
+2. After generating the refined original context, one memorable alternative, and one categorized learning connection, the assistant passes all three as save-ready `choices` to `render_phrase_choices`. Card 3 may use different headwords when it teaches a connected word or expression. Rendering does not express save intent and does not persist anything.
+3. In clients that support MCP Apps, the user can click Save on any card. The component calls `add_phrase` through `tools/call`, then displays the authoritative success or error state. It never calls the private backend directly and never receives the OAuth token.
 4. In clients without UI support, choices remain numbered and the user can select one conversationally. The assistant then calls `add_phrase` as before.
 5. When the user's initial request already contains a direct, unambiguous save instruction, the assistant skips exploration and rendering, constructs the finished entry, and calls `add_phrase` directly.
 
@@ -176,16 +176,17 @@ Exploration, presentation, and saving are separate stages:
 
 The phrase-choice component is a versioned MCP resource:
 
-- URI: `ui://phrasely/phrase-choices-v1.html`
+- URI: `ui://phrasely/phrase-choices-v2.html`
 - MIME type: `text/html;profile=mcp-app`
 - Source: `mcp/ui/phrase-choices.html`, embedded into the MCP binary with `go:embed`
 - Owner: only `render_phrase_choices` references the resource through `_meta.ui.resourceUri`
 
-The render tool returns the same `choices` object in `structuredContent` that
-the component consumes. Each choice contains `phrase`, `headwords`, optional
-`note`, optional `source_urls`, a short label, and an optional `recommended`
-flag. The component treats all structured content as untrusted and constructs
-the DOM with text nodes rather than injecting HTML.
+The render tool returns the same three `choices` in `structuredContent` that the
+component consumes. Each choice contains `phrase`, `headwords`, optional `note`,
+optional `source_urls`, a short label, and an optional `recommended` flag. Choice
+3 uses its label for the connection category and its note to explain the
+relationship. The component treats all structured content as untrusted and
+constructs the DOM with text nodes rather than injecting HTML.
 
 Save is an app-initiated call to `add_phrase`. The tool remains available to
 the model for conversational saves and is additionally visible to the MCP app.
