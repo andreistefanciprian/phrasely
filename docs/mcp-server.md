@@ -157,7 +157,7 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 | `list_phrases(headword?)` | List the user's saved phrases, optionally filtered by headword | `GET /api/v1/phrases` |
 | `sample_phrases(count?)` | Randomly pick N phrases (1–10) for practice or quizzing | `GET /api/v1/phrases/random` |
 | `explore_phrase(phrase)` | Return learning instructions for understanding an expression and generating memorable contexts — no backend call, no data persisted | — |
-| `render_phrase_choices(choices)` | Render three save-ready cards: two target-expression contexts and one learning connection — no backend call, no data persisted | — |
+| `render_phrase_choices(choices)` | Render three save-ready cards: an original-or-personal context, a distinct personal context, and a personal learning connection — no backend call, no data persisted | — |
 | `add_phrase(phrase, headwords, note?, source_urls?)` | Save a finished phrase constructed locally by the assistant | `POST /api/v1/phrases` |
 
 ### Exploration and save flow
@@ -165,7 +165,7 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 Exploration, presentation, and saving are separate stages:
 
 1. When the user wants to understand or explore an expression, the assistant calls `explore_phrase(phrase)` and applies the returned learning instructions conversationally. Nothing is persisted.
-2. After generating the refined original context, one memorable alternative, and one categorized learning connection, the assistant passes all three as save-ready `choices` to `render_phrase_choices`. Card 3 may use different headwords when it teaches a connected word or expression. Rendering does not express save intent and does not persist anything.
+2. The assistant generates three save-ready choices. Card 1 refines a supplied context, or uses a context from the user's life when only the target expression was supplied. Card 2 uses a distinct situation the user could realistically say or write in their own life. Card 3 teaches one categorized connection through another personal situation and may use different headwords for a connected expression. Personalization uses only reliable context and never invents personal facts. The assistant passes all three to `render_phrase_choices`; rendering does not express save intent or persist anything.
 3. In clients that support MCP Apps, the user can click Save on any card. The component calls `add_phrase` through `tools/call`, then displays the authoritative success or error state. It never calls the private backend directly and never receives the OAuth token.
 4. In clients without UI support, choices remain numbered and the user can select one conversationally. The assistant then calls `add_phrase` as before.
 5. When the user's initial request already contains a direct, unambiguous save instruction, the assistant skips exploration and rendering, constructs the finished entry, and calls `add_phrase` directly.

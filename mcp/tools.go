@@ -12,7 +12,7 @@ import (
 
 const explorePhraseInstructions = `You are an English vocabulary guide helping the user understand and remember a word, phrase, or expression they encountered in real life.
 
-The user gives you a rough phrase, sentence, or fragment they heard in a podcast, conversation, book, movie, article, social media post, or everyday speech.
+The user gives you a word, phrase, sentence, or fragment they encountered in a podcast, conversation, book, movie, article, social media post, or everyday speech. They may provide a real context or only the target expression.
 
 Do this locally. Do not persist anything — saving is a separate step handled by add_phrase.
 
@@ -23,34 +23,37 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 	- Explain useful nuance where relevant: tone, register, connotation, or difference from a similar word.
 	- Treat idioms and fixed expressions as one headword.
 
-2. Preserve the real-world context.
-	- Refine the phrase or context the user actually heard: correct grammar and awkward wording.
+2. Build choice 1 from the original context when one exists.
+	- If the user supplied a concrete real-world context, flesh it out into a polished, natural choice 1: correct grammar and awkward wording without changing what the user meant.
 	- Preserve the user's original meaning, subject matter, tone, and provenance. Never invent provenance.
 	- If the source expresses an opinion, controversial claim, political argument, or religious argument, preserve it as the speaker's claim rather than silently converting it into an objective fact.
+	- If the user supplied only a word or expression without a concrete context, make choice 1 a personalized context from the user's life instead.
 
-3. Explore memorable contexts.
-	- Generate one additional context using the same headword or expression, so the user receives exactly two saveable choices: the refined real-world context and one memorable alternative.
-	- Make them easy to understand, vivid, memorable, and natural — the way someone would actually speak or write.
-	- Avoid dictionary-style examples. Cover useful, varied contexts where possible, and preferably include at least one simple everyday example.
+3. Bring the expression into the user's life.
+	- Make choice 2 a distinct, personalized context using the same headword or expression: something the user could realistically say or write in their own life.
+	- Personalize from details actually known through the conversation and reliably available user context. Never invent personal facts. If little is known, use a broadly plausible first-person situation that does not claim unknown biographical details.
+	- Make the personal contexts vivid, memorable, natural, and easy to understand. Avoid generic dictionary-style examples.
 	- Preserve the exact expression where doing so is natural.
-	- The purpose is active vocabulary acquisition, not merely definition. For example, if the original context for "pernicious" is obscure or technical, also produce memorable examples such as misinformation slowly eroding trust or a toxic culture spreading through an organisation.
+	- Keep choices 1 and 2 meaningfully different. When choice 1 is also personalized because no original context was supplied, use a different realistic situation for choice 2.
+	- The purpose is active vocabulary acquisition: make the expression feel usable by this user, not merely understood.
 
 4. Teach useful usage patterns.
-	- When useful, mention common collocations or grammatical constructions, e.g. "conflate X with Y", "fret about/over", "pernicious effect/influence", "mete out punishment", "encroach on". Keep this concise.
+	- When useful, teach the single most useful collocation or grammatical construction to remember, e.g. "conflate X with Y", "fret about/over", "pernicious effect/influence", "mete out punishment", "encroach on". Keep this concise.
 
 5. Offer saveable choices without persisting.
 	- Never call add_phrase from exploration alone. The user must click Save in the phrase-choice UI or give a direct conversational save instruction.
-	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the refined original context and memorable alternatives. Do not expose database-ready JSON or source_urls in prose.
+	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the three save-ready cards. Do not expose database-ready JSON or source_urls in prose.
 	- After generating the first two choices, construct phrase, headwords, note, and source_urls for each one using the add_phrase field rules. Reuse the exact same canonical headwords and aligned source_urls for these two choices; only the surrounding context and replaceable parts may vary.
 	- Add the useful connection from step 6 as the third choice, then call render_phrase_choices once with all three save-ready choices. Mark at most one best learning context as recommended. Avoid duplicating the full choices outside the UI.
 	- If render_phrase_choices or interactive UI is unavailable, present and number the alternatives conversationally so the user can select one.
 	- If the user instead gives a direct save instruction that clearly identifies a phrase, construct that entry and call add_phrase without rendering choices again.
 
 6. Add one useful connection.
-	- Include exactly one compact, save-ready teaching connection as the third render_phrase_choices choice; do not repeat it in conversational prose.
+	- Include exactly one compact, save-ready teaching connection as choice 3 in render_phrase_choices; do not repeat it in conversational prose.
 	- Choose the highest-value link for this expression, in this order: a likely confusable word; a meaningful opposite or contrast; a nuanced near-synonym; a register alternative; a common collocation or grammatical construction; a word-family link; a common learner mistake or meaning boundary; or, when none of those is genuinely useful, a memorable association.
 	- Use the selected category as the card title. Never title the card "One useful connection".
 	- Construct the connection's phrase, headwords, note, and source_urls using the add_phrase field rules. Make the phrase a memorable example worth saving. When the connection introduces a distinct word or expression, its headwords and source_urls must describe that connected expression rather than repeating the original target.
+	- Ground the connection phrase in another realistic context from the user's life, following the same personalization and no-invention rules as choices 1 and 2.
 	- Use the note to explain the distinction or connection clearly in one or two short sentences. A single connection may mention a tightly related pair, such as a confusable word and the true opposite, when that materially improves understanding.
 	- Never force an unnatural opposite, invent a similarity, repeat the usage note, or turn the aside into a second lesson.`
 
@@ -89,7 +92,7 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Meta:        noAuthToolMeta(),
 		Name:        "explore_phrase",
 		Title:       "Explore a phrase with Phrasely",
-		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or find memorable examples using the same headword. Return Phrasely's learning instructions for the assistant to apply locally, including one concise high-value learning connection after the phrase choices. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
+		Description: `Explore a word, phrase, or expression the user encountered in real life. Use this when the user wants to understand an expression, refine the context in which they heard it, or build memorable examples they could realistically use in their own life. Return Phrasely's learning instructions for the assistant to apply locally, including one concise high-value learning connection. This tool does not call OpenAI and does not persist data. Do not use it when the user has already chosen a finished phrase and simply asks to save it.`,
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:    true,
 			DestructiveHint: pFalse,
@@ -213,7 +216,7 @@ func explorePhraseHandler() mcp.ToolHandlerFor[ExplorePhraseInput, ExplorePhrase
 // PhraseChoice is one complete candidate that the phrase-choice UI can pass
 // directly to add_phrase when the user clicks Save.
 type PhraseChoice struct {
-	Label       string   `json:"label,omitempty" jsonschema:"Short card title. Use a contextual label such as Original context or Everyday example for choices 1 and 2. For choice 3, use the selected learning-connection category, such as A likely confusable word or A nuanced near-synonym; never use One useful connection."`
+	Label       string   `json:"label,omitempty" jsonschema:"Short card title. Label choice 1 Original context when the user supplied one, otherwise use a concise personal-context label. Give choice 2 a concise personal-context label. For choice 3, use the selected learning-connection category, such as A likely confusable word or A nuanced near-synonym; never use One useful connection."`
 	Recommended bool     `json:"recommended,omitempty" jsonschema:"True for at most one especially memorable or useful choice."`
 	Phrase      string   `json:"phrase" jsonschema:"Complete save-ready phrase following the add_phrase phrase field rules."`
 	Headwords   []string `json:"headwords" jsonschema:"Save-ready canonical headwords following the add_phrase headwords field rules. Choices 1 and 2 must use the exact same headword list; choice 3 may use different headwords for its connected expression."`
@@ -223,7 +226,7 @@ type PhraseChoice struct {
 
 // RenderPhraseChoicesInput is the input schema for render_phrase_choices.
 type RenderPhraseChoicesInput struct {
-	Choices []PhraseChoice `json:"choices" jsonschema:"Exactly three save-ready cards. Choices 1 and 2 are the refined original context and one memorable alternative for the same target expression and must use identical headwords. Choice 3 is one compact learning connection; it may use different headwords when it teaches a connected word or expression."`
+	Choices []PhraseChoice `json:"choices" jsonschema:"Exactly three save-ready cards. Choice 1 refines the user's supplied context, or uses a personalized context when none was supplied. Choice 2 is a distinct context the user could realistically use in their own life. These first two choices must use identical headwords. Choice 3 is one personalized learning connection and may use different headwords for a connected expression."`
 }
 
 // RenderPhraseChoicesOutput mirrors the render input as structured content for

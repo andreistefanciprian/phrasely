@@ -21,10 +21,13 @@ JWT issued by the OAuth 2.1 + PKCE flow:
 
 ## Phrase-choice UI
 
-After `explore_phrase`, the assistant prepares the refined original context and
-one memorable alternative as two complete save-ready entries, then calls
-`render_phrase_choices`. That read-only tool returns all three as structured,
-save-ready choices and is associated with
+After `explore_phrase`, the assistant prepares three complete save-ready
+entries: the refined original context (or a personal context when the user
+provided only the target expression), a distinct situation from the user's
+life, and a learning connection grounded in another personal situation. It
+personalizes only from reliable context and does not invent personal facts.
+The assistant then calls `render_phrase_choices`. That read-only tool returns
+all three as structured, save-ready choices and is associated with
 `ui://phrasely/phrase-choices-v2.html`.
 
 The UI displays the connection as the third saveable card. Its title names
