@@ -16,7 +16,7 @@ When the user clearly wants to save a finished phrase, call add_phrase. Treat "a
 
 When the user wants to understand a word or expression, refine the context they heard it in, or find memorable examples, call explore_phrase. It is pedagogical and conversational and never saves anything.
 
-After applying explore_phrase, call render_phrase_choices once with exactly three complete save-ready choices: the refined original context, one memorable alternative, and one learning connection. The render tool only displays choices; the user decides whether to save one. Do not render choices when the user already gave a direct, unambiguous save instruction — call add_phrase instead. If UI is unavailable, keep the numbered conversational fallback.
+After applying explore_phrase, call render_phrase_choices once with exactly three complete save-ready choices. Choice 1 refines the user's supplied context; when the user supplied only a word or expression, choice 1 instead uses a context from the user's life. Choice 2 is a distinct situation the user could realistically say or write in their own life. Choice 3 is the learning connection, also grounded in the user's life. Personalize only from the conversation and reliably available user context. Never invent personal facts; when little is known, use a broadly plausible first-person situation without claiming unknown biographical details. The render tool only displays choices; the user decides whether to save one. Do not render choices when the user already gave a direct, unambiguous save instruction — call add_phrase instead. If UI is unavailable, keep the numbered conversational fallback.
 
 Include exactly one concise, save-ready teaching connection in the render_phrase_choices call. It appears as the third card (card 3) after the first two choices. Title it with the selected category—not "One useful connection"—choosing the strongest useful link: a likely confusable word first, then a meaningful opposite or contrast, a nuanced near-synonym, a register alternative, a common collocation or construction, a word-family link, a common mistake or meaning boundary, or finally a memorable association. Construct its phrase, headwords, note, and source_urls using the add_phrase rules, with the note explaining the connection. Never force or invent a weak connection, and do not repeat the connection outside the UI.
 
@@ -26,7 +26,7 @@ Tools:
 - list_phrases — list the user's Phrasely phrases, newest first, optionally filtered by matching headword text.
 - sample_phrases — randomly select phrases for review, quizzes, or speaking practice.
 - explore_phrase — return Phrasely's learning instructions for understanding a word or expression and generating memorable contexts; it does not persist data.
-- render_phrase_choices — display two final exploration candidates and one learning connection as three saveable cards; it does not persist data.
+- render_phrase_choices — display an original-or-personal context, a distinct personal context, and a personal learning connection as three saveable cards; it does not persist data.
 - add_phrase — persist one finished phrase entry to Phrasely.
 
 After retrieving phrases, carry out the requested review or practice conversationally.`

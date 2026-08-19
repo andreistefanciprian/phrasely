@@ -138,7 +138,7 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 - `list_phrases` — list saved phrases newest first, optionally filtered by headword text
 - `sample_phrases` — randomly select saved phrases for review, quizzes, or practice
 - `explore_phrase` — return learning instructions for understanding an expression and generating memorable contexts; never persists data
-- `render_phrase_choices` — display two complete context candidates plus one learning connection as three save-ready cards in an optional inline MCP Apps UI; never persists data
+- `render_phrase_choices` — display an original-or-personal context, a distinct personal context, and a personal learning connection as three save-ready cards in an optional inline MCP Apps UI; never persists data
 - `add_phrase` — save one finished phrase entry assembled by the assistant
 
 There is no MCP `curate` tool. The backend `/api/v1/phrases/curate` endpoint remains available to the web frontend, but MCP exploration uses `explore_phrase`, optional choice presentation uses `render_phrase_choices`, and saves go through `add_phrase` either conversationally or from the UI Save button.
@@ -184,7 +184,7 @@ MCP server is the public OAuth face; backend handles the real work over the priv
 release-please runs on every push to `main` and tracks `frontend/`, `backend/`, and `mcp/` as separate packages. It reads commit messages to determine the version bump and generate changelogs.
 
 - `fix:` → patch bump; `feat:` → minor bump; `feat!:` or `BREAKING CHANGE:` footer → major bump
-- **Before creating a PR, ask the user whether the change is a patch, minor, or major release** so the correct commit type is used
+- **When the user asks to push or create a PR without naming a release type, choose the recommended patch, minor, or major classification and tell them which one you chose.** Do not ask them to repeat the choice. If they specify a type, use it.
 - Merging the release-please PR tags the release as `frontend-vX.Y.Z` / `backend-vX.Y.Z` / `mcp-vX.Y.Z` and updates `CHANGELOG.md`
 
 ## Design notes
