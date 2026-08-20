@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.8.0...mcp-v0.9.0) (2026-08-20)
+
+
+### Features
+
+* **mcp:** personalize phrase choice contexts ([53fa18b](https://github.com/andreistefanciprian/phrasely/commit/53fa18b76f29667c7cfb831437a5b3d7d23436e4))
+
 ## [0.8.0](https://github.com/andreistefanciprian/phrasely/compare/mcp-v0.7.5...mcp-v0.8.0) (2026-08-18)
 
 
