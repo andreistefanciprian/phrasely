@@ -19,7 +19,15 @@ The UI is available at `http://localhost:3000`.
 task down      # stop containers, keep DB data
 task reset     # stop containers and wipe DB data (fresh start)
 task test      # run unit tests
+task crap      # report CRAP scores for all Go modules
 ```
+
+## Code Quality
+
+Run `task crap` to combine cyclomatic complexity with test coverage for every
+function in the backend, frontend, and MCP modules. Higher scores highlight
+complex, under-tested functions; treat scores above 30 as candidates for
+investigation rather than an automatic failure.
 
 ## API Script
 

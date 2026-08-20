@@ -1,5 +1,6 @@
 .env
 bin/
+target/
 .claude/
 .debug/
 frontend_nginx/
