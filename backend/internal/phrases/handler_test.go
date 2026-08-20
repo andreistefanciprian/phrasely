@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,6 +27,7 @@ type mockStore struct {
 	listPhrasesSummary func(ctx context.Context, userID string, headword string) ([]db.PhraseSummary, error)
 	getRandomPhrases   func(ctx context.Context, userID string, count int) ([]db.PhraseSummary, error)
 	getPhrase          func(ctx context.Context, userID string, id string) (*db.Phrase, error)
+	getRelatedPhrases  func(ctx context.Context, userID string, phraseID string, maxDist float64, limit int) ([]db.Phrase, error)
 	deletePhrase       func(ctx context.Context, userID string, id string) error
 	updatePhrase       func(ctx context.Context, userID string, id string, req db.UpdatePhraseRequest) (*db.Phrase, error)
 }
@@ -63,8 +65,8 @@ func (m *mockStore) ListPhrasesWithoutEmbedding(_ context.Context) ([]db.Phrase,
 func (m *mockStore) SearchPhrasesBySimilarity(_ context.Context, _ string, _ []float32, _ int) ([]db.Phrase, error) {
 	panic("SearchPhrasesBySimilarity not expected in phrase tests")
 }
-func (m *mockStore) GetRelatedPhrases(_ context.Context, _ string, _ string, _ float64, _ int) ([]db.Phrase, error) {
-	panic("GetRelatedPhrases not expected in phrase tests")
+func (m *mockStore) GetRelatedPhrases(ctx context.Context, userID string, phraseID string, maxDist float64, limit int) ([]db.Phrase, error) {
+	return m.getRelatedPhrases(ctx, userID, phraseID, maxDist, limit)
 }
 
 // Auth methods — not used in phrase tests; panic if called unexpectedly.
@@ -224,6 +226,123 @@ func TestListPhrases_HeadwordFilter(t *testing.T) {
 }
 
 const validUUID = "550e8400-e29b-41d4-a716-446655440000"
+
+func TestRelatedPhrases_InvalidID(t *testing.T) {
+	store := &mockStore{}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/not-a-uuid/related")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestRelatedPhrases_StoreFailure(t *testing.T) {
+	store := &mockStore{
+		getRelatedPhrases: func(_ context.Context, _ string, _ string, _ float64, _ int) ([]db.Phrase, error) {
+			return nil, errors.New("database unavailable")
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/" + validUUID + "/related")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", resp.StatusCode)
+	}
+}
+
+func TestRelatedPhrases_EmptyReturnsArray(t *testing.T) {
+	store := &mockStore{
+		getRelatedPhrases: func(_ context.Context, userID string, phraseID string, maxDist float64, limit int) ([]db.Phrase, error) {
+			if userID != testUserID {
+				t.Errorf("expected userID %q, got %q", testUserID, userID)
+			}
+			if phraseID != validUUID {
+				t.Errorf("expected phraseID %q, got %q", validUUID, phraseID)
+			}
+			if maxDist != 0.45 {
+				t.Errorf("expected maxDist 0.45, got %v", maxDist)
+			}
+			if limit != 5 {
+				t.Errorf("expected limit 5, got %d", limit)
+			}
+			return []db.Phrase{}, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/" + validUUID + "/related")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got []db.Phrase
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got == nil {
+		t.Error("expected empty array, got null")
+	}
+}
+
+func TestRelatedPhrases_PopulatedResults(t *testing.T) {
+	want := []db.Phrase{
+		{ID: "550e8400-e29b-41d4-a716-446655440001", Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
+		{ID: "550e8400-e29b-41d4-a716-446655440002", Phrase: "A happy accident.", Headwords: []string{"serendipity"}},
+	}
+	store := &mockStore{
+		getRelatedPhrases: func(_ context.Context, _ string, _ string, _ float64, _ int) ([]db.Phrase, error) {
+			return want, nil
+		},
+	}
+
+	srv := newTestServer(store)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/phrases/" + validUUID + "/related")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var got []db.Phrase
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got) != len(want) {
+		t.Fatalf("expected %d phrases, got %d", len(want), len(got))
+	}
+	for i := range want {
+		if got[i].ID != want[i].ID || got[i].Phrase != want[i].Phrase {
+			t.Errorf("unexpected phrase at index %d: %+v", i, got[i])
+		}
+	}
+}
 
 func TestGetPhrase_Success(t *testing.T) {
 	store := &mockStore{

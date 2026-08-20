@@ -89,6 +89,7 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 ## Tests
 
 - **Run**: `task test` or `cd backend && go test ./... -v`
+- **CRAP analysis**: `task crap` reports function-level change risk across the backend, frontend, and MCP modules; investigate scores above 30
 - **No real DB needed**: handlers use a `mockStore` struct that satisfies `db.Store`; set only the fields the test exercises
 - `testUserID` is injected into request context to simulate an authenticated user
 - Tests live alongside handlers: `internal/<domain>/handler_test.go`

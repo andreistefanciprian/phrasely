@@ -18,3 +18,28 @@ tasks:
     dir: backend
     cmds:
       - go test ./... -v
+
+  crap:
+    desc: Report CRAP scores for all Go modules
+    cmds:
+      - task: crap-backend
+      - task: crap-frontend
+      - task: crap-mcp
+
+  crap-backend:
+    internal: true
+    dir: backend
+    cmds:
+      - go run github.com/unclebob/crap4go/cmd/crap4go@v0.0.0-20260521190544-bee16dbdadb4
+
+  crap-frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - go run github.com/unclebob/crap4go/cmd/crap4go@v0.0.0-20260521190544-bee16dbdadb4
+
+  crap-mcp:
+    internal: true
+    dir: mcp
+    cmds:
+      - go run github.com/unclebob/crap4go/cmd/crap4go@v0.0.0-20260521190544-bee16dbdadb4
