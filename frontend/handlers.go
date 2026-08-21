@@ -259,6 +259,7 @@ func (app *application) bubblePage(w http.ResponseWriter, r *http.Request) {
 	app.renderAuth(w, "bubble.html", map[string]any{
 		"Page":        "bubble",
 		"PhrasesJSON": template.JS(phrasesJSON),
+		"Count":       len(phrases),
 	})
 }
 
@@ -513,5 +514,6 @@ func (app *application) shufflePage(w http.ResponseWriter, r *http.Request) {
 	app.renderAuth(w, "shuffle.html", map[string]any{
 		"Page":        "shuffle",
 		"PhrasesJSON": template.JS(phrasesJSON),
+		"Count":       len(phrases),
 	})
 }

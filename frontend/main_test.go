@@ -168,6 +168,44 @@ func TestStoryPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 	}
 }
 
+func TestBubbleAndShufflePagesShareEmptyState(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/phrases" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]map[string]any{})
+	}))
+	defer backend.Close()
+
+	app := &application{api: newAPIClient(backend.URL)}
+	want := `No phrases yet. <a href="/add">Add your first →</a>`
+
+	for _, tt := range []struct {
+		name    string
+		path    string
+		handler http.HandlerFunc
+	}{
+		{name: "bubble", path: "/bubble", handler: app.bubblePage},
+		{name: "shuffle", path: "/shuffle", handler: app.shufflePage},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			w := httptest.NewRecorder()
+
+			tt.handler(w, req)
+
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+			}
+			if !strings.Contains(w.Body.String(), want) {
+				t.Errorf("response does not contain shared empty state %q", want)
+			}
+		})
+	}
+}
+
 func TestAuthorizePreservesOAuthResource(t *testing.T) {
 	const resource = "https://mcp.example.com"
 	const redirectURI = "https://chatgpt.com/callback"

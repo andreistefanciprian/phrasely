@@ -6,6 +6,7 @@
   html, body { width: 100%; height: 100%; overflow: hidden; background: var(--white); }
 
   #bubble { position: fixed; top: 4.5rem; left: 0; right: 0; bottom: 0; }
+  #bubble > .empty-state { position: absolute; top: 50%; left: 50%; width: 100%; padding: 0 1.5rem; transform: translate(-50%, -50%); }
   @media (max-width: 600px) { #bubble { top: 3.5rem; bottom: 4rem; } }
 
   .word {
@@ -29,8 +30,11 @@
 {{end}}
 
 {{define "content"}}
-<div id="bubble"></div>
+<div id="bubble">
+  {{if eq .Count 0}}<p class="empty-state">No phrases yet. <a href="/add">Add your first →</a></p>{{end}}
+</div>
 
+{{if ne .Count 0}}
 <script>
   const phrases = {{.PhrasesJSON}};
 
@@ -69,7 +73,7 @@
       .sort((a, b) => b.count - a.count);
 
     if (words.length === 0) {
-      bubble.innerHTML = '<p style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:0.9rem">No phrases yet — add some to see your bubble.</p>';
+      bubble.innerHTML = '<p class="empty-state">No phrases yet. <a href="/add">Add your first →</a></p>';
       return;
     }
 
@@ -139,4 +143,5 @@
     resizeTimer = setTimeout(render, 200);
   });
 </script>
+{{end}}
 {{end}}

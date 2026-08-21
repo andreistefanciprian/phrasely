@@ -48,10 +48,6 @@
   .btn-cancel:hover { color: var(--navy); }
   .edit-error { font-size: 0.8rem; color: #e53e3e; }
 
-  .empty { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 3rem 0; }
-  .empty a { color: var(--teal); text-decoration: none; }
-  .empty a:hover { text-decoration: underline; }
-
   @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 {{end}}
@@ -88,8 +84,8 @@
 
     if (display.length === 0) {
       list.innerHTML = items === undefined
-        ? '<li class="empty">No phrases yet. <a href="/add">Add your first →</a></li>'
-        : '<li class="empty">No phrases found.</li>';
+        ? '<li class="empty-state">No phrases yet. <a href="/add">Add your first →</a></li>'
+        : '<li class="empty-state">No phrases found.</li>';
       return;
     }
 

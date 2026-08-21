@@ -35,6 +35,9 @@
 {{end}}
 
 {{define "content"}}
+{{if eq .Count 0}}
+<p class="empty-state">No phrases yet. <a href="/add">Add your first →</a></p>
+{{else}}
 <div id="main-content">
   <p class="shuffle-hint" id="click-hint">Click to shuffle</p>
   <p class="shuffle-hint" id="tap-hint">Tap to shuffle</p>
@@ -170,4 +173,5 @@
     }
   });
 </script>
+{{end}}
 {{end}}
