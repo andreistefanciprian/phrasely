@@ -61,6 +61,11 @@ a { color: inherit; text-decoration: none; }
 .btn-secondary:disabled { opacity: 0.5; cursor: default; }
 .btn-secondary.w-full { width: 100%; text-align: center; }
 
+/* ── Empty collections ── */
+.empty-state { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 3rem 0; }
+.empty-state a { color: var(--teal); text-decoration: none; }
+.empty-state a:hover { text-decoration: underline; }
+
 /* ── Form inputs ── */
 .input {
   width: 100%;
