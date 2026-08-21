@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.9.2...frontend-v0.9.3) (2026-08-21)
+
+
+### Bug Fixes
+
+* **frontend:** align empty collection states ([324fde0](https://github.com/andreistefanciprian/phrasely/commit/324fde05c751f3d755314e33155a63dc1a8a4efe))
+
 ## [0.9.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.9.1...frontend-v0.9.2) (2026-08-16)
 
 
