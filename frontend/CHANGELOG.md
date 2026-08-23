@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.9.3...frontend-v0.10.0) (2026-08-23)
+
+
+### Features
+
+* **frontend:** add interactive landing page review ([a6d5e6d](https://github.com/andreistefanciprian/phrasely/commit/a6d5e6d3fcac41dff5cd8f1153796469c512815b))
+
+
+### Bug Fixes
+
+* **frontend:** refine landing section contrast ([dac50b7](https://github.com/andreistefanciprian/phrasely/commit/dac50b76cb725705d5b43b3e9a5640a39b9b5d74))
+
 ## [0.9.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.9.2...frontend-v0.9.3) (2026-08-21)
 
 
