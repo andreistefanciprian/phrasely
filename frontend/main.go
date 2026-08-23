@@ -11,12 +11,13 @@ import (
 	"strings"
 )
 
-//go:embed templates/* static/* home_phrases.json
+//go:embed templates/* static/* home_phrases.json home_shuffle_phrases.json
 var files embed.FS
 
 type application struct {
-	api               *apiClient
-	homePhraseSamples []homePhrase
+	api                *apiClient
+	homePhraseSamples  []homePhrase
+	homeShuffleSamples []homeShufflePhrase
 }
 
 func main() {
@@ -39,10 +40,19 @@ func main() {
 		slog.Error("failed to parse home_phrases.json", "error", err)
 		os.Exit(1)
 	}
+	var homeShuffleSamples []homeShufflePhrase
+	if data, err := files.ReadFile("home_shuffle_phrases.json"); err != nil {
+		slog.Error("failed to read home_shuffle_phrases.json", "error", err)
+		os.Exit(1)
+	} else if err := json.Unmarshal(data, &homeShuffleSamples); err != nil {
+		slog.Error("failed to parse home_shuffle_phrases.json", "error", err)
+		os.Exit(1)
+	}
 
 	app := &application{
-		api:               newAPIClient(apiURL),
-		homePhraseSamples: homePhraseSamples,
+		api:                newAPIClient(apiURL),
+		homePhraseSamples:  homePhraseSamples,
+		homeShuffleSamples: homeShuffleSamples,
 	}
 
 	mux := http.NewServeMux()

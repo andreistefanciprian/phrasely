@@ -168,6 +168,96 @@ func TestStoryPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 	}
 }
 
+func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
+	app := &application{homeShuffleSamples: []homeShufflePhrase{
+		{Phrase: "First phrase.", Keyword: "first", Definition: "first meaning", Weight: 4},
+		{Phrase: "Second phrase.", Keyword: "second", Definition: "second meaning", Weight: 1},
+	}}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	app.homePage(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	for _, want := range []string{
+		"Your vocabulary, made visible",
+		"See what you’re actually learning.",
+		`id="bubble-word-field"`,
+		"Choose any expression to revisit it",
+		"word.type = 'button'",
+		"card.scrollIntoView",
+		"A better five-minute habit",
+		`class="habit-section"`,
+		`class="habit-section-inner"`,
+		"Got five minutes?",
+		`id="home-shuffle"`,
+		"Five minutes · your words",
+		"First phrase.",
+		"first meaning",
+		"Second phrase.",
+		"second meaning",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("response does not contain %q", want)
+		}
+	}
+	if strings.Contains(body, `class="quote-section"`) {
+		t.Error("response still contains the old quote section")
+	}
+	if strings.Contains(body, `class="bubble-preview"`) || strings.Contains(body, `<img src="/static/bubble-preview.png"`) {
+		t.Error("response still contains the old static bubble preview")
+	}
+	if strings.Contains(body, "Why I built Phrasely") {
+		t.Error("response still contains the story card")
+	}
+}
+
+func TestHomeShufflePhraseSet(t *testing.T) {
+	data, err := files.ReadFile("home_shuffle_phrases.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var samples []homeShufflePhrase
+	if err := json.Unmarshal(data, &samples); err != nil {
+		t.Fatal(err)
+	}
+	if len(samples) != 30 {
+		t.Fatalf("shuffle phrase count = %d, want 30", len(samples))
+	}
+
+	featured := map[string]bool{
+		"a hunch":          true,
+		"put my finger on": true,
+		"forthcoming":      true,
+		"find your groove": true,
+		"brush off":        true,
+		"hinge on":         true,
+		"a whisker away":   true,
+		"get cracking":     true,
+		"taper off":        true,
+		"muddy the waters": true,
+	}
+	for _, sample := range samples {
+		if sample.Keyword == "" || sample.Definition == "" || sample.Phrase == "" {
+			t.Errorf("incomplete shuffle sample: %+v", sample)
+		}
+		wantWeight := 1
+		if featured[sample.Keyword] {
+			wantWeight = 4
+			delete(featured, sample.Keyword)
+		}
+		if sample.Weight != wantWeight {
+			t.Errorf("weight for %q = %d, want %d", sample.Keyword, sample.Weight, wantWeight)
+		}
+	}
+	if len(featured) != 0 {
+		t.Errorf("featured phrases missing from shuffle data: %v", featured)
+	}
+}
+
 func TestBubbleAndShufflePagesShareEmptyState(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/phrases" {

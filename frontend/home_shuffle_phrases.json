@@ -1,0 +1,182 @@
+[
+  {
+    "keyword": "by leaps and bounds",
+    "definition": "very quickly and noticeably",
+    "phrase": "Her development is coming along by leaps and bounds — every week she seems more alert and interactive.",
+    "weight": 1
+  },
+  {
+    "keyword": "a hunch",
+    "definition": "an instinctive feeling or guess",
+    "phrase": "What’s your hunch here? These two things don’t really add up.",
+    "weight": 4
+  },
+  {
+    "keyword": "put my finger on",
+    "definition": "identify exactly what something is",
+    "phrase": "Something feels wrong, but I can’t quite put my finger on it.",
+    "weight": 4
+  },
+  {
+    "keyword": "conducive to",
+    "definition": "creating favourable conditions for something",
+    "phrase": "A quiet home office is much more conducive to productive work than a noisy café.",
+    "weight": 1
+  },
+  {
+    "keyword": "forthcoming",
+    "definition": "open and willing to provide information",
+    "phrase": "The recruiter wasn’t very forthcoming about the salary range.",
+    "weight": 4
+  },
+  {
+    "keyword": "caveat",
+    "definition": "add an important qualification or limitation",
+    "phrase": "I’d caveat that: the Kubernetes setup works well at our current scale, but I wouldn’t assume it will behave the same way under ten times the load.",
+    "weight": 1
+  },
+  {
+    "keyword": "leverage",
+    "definition": "the ability to achieve much more with the same effort",
+    "phrase": "A well-designed API gives you a lot of leverage because many teams can build on the same clean interface.",
+    "weight": 1
+  },
+  {
+    "keyword": "telltale",
+    "definition": "revealing something that isn't immediately obvious",
+    "phrase": "Not receiving any tasks for the next sprint was a telltale sign that my position would be made redundant.",
+    "weight": 1
+  },
+  {
+    "keyword": "contrived",
+    "definition": "artificial or forced rather than natural",
+    "phrase": "His excuse sounded contrived, as if he'd rehearsed it rather than speaking honestly.",
+    "weight": 1
+  },
+  {
+    "keyword": "reminiscent of",
+    "definition": "reminding you of something similar",
+    "phrase": "This situation is reminiscent of the early days of the company, when everyone was still figuring things out.",
+    "weight": 1
+  },
+  {
+    "keyword": "find your groove",
+    "definition": "discover a way of doing something that feels natural and effective",
+    "phrase": "Peter finally found his groove after years of working across different roles.",
+    "weight": 4
+  },
+  {
+    "keyword": "brush off",
+    "definition": "dismiss without serious consideration",
+    "phrase": "My workmates brushed off all my suggestions about the pipelines.",
+    "weight": 4
+  },
+  {
+    "keyword": "hinge on",
+    "definition": "depend critically on something",
+    "phrase": "The decision may hinge on whether the company allows remote work.",
+    "weight": 4
+  },
+  {
+    "keyword": "a whisker away",
+    "definition": "extremely close to something happening",
+    "phrase": "England was a whisker away from losing the lead.",
+    "weight": 4
+  },
+  {
+    "keyword": "in the nick of time",
+    "definition": "at the last possible moment",
+    "phrase": "He saved the team from conceding a goal in the nick of time.",
+    "weight": 1
+  },
+  {
+    "keyword": "get cracking",
+    "definition": "start doing something with energy or urgency",
+    "phrase": "Let’s get cracking on this project before the deadline sneaks up on us.",
+    "weight": 4
+  },
+  {
+    "keyword": "put a bow on it",
+    "definition": "finish something neatly and completely",
+    "phrase": "We’ve fixed the last bug, so let’s put a bow on this project and release it.",
+    "weight": 1
+  },
+  {
+    "keyword": "bear the brunt",
+    "definition": "suffer the worst part of something",
+    "phrase": "Junior employees often bear the brunt of poorly planned restructures.",
+    "weight": 1
+  },
+  {
+    "keyword": "taper off",
+    "definition": "gradually become less intense or frequent",
+    "phrase": "The crying usually starts to taper off after the first few weeks.",
+    "weight": 4
+  },
+  {
+    "keyword": "encroach on",
+    "definition": "gradually intrude into or take over something",
+    "phrase": "Work has been encroaching on my personal life.",
+    "weight": 1
+  },
+  {
+    "keyword": "squander",
+    "definition": "waste an opportunity or resource",
+    "phrase": "Don’t squander the opportunity just because it feels uncomfortable.",
+    "weight": 1
+  },
+  {
+    "keyword": "disheartening",
+    "definition": "causing you to lose confidence or motivation",
+    "phrase": "It’s disheartening to apply for so many jobs and hear nothing back.",
+    "weight": 1
+  },
+  {
+    "keyword": "nimble",
+    "definition": "able to adapt quickly and easily",
+    "phrase": "Small teams can stay nimble by cutting features that aren't delivering value.",
+    "weight": 1
+  },
+  {
+    "keyword": "foregone conclusion",
+    "definition": "an outcome regarded as inevitable",
+    "phrase": "A rate cut isn't a foregone conclusion.",
+    "weight": 1
+  },
+  {
+    "keyword": "plausible deniability",
+    "definition": "the ability to deny involvement because there's no clear proof",
+    "phrase": "The executive never gave a direct order, giving him plausible deniability when the plan failed.",
+    "weight": 1
+  },
+  {
+    "keyword": "beyond the pale",
+    "definition": "outside the limits of acceptable behaviour",
+    "phrase": "The language he used was beyond the pale.",
+    "weight": 1
+  },
+  {
+    "keyword": "muddy the waters",
+    "definition": "make an issue more confusing or difficult to understand",
+    "phrase": "That’s a fallacy, often used to muddy the waters in an argument.",
+    "weight": 4
+  },
+  {
+    "keyword": "ad nauseam",
+    "definition": "repeatedly, to the point of becoming tiresome",
+    "phrase": "The media discussed the scandal ad nauseam.",
+    "weight": 1
+  },
+  {
+    "keyword": "serendipitous",
+    "definition": "unexpectedly discovered by chance in a beneficial way",
+    "phrase": "Our hike took a wrong turn and led us to a hidden waterfall — a completely serendipitous find.",
+    "weight": 1
+  },
+  {
+    "keyword": "go through the gauntlet",
+    "definition": "endure a demanding series of challenges",
+    "phrase": "Anyone who has gone through the gauntlet of debugging a nasty Kubernetes production incident knows how much you learn when the easy fixes fail.",
+    "weight": 1
+  }
+]

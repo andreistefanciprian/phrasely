@@ -20,6 +20,13 @@ type homePhrase struct {
 	Source  string `json:"source"`
 }
 
+type homeShufflePhrase struct {
+	Phrase     string `json:"phrase"`
+	Keyword    string `json:"keyword"`
+	Definition string `json:"definition"`
+	Weight     int    `json:"weight"`
+}
+
 const authCookieName = "auth_token"
 const authCookieTTL = 30 * 24 * time.Hour
 
@@ -84,11 +91,41 @@ func (app *application) homePage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	sample := app.homePhraseSamples[rand.IntN(len(app.homePhraseSamples))]
+	initialIndex := weightedHomeShuffleIndex(app.homeShuffleSamples, -1)
+	sample := app.homeShuffleSamples[initialIndex]
+	phraseSamplesJSON, err := json.Marshal(app.homeShuffleSamples)
+	if err != nil {
+		slog.Error("marshal home phrase samples", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 	app.render(w, "home.html", map[string]any{
-		"Quote":     sample.Phrase,
-		"QuoteMeta": sample.Keyword + " · captured from " + sample.Source,
+		"InitialIndex":      initialIndex,
+		"InitialPhrase":     sample.Phrase,
+		"InitialKeyword":    sample.Keyword,
+		"InitialDefinition": sample.Definition,
+		"PhraseSamples":     template.JS(phraseSamplesJSON),
 	})
+}
+
+func weightedHomeShuffleIndex(samples []homeShufflePhrase, excludedIndex int) int {
+	totalWeight := 0
+	for i, sample := range samples {
+		if i != excludedIndex {
+			totalWeight += sample.Weight
+		}
+	}
+	draw := rand.IntN(totalWeight)
+	for i, sample := range samples {
+		if i == excludedIndex {
+			continue
+		}
+		if draw < sample.Weight {
+			return i
+		}
+		draw -= sample.Weight
+	}
+	return 0
 }
 
 func (app *application) loginPage(w http.ResponseWriter, r *http.Request) {

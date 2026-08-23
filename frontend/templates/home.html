@@ -39,20 +39,44 @@
   .step-body h3 { font-size: 0.9rem; font-weight: 600; color: var(--navy); margin-bottom: 0.2rem; }
   .step-body p { font-size: 0.85rem; color: var(--muted); line-height: 1.55; }
 
-  .bubble-preview { padding: 0 2rem 3rem; text-align: center; }
-  .bubble-caption { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); margin-bottom: 1.25rem; }
-  .bubble-preview img { width: 100%; max-width: 720px; border-radius: 16px; box-shadow: 0 8px 40px rgba(15,27,110,0.10); }
+  .bubble-showcase { width: 100%; padding: 6.5rem 2rem; background: var(--navy); color: var(--white); }
+  .bubble-showcase-inner { display: grid; grid-template-columns: minmax(240px, 0.78fr) minmax(0, 1.22fr); align-items: center; gap: clamp(3rem, 7vw, 7rem); width: 100%; max-width: 1120px; margin: 0 auto; }
+  .bubble-showcase-copy { max-width: 430px; }
+  .bubble-showcase-eyebrow { margin-bottom: 1.25rem; color: var(--teal); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .bubble-showcase h2 { margin-bottom: 1.4rem; color: var(--white); font-family: 'Lora', Georgia, serif; font-size: clamp(2.15rem, 5vw, 3.4rem); font-weight: 400; line-height: 1.12; }
+  .bubble-showcase-description { margin-bottom: 1.4rem; color: #B9C1EE; font-size: clamp(0.98rem, 2vw, 1.08rem); line-height: 1.75; }
+  .bubble-showcase-hint { color: var(--teal); font-size: 0.8rem; font-weight: 600; }
+  .bubble-word-field { display: flex; align-content: center; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: clamp(0.55rem, 1.5vw, 1.15rem) clamp(0.75rem, 2.25vw, 1.8rem); min-height: 390px; padding: 1.5rem 0; }
+  .bubble-word { display: inline-block; padding: 0.12rem; border: 0; background: transparent; color: #9298EC; font-family: inherit; font-size: clamp(0.76rem, 1.45vw, 1.05rem); line-height: 1.1; white-space: nowrap; cursor: pointer; transition: color 0.3s ease, font-size 0.3s ease, transform 0.3s ease; }
+  .bubble-word:nth-child(3n) { color: var(--teal); }
+  .bubble-word:nth-child(5n) { color: var(--white); }
+  .bubble-word:hover { color: var(--white); transform: translateY(-2px); }
+  .bubble-word:focus-visible { border-radius: 4px; outline: 2px solid var(--teal); outline-offset: 4px; color: var(--white); }
+  .bubble-word--high { font-size: clamp(1.2rem, 2.55vw, 2rem); }
+  .bubble-word--reviewed { color: var(--white); font-size: clamp(1.75rem, 3.8vw, 3rem); transform: scale(1.04); }
 
-  .story-section { max-width: 640px; margin: 0 auto; padding: 3rem 2rem 5rem; }
-  .story-section h2 { font-family: 'Lora', Georgia, serif; font-size: clamp(1.3rem, 3.5vw, 1.75rem); font-weight: 600; color: var(--navy); line-height: 1.35; margin-bottom: 1.5rem; }
-  .story-section p { font-size: 0.95rem; color: var(--navy); line-height: 1.8; margin-bottom: 0.75rem; }
-  .story-section p:last-child { margin-bottom: 0; }
-  .story-link { display: inline-block; margin-top: 1.25rem; font-size: 0.875rem; font-weight: 600; color: var(--blue); text-decoration: none; transition: opacity 0.15s; }
-  .story-link:hover { opacity: 0.75; }
+  .habit-section { width: 100%; margin: 2rem 0 0; padding: 6.5rem 2rem; background: #F6F6FF; }
+  .habit-section-inner { display: grid; grid-template-columns: minmax(240px, 0.78fr) minmax(0, 1.22fr); align-items: stretch; width: 100%; max-width: 1120px; min-height: 390px; margin: 0 auto; }
+  .habit-intro { display: flex; align-items: center; width: 100%; padding-right: clamp(3rem, 7vw, 7rem); }
+  .habit-content { width: 100%; max-width: 430px; }
+  .habit-eyebrow { margin-bottom: 1.35rem; color: var(--secondary); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+  .habit-intro h2 { margin-bottom: 0.2rem; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: clamp(2rem, 5vw, 2.65rem); font-weight: 400; line-height: 1.2; }
+  .habit-copy { max-width: 470px; color: var(--secondary); font-size: clamp(1rem, 2.2vw, 1.1rem); line-height: 1.75; }
 
-  .quote-section { background: var(--surface); padding: 4rem 2rem; text-align: center; }
-  .quote { font-family: 'Lora', Georgia, serif; font-size: clamp(1.1rem, 3vw, 1.4rem); line-height: 1.8; color: var(--navy); max-width: 560px; margin: 0 auto 1rem; }
-  .quote-meta { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); }
+  .shuffle-card { display: flex; flex-direction: column; justify-content: center; width: 100%; padding: 1rem 0 1rem clamp(3rem, 7vw, 7rem); border-left: 1px solid var(--border); background: transparent; text-align: center; }
+  .shuffle-kicker { margin-bottom: 2rem; color: #8C91F5; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .shuffle-phrase { max-width: 620px; min-height: 6.8rem; margin: 0 auto 1.9rem; display: flex; align-items: center; justify-content: center; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: clamp(1.45rem, 4vw, 2rem); font-weight: 600; line-height: 1.3; }
+  .shuffle-keyword { display: inline-block; margin-bottom: 0.8rem; padding: 0.15rem 0.2rem; color: var(--navy); background: #B9D9FF; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .shuffle-definition { min-height: 1.4rem; margin-bottom: 1.75rem; color: var(--secondary); font-size: 0.78rem; }
+  .shuffle-button { align-self: center; width: max-content; padding: 0.78rem 1.35rem; border: 0; border-radius: 100px; background: var(--navy); color: var(--white); font-family: inherit; font-size: 0.85rem; font-weight: 500; line-height: 1; cursor: pointer; transition: transform 0.15s, opacity 0.15s; }
+  .shuffle-button:hover { opacity: 0.9; transform: translateY(-1px); }
+  .shuffle-button:focus-visible { outline: 3px solid rgba(90,84,255,0.3); outline-offset: 3px; }
+  .shuffle-card--selected { animation: shuffleSelected 0.85s ease; }
+
+  @keyframes shuffleSelected {
+    0% { background-color: rgba(221,225,245,0.72); }
+    100% { background-color: transparent; }
+  }
 
   footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.45rem; text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
   footer a { color: inherit; text-decoration: underline; }
@@ -65,6 +89,19 @@
   @media (max-width: 600px) {
     nav { padding: 1rem 1.25rem; }
     .hero { padding: 3.5rem 1.25rem 3rem; }
+    .bubble-showcase { padding: 4.75rem 1.25rem; }
+    .bubble-showcase-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    .bubble-word-field { min-height: 360px; padding: 0; }
+    .habit-section { margin-top: 1rem; padding: 4.75rem 1.25rem; }
+    .habit-section-inner { grid-template-columns: 1fr; min-height: 0; }
+    .habit-intro { padding: 0 0 3rem; }
+    .shuffle-card { padding: 3rem 0 0; border-top: 1px solid var(--border); border-left: 0; }
+    .shuffle-phrase { min-height: 8.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bubble-word { transition: none; }
+    .shuffle-card--selected { animation: none; }
   }
 </style>
 {{end}}
@@ -110,22 +147,99 @@
   </div>
 </div>
 
-<div class="bubble-preview">
-  <p class="bubble-caption">What your collection looks like after a while</p>
-  <img src="/static/bubble-preview.png" alt="Phrasely word bubble">
-</div>
+<section class="bubble-showcase" aria-labelledby="bubble-showcase-heading">
+  <div class="bubble-showcase-inner">
+    <div class="bubble-showcase-copy">
+      <p class="bubble-showcase-eyebrow">Your vocabulary, made visible</p>
+      <h2 id="bubble-showcase-heading">See what you’re actually learning.</h2>
+      <p class="bubble-showcase-description">The expressions you revisit grow larger in your Bubble. A new word begins quietly. The language you keep returning to becomes impossible to miss.</p>
+      <p class="bubble-showcase-hint">Choose any expression to revisit it ↓</p>
+    </div>
+    <div class="bubble-word-field" id="bubble-word-field" aria-label="Choose an expression to revisit in Shuffle"></div>
+  </div>
+</section>
 
-<div class="story-section">
-  <h2>Why I built Phrasely</h2>
-  <p>I'm Cip, from Romania, now living in Australia. For years I collected hundreds of phrases across notebooks, spreadsheets, and notes apps in the hope I could improve my vocabulary. Over the years I realised that collecting wasn't learning.</p>
-  <p>I wasn't improving my vocabulary, I was building an archive.</p>
-  <a href="/story" class="story-link">Read my full story →</a>
-</div>
+<section class="habit-section" aria-labelledby="habit-heading">
+  <div class="habit-section-inner">
+    <div class="habit-intro">
+      <div class="habit-content">
+        <p class="habit-eyebrow">A better five-minute habit</p>
+        <h2 id="habit-heading">Got five minutes?</h2>
+        <p class="habit-copy">Skip the infinite feed. Shuffle through words and expressions you deliberately wanted to remember. Calm, lightweight, and yours.</p>
+      </div>
+    </div>
 
-<div class="quote-section">
-  <p class="quote">"{{ .Quote }}"</p>
-  <p class="quote-meta">{{ .QuoteMeta }}</p>
-</div>
+    <section class="shuffle-card" id="home-shuffle" aria-labelledby="shuffle-heading" data-initial-index="{{ .InitialIndex }}" tabindex="-1">
+      <p class="shuffle-kicker" id="shuffle-heading">Five minutes · your words</p>
+      <p class="shuffle-phrase" id="shuffle-phrase" aria-live="polite">{{ .InitialPhrase }}</p>
+      <p><span class="shuffle-keyword" id="shuffle-keyword">{{ .InitialKeyword }}</span></p>
+      <p class="shuffle-definition" id="shuffle-definition">{{ .InitialDefinition }}</p>
+      <button class="shuffle-button" id="shuffle-button" type="button">Shuffle ⇝</button>
+    </section>
+  </div>
+</section>
 
 <footer><span>&copy; 2026 Phrasely</span><span aria-hidden="true">·</span><a href="/privacy">Privacy</a><span aria-hidden="true">·</span><a href="/terms">Terms</a><span aria-hidden="true">·</span><a href="https://github.com/andreistefanciprian/phrasely" target="_blank" rel="noopener" class="github-link"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.6 7.6 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>Source code on GitHub</a></footer>
+
+<script type="application/json" id="home-phrase-samples">{{ .PhraseSamples }}</script>
+<script>
+  (() => {
+    const card = document.getElementById('home-shuffle');
+    const phraseEl = document.getElementById('shuffle-phrase');
+    const keywordEl = document.getElementById('shuffle-keyword');
+    const definitionEl = document.getElementById('shuffle-definition');
+    const button = document.getElementById('shuffle-button');
+    const bubbleField = document.getElementById('bubble-word-field');
+    const phrases = JSON.parse(document.getElementById('home-phrase-samples').textContent);
+    let currentIndex = Number(card.dataset.initialIndex);
+
+    phrases.forEach((sample, index) => {
+      const word = document.createElement('button');
+      word.type = 'button';
+      word.className = 'bubble-word';
+      if (sample.weight > 1) word.classList.add('bubble-word--high');
+      word.dataset.keyword = sample.keyword;
+      word.textContent = sample.keyword;
+      word.title = sample.definition;
+      word.setAttribute('aria-label', `Revisit ${sample.keyword}: ${sample.definition}`);
+      word.addEventListener('click', () => {
+        word.classList.add('bubble-word--reviewed');
+        currentIndex = index;
+        renderPhrase(sample);
+        card.classList.remove('shuffle-card--selected');
+        void card.offsetWidth;
+        card.classList.add('shuffle-card--selected');
+        card.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'center'
+        });
+        card.focus({preventScroll: true});
+      });
+      bubbleField.appendChild(word);
+    });
+
+    function renderPhrase(sample) {
+      phraseEl.textContent = sample.phrase;
+      keywordEl.textContent = sample.keyword;
+      definitionEl.textContent = sample.definition;
+    }
+
+    renderPhrase(phrases[currentIndex]);
+    button.addEventListener('click', () => {
+      const candidates = phrases
+        .map((sample, index) => ({...sample, index}))
+        .filter(sample => sample.index !== currentIndex);
+      if (candidates.length > 0) {
+        const totalWeight = candidates.reduce((total, sample) => total + sample.weight, 0);
+        let draw = Math.random() * totalWeight;
+        const next = candidates.find(sample => {
+          draw -= sample.weight;
+          return draw < 0;
+        });
+        currentIndex = next.index;
+      }
+      renderPhrase(phrases[currentIndex]);
+    });
+  })();
+</script>
 {{end}}
