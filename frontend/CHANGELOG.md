@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.10.0...frontend-v0.10.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **frontend:** make landing shuffle card interactive ([7a30d37](https://github.com/andreistefanciprian/phrasely/commit/7a30d370c5b3f1c6a7886e334c5e65c7a0153117))
+* **frontend:** restyle landing page shuffle ([c2a8c96](https://github.com/andreistefanciprian/phrasely/commit/c2a8c961cb9d875e3d754b6db73fe5d091ca4b74))
+
 ## [0.10.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.9.3...frontend-v0.10.0) (2026-08-23)
 
 
