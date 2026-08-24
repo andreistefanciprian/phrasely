@@ -64,13 +64,17 @@
   .habit-copy { max-width: 470px; color: var(--secondary); font-size: clamp(1rem, 2.2vw, 1.1rem); line-height: 1.75; }
 
   .shuffle-card { display: flex; flex-direction: column; justify-content: center; width: 100%; padding: 1rem 0 1rem clamp(3rem, 7vw, 7rem); border-left: 1px solid var(--border); background: transparent; text-align: center; }
-  .shuffle-kicker { margin-bottom: 2rem; color: #8C91F5; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
-  .shuffle-phrase { max-width: 620px; min-height: 6.8rem; margin: 0 auto 1.9rem; display: flex; align-items: center; justify-content: center; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: clamp(1.45rem, 4vw, 2rem); font-weight: 600; line-height: 1.3; }
-  .shuffle-keyword { display: inline-block; margin-bottom: 0.8rem; padding: 0.15rem 0.2rem; color: var(--navy); background: #B9D9FF; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
-  .shuffle-definition { min-height: 1.4rem; margin-bottom: 1.75rem; color: var(--secondary); font-size: 0.78rem; }
-  .shuffle-button { align-self: center; width: max-content; padding: 0.78rem 1.35rem; border: 0; border-radius: 100px; background: var(--navy); color: var(--white); font-family: inherit; font-size: 0.85rem; font-weight: 500; line-height: 1; cursor: pointer; transition: transform 0.15s, opacity 0.15s; }
-  .shuffle-button:hover { opacity: 0.9; transform: translateY(-1px); }
-  .shuffle-button:focus-visible { outline: 3px solid rgba(90,84,255,0.3); outline-offset: 3px; }
+  .shuffle-kicker { margin-bottom: 2.25rem; color: #8C91F5; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .shuffle-phrase { max-width: 620px; min-height: 8.25rem; margin: 0 auto 1.5rem; display: grid; place-items: center; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: clamp(1.55rem, 4vw, 2rem); font-weight: 400; line-height: 1.45; }
+  .shuffle-phrase-highlight { text-decoration: underline; text-decoration-color: var(--navy); text-decoration-thickness: 1px; text-underline-offset: 0.16em; }
+  .shuffle-keyword { display: inline-block; margin-bottom: 0.55rem; padding: 0.17rem 0.35rem; color: var(--navy); background: #C9DCFF; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.65rem; letter-spacing: 0.1em; line-height: 1.2; text-transform: uppercase; }
+  .shuffle-definition { min-height: 1.4rem; margin-bottom: 2rem; color: var(--blue); font-size: 0.78rem; }
+  .shuffle-button { align-self: center; width: max-content; padding: 0; border: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: 0.72rem; letter-spacing: 0.08em; line-height: 1; text-transform: uppercase; cursor: pointer; transition: color 0.15s; }
+  .shuffle-button:hover { color: var(--blue); }
+  .shuffle-button:focus-visible { border-radius: 2px; outline: 2px solid var(--teal); outline-offset: 5px; }
+  .shuffle-button-label { display: none; }
+  @media (hover: hover) { .shuffle-button-label--click { display: inline; } }
+  @media (hover: none) { .shuffle-button-label--tap { display: inline; } }
 
   footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.45rem; text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
   footer a { color: inherit; text-decoration: underline; }
@@ -167,7 +171,10 @@
       <p class="shuffle-phrase" id="shuffle-phrase" aria-live="polite">{{ .InitialPhrase }}</p>
       <p><span class="shuffle-keyword" id="shuffle-keyword">{{ .InitialKeyword }}</span></p>
       <p class="shuffle-definition" id="shuffle-definition">{{ .InitialDefinition }}</p>
-      <button class="shuffle-button" id="shuffle-button" type="button">Shuffle ⇝</button>
+      <button class="shuffle-button" id="shuffle-button" type="button" aria-label="Shuffle phrase">
+        <span class="shuffle-button-label shuffle-button-label--click">Click to shuffle</span>
+        <span class="shuffle-button-label shuffle-button-label--tap">Tap to shuffle</span>
+      </button>
     </section>
   </div>
 </section>
@@ -209,9 +216,43 @@
     });
 
     function renderPhrase(sample) {
-      phraseEl.textContent = sample.phrase;
+      renderHighlightedPhrase(sample.phrase, sample.keyword);
       keywordEl.textContent = sample.keyword;
       definitionEl.textContent = sample.definition;
+    }
+
+    function renderHighlightedPhrase(phrase, keyword) {
+      phraseEl.textContent = '';
+      const phraseText = document.createElement('span');
+      phraseText.className = 'shuffle-phrase-text';
+      phraseEl.appendChild(phraseText);
+      const match = findKeywordMatch(phrase, keyword);
+      if (!match) {
+        phraseText.textContent = phrase;
+        return;
+      }
+
+      phraseText.append(document.createTextNode(phrase.slice(0, match.index)));
+      const highlight = document.createElement('span');
+      highlight.className = 'shuffle-phrase-highlight';
+      highlight.textContent = phrase.slice(match.index, match.index + match.length);
+      phraseText.append(highlight, document.createTextNode(phrase.slice(match.index + match.length)));
+    }
+
+    function findKeywordMatch(phrase, keyword) {
+      const exactIndex = phrase.toLocaleLowerCase().indexOf(keyword.toLocaleLowerCase());
+      if (exactIndex !== -1) return {index: exactIndex, length: keyword.length};
+
+      const ignoredWords = new Set(['the', 'and', 'your', 'my', 'his', 'her', 'our', 'their', 'with', 'from', 'into', 'through']);
+      const candidates = keyword.match(/[\p{L}\p{N}’'-]+/gu) || [];
+      candidates.sort((a, b) => b.length - a.length);
+      for (const candidate of candidates) {
+        if (candidate.length < 4 || ignoredWords.has(candidate.toLocaleLowerCase())) continue;
+        const escaped = candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const token = new RegExp(`\\b${escaped}[\\p{L}\\p{N}’'-]*`, 'iu').exec(phrase);
+        if (token) return {index: token.index, length: token[0].length};
+      }
+      return null;
     }
 
     renderPhrase(phrases[currentIndex]);
