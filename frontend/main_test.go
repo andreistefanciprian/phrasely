@@ -197,6 +197,7 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 		"Five minutes · your words",
 		"Click to shuffle",
 		"Tap to shuffle",
+		"card.addEventListener('click'",
 		"renderHighlightedPhrase",
 		"shuffle-phrase-highlight",
 		"First phrase.",
