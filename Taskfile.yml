@@ -15,7 +15,26 @@ tasks:
 
   test:
     desc: Run all unit tests
+    cmds:
+      - task: test-backend
+      - task: test-frontend
+      - task: test-mcp
+
+  test-backend:
+    internal: true
     dir: backend
+    cmds:
+      - go test ./... -v
+
+  test-frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - go test ./... -v
+
+  test-mcp:
+    internal: true
+    dir: mcp
     cmds:
       - go test ./... -v
 
