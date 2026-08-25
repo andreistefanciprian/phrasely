@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.10.1...frontend-v0.10.2) (2026-08-25)
+
+
+### Bug Fixes
+
+* **frontend:** reuse landing phrases on story page ([4d2757c](https://github.com/andreistefanciprian/phrasely/commit/4d2757cd75146055427b31ca3ec2ea522fde591e))
+
 ## [0.10.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.10.0...frontend-v0.10.1) (2026-08-24)
 
 
