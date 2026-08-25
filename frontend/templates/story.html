@@ -111,42 +111,26 @@
     let currentIndex = Number(card.dataset.initialIndex);
 
     function renderPhrase(sample) {
-      renderHighlightedPhrase(sample.phrase, sample.keyword);
+      renderHighlightedPhrase(sample.phrase, sample.highlight);
       keywordEl.textContent = sample.keyword;
       definitionEl.textContent = sample.definition;
     }
 
-    function renderHighlightedPhrase(phrase, keyword) {
+    function renderHighlightedPhrase(phrase, highlightText) {
       phraseEl.textContent = '';
       const phraseText = document.createElement('span');
       phraseEl.appendChild(phraseText);
-      const match = findKeywordMatch(phrase, keyword);
-      if (!match) {
+      const highlightIndex = phrase.toLocaleLowerCase().indexOf(highlightText.toLocaleLowerCase());
+      if (highlightIndex === -1) {
         phraseText.textContent = phrase;
         return;
       }
 
-      phraseText.append(document.createTextNode(phrase.slice(0, match.index)));
+      phraseText.append(document.createTextNode(phrase.slice(0, highlightIndex)));
       const highlight = document.createElement('span');
       highlight.className = 'shuffle-phrase-highlight';
-      highlight.textContent = phrase.slice(match.index, match.index + match.length);
-      phraseText.append(highlight, document.createTextNode(phrase.slice(match.index + match.length)));
-    }
-
-    function findKeywordMatch(phrase, keyword) {
-      const exactIndex = phrase.toLocaleLowerCase().indexOf(keyword.toLocaleLowerCase());
-      if (exactIndex !== -1) return {index: exactIndex, length: keyword.length};
-
-      const ignoredWords = new Set(['the', 'and', 'your', 'my', 'his', 'her', 'our', 'their', 'with', 'from', 'into', 'through']);
-      const candidates = keyword.match(/[\p{L}\p{N}’'-]+/gu) || [];
-      candidates.sort((a, b) => b.length - a.length);
-      for (const candidate of candidates) {
-        if (candidate.length < 4 || ignoredWords.has(candidate.toLocaleLowerCase())) continue;
-        const escaped = candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const token = new RegExp(`\\b${escaped}[\\p{L}\\p{N}’'-]*`, 'iu').exec(phrase);
-        if (token) return {index: token.index, length: token[0].length};
-      }
-      return null;
+      highlight.textContent = phrase.slice(highlightIndex, highlightIndex + highlightText.length);
+      phraseText.append(highlight, document.createTextNode(phrase.slice(highlightIndex + highlightText.length)));
     }
 
     renderPhrase(phrases[currentIndex]);

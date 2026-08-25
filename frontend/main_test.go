@@ -199,6 +199,7 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 	}
 	body := w.Body.String()
 	for _, want := range []string{
+		"Build your personal vocabulary from",
 		"Your vocabulary, made visible",
 		"See what you’re actually learning.",
 		`id="bubble-word-field"`,
