@@ -128,11 +128,11 @@ sequenceDiagram
 
     Note over C,DB: 4. MCP Tool Calls (access token valid)
     C->>MCP: POST /mcp {tool: list_phrases, arguments: {}} - Authorization: Bearer access_token
-    MCP->>API: GET /api/v1/phrases - Authorization: Bearer access_token
+    MCP->>API: GET /api/v1/phrases/summary - Authorization: Bearer access_token
     API->>API: middleware.Auth: verify JWT signature, extract user_id
     API->>DB: SELECT phrases WHERE user_id=...
     DB-->>API: rows
-    API-->>MCP: [{id, phrase, headwords, context, ...}]
+    API-->>MCP: [{phrase, headwords}]
     MCP-->>C: tool result {phrases: [...]}
 
     Note over C,DB: 5. Token Refresh (after 1h when access token expires)
@@ -154,7 +154,7 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 
 | Tool | Purpose | Backend call |
 |---|---|---|
-| `list_phrases(headword?)` | List the user's saved phrases, optionally filtered by headword | `GET /api/v1/phrases` |
+| `list_phrases(headword?)` | List the user's saved phrases, optionally filtered by headword | `GET /api/v1/phrases/summary` |
 | `sample_phrases(count?)` | Randomly pick N phrases (1–10) for practice or quizzing | `GET /api/v1/phrases/random` |
 | `explore_phrase(phrase)` | Return learning instructions for understanding an expression and generating memorable contexts — no backend call, no data persisted | — |
 | `render_phrase_choices(choices)` | Render three save-ready cards: an original-or-personal context, a distinct personal context, and a personal learning connection — no backend call, no data persisted | — |
