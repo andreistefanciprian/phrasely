@@ -40,16 +40,6 @@ func newAPIClient(baseURL string) *apiClient {
 	}
 }
 
-// Phrase mirrors backend/internal/db.Phrase. mcp has no direct DB access and
-// does not share internal/ packages with backend, so the shape is duplicated here.
-type Phrase struct {
-	ID         string   `json:"id"`
-	Phrase     string   `json:"phrase"`
-	Headwords  []string `json:"headwords"`
-	Note       string   `json:"note"`
-	SourceURLs []string `json:"source_urls"`
-}
-
 // PhraseSummary mirrors backend/internal/db.PhraseSummary — lightweight projection
 // returned by GET /api/v1/phrases/summary to reduce token usage in AI contexts.
 type PhraseSummary struct {
@@ -67,31 +57,31 @@ type AddPhraseRequest struct {
 }
 
 // AddPhrase creates a new phrase for the authenticated user.
-func (c *apiClient) AddPhrase(jwt string, in AddPhraseRequest) (Phrase, error) {
+func (c *apiClient) AddPhrase(jwt string, in AddPhraseRequest) (PhraseSummary, error) {
 	body, err := json.Marshal(in)
 	if err != nil {
-		return Phrase{}, err
+		return PhraseSummary{}, err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/v1/phrases", bytes.NewReader(body))
 	if err != nil {
-		return Phrase{}, err
+		return PhraseSummary{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+jwt)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return Phrase{}, fmt.Errorf("add phrase: %w", err)
+		return PhraseSummary{}, fmt.Errorf("add phrase: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
-		return Phrase{}, &apiStatusError{StatusCode: resp.StatusCode}
+		return PhraseSummary{}, &apiStatusError{StatusCode: resp.StatusCode}
 	}
 
-	var phrase Phrase
+	var phrase PhraseSummary
 	if err := json.NewDecoder(resp.Body).Decode(&phrase); err != nil {
-		return Phrase{}, fmt.Errorf("decode phrase: %w", err)
+		return PhraseSummary{}, fmt.Errorf("decode phrase: %w", err)
 	}
 	return phrase, nil
 }
@@ -149,33 +139,4 @@ func (c *apiClient) GetRandomPhrases(jwt string, count int) ([]PhraseSummary, er
 		return nil, fmt.Errorf("decode random phrases: %w", err)
 	}
 	return summaries, nil
-}
-
-// ListPhrases fetches the authenticated user's phrases, optionally filtered by headword.
-func (c *apiClient) ListPhrases(jwt, headword string) ([]Phrase, error) {
-	reqURL := c.baseURL + "/api/v1/phrases"
-	if headword != "" {
-		reqURL += "?headword=" + url.QueryEscape(headword)
-	}
-
-	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+jwt)
-
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("list phrases: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, &apiStatusError{StatusCode: resp.StatusCode}
-	}
-
-	var phrases []Phrase
-	if err := json.NewDecoder(resp.Body).Decode(&phrases); err != nil {
-		return nil, fmt.Errorf("decode phrases: %w", err)
-	}
-	return phrases, nil
 }
