@@ -14,12 +14,6 @@ import (
 	"time"
 )
 
-type homePhrase struct {
-	Phrase  string `json:"phrase"`
-	Keyword string `json:"keyword"`
-	Source  string `json:"source"`
-}
-
 type homeShufflePhrase struct {
 	Phrase     string `json:"phrase"`
 	Keyword    string `json:"keyword"`
@@ -250,12 +244,22 @@ func (app *application) signOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) storyPage(w http.ResponseWriter, r *http.Request) {
-	sample := app.homePhraseSamples[rand.IntN(len(app.homePhraseSamples))]
+	initialIndex := weightedHomeShuffleIndex(app.homeShuffleSamples, -1)
+	sample := app.homeShuffleSamples[initialIndex]
+	phraseSamplesJSON, err := json.Marshal(app.homeShuffleSamples)
+	if err != nil {
+		slog.Error("marshal story phrase samples", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 	authenticated := hasAuthCookie(r)
 	data := map[string]any{
-		"Authenticated": authenticated,
-		"Quote":         sample.Phrase,
-		"QuoteMeta":     sample.Keyword + " · captured from " + sample.Source,
+		"Authenticated":     authenticated,
+		"InitialIndex":      initialIndex,
+		"InitialPhrase":     sample.Phrase,
+		"InitialKeyword":    sample.Keyword,
+		"InitialDefinition": sample.Definition,
+		"PhraseSamples":     template.JS(phraseSamplesJSON),
 	}
 	if authenticated {
 		app.renderAuth(w, "story.html", data)
