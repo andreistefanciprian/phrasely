@@ -17,6 +17,7 @@ import (
 type homeShufflePhrase struct {
 	Phrase     string `json:"phrase"`
 	Keyword    string `json:"keyword"`
+	Highlight  string `json:"highlight"`
 	Definition string `json:"definition"`
 	Weight     int    `json:"weight"`
 }
