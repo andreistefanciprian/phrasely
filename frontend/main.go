@@ -11,12 +11,11 @@ import (
 	"strings"
 )
 
-//go:embed templates/* static/* home_phrases.json home_shuffle_phrases.json
+//go:embed templates/* static/* home_shuffle_phrases.json
 var files embed.FS
 
 type application struct {
 	api                *apiClient
-	homePhraseSamples  []homePhrase
 	homeShuffleSamples []homeShufflePhrase
 }
 
@@ -32,14 +31,6 @@ func main() {
 		apiURL = "http://localhost:8080"
 	}
 
-	var homePhraseSamples []homePhrase
-	if data, err := files.ReadFile("home_phrases.json"); err != nil {
-		slog.Error("failed to read home_phrases.json", "error", err)
-		os.Exit(1)
-	} else if err := json.Unmarshal(data, &homePhraseSamples); err != nil {
-		slog.Error("failed to parse home_phrases.json", "error", err)
-		os.Exit(1)
-	}
 	var homeShuffleSamples []homeShufflePhrase
 	if data, err := files.ReadFile("home_shuffle_phrases.json"); err != nil {
 		slog.Error("failed to read home_shuffle_phrases.json", "error", err)
@@ -51,7 +42,6 @@ func main() {
 
 	app := &application{
 		api:                newAPIClient(apiURL),
-		homePhraseSamples:  homePhraseSamples,
 		homeShuffleSamples: homeShuffleSamples,
 	}
 
@@ -89,7 +79,6 @@ func main() {
 	mux.HandleFunc("/story", app.storyPage)
 	mux.HandleFunc("/privacy", app.privacyPage)
 	mux.HandleFunc("/terms", app.termsPage)
-	mux.HandleFunc("/auth/verify", app.authVerify) // API-side verify (internal)
 	mux.HandleFunc("/auth-verify", app.authVerify) // magic link landing (what the API emails)
 	mux.HandleFunc("/sign-out", app.signOut)
 

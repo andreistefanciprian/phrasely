@@ -139,10 +139,16 @@ func TestTermsPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 }
 
 func TestStoryPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
-	app := &application{homePhraseSamples: []homePhrase{{
-		Phrase:  "a stitch in time",
-		Keyword: "stitch",
-		Source:  "test",
+	app := &application{homeShuffleSamples: []homeShufflePhrase{{
+		Phrase:     "A stitch in time saves nine.",
+		Keyword:    "a stitch in time",
+		Definition: "acting early prevents more work later",
+		Weight:     1,
+	}, {
+		Phrase:     "We got there in the nick of time.",
+		Keyword:    "in the nick of time",
+		Definition: "at the last possible moment",
+		Weight:     1,
 	}}}
 	req := httptest.NewRequest(http.MethodGet, "/story", nil)
 	req.AddCookie(&http.Cookie{Name: authCookieName, Value: "jwt"})
@@ -158,6 +164,16 @@ func TestStoryPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 		`id="navbar"`,
 		`href="/bubble"`,
 		"Open Phrasely →",
+		`id="story-shuffle"`,
+		"Five minutes · your words",
+		"Click to shuffle",
+		"Tap to shuffle",
+		"A stitch in time saves nine.",
+		"acting early prevents more work later",
+		"We got there in the nick of time.",
+		"at the last possible moment",
+		"card.addEventListener('click'",
+		"renderHighlightedPhrase",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("response does not contain %q", want)
