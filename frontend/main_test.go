@@ -199,9 +199,31 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 	}
 	body := w.Body.String()
 	for _, want := range []string{
-		"Build your personal vocabulary from",
+		"Your AI vocabulary companion",
+		"Turn expressions you encounter into language you",
+		"actually use",
+		"Encounter it again",
+		"Start on the web — free",
+		"Request ChatGPT access",
+		`class="integration-showcase"`,
+		"Phrasely in ChatGPT · Private preview",
+		"Hear something interesting? Just tell Phrasely.",
+		"Choose a phrase to save",
+		"Pick the context you’ll be most likely to remember.",
+		"beyond the pale",
+		"Everyday context",
+		"A useful distinction",
+		"out of line",
+		"Saved privately to Phrasely",
+		`class="chat-context-button saved"`,
+		`href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access"`,
+		`class="web-showcase"`,
+		"Phrasely on the web",
+		"Prefer to shape the phrase yourself?",
+		"muddy the waters",
+		"Review before saving",
 		"Your vocabulary, made visible",
-		"See what you’re actually learning.",
+		"See what you’re reinforcing.",
 		`id="bubble-word-field"`,
 		"Choose any expression to revisit it",
 		"word.type = 'button'",
@@ -214,6 +236,20 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 		"Five minutes · your words",
 		"Click to shuffle",
 		"Tap to shuffle",
+		`class="conversation-showcase"`,
+		"Your vocabulary, in conversation",
+		"Practise without turning it into a lesson.",
+		`class="conversation-plugin-mention"`,
+		"pull all my saved phrases, but don’t list them",
+		"Worked for 5s",
+		"Called tool",
+		"378 saved phrases",
+		"making the conversation feel contrived",
+		`class="conversation-composer"`,
+		"Ask ChatGPT",
+		`class="closing-showcase"`,
+		"The idea is simple",
+		"Making it part of the way you speak is the hard part.",
 		"card.addEventListener('click'",
 		"renderHighlightedPhrase",
 		"shuffle-phrase-highlight",
@@ -225,6 +261,21 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Errorf("response does not contain %q", want)
 		}
+	}
+	for _, unwanted := range []string{"Build your personal vocabulary from", "See what you’re actually learning.", "Chat with your collection", "Practise on demand", "dwell on", "morass", "ad nauseam", "vantage point", "find your groove", "Sources", "ChatGPT can make mistakes. Check important info.", `class="integration-uses"`, `class="loop-step"`} {
+		if strings.Contains(body, unwanted) {
+			t.Errorf("response unexpectedly contains %q", unwanted)
+		}
+	}
+	integrationIndex := strings.Index(body, `class="integration-showcase"`)
+	habitIndex := strings.Index(body, `class="habit-section"`)
+	bubbleIndex := strings.Index(body, `class="bubble-showcase"`)
+	conversationIndex := strings.Index(body, `class="conversation-showcase"`)
+	webIndex := strings.Index(body, `class="web-showcase"`)
+	closingIndex := strings.Index(body, `class="closing-showcase"`)
+	if integrationIndex == -1 || habitIndex == -1 || bubbleIndex == -1 || conversationIndex == -1 || webIndex == -1 || closingIndex == -1 ||
+		integrationIndex >= habitIndex || habitIndex >= bubbleIndex || bubbleIndex >= conversationIndex || conversationIndex >= webIndex || webIndex >= closingIndex {
+		t.Error("landing page sections do not follow the intended learning journey")
 	}
 	if strings.Contains(body, `class="quote-section"`) {
 		t.Error("response still contains the old quote section")
