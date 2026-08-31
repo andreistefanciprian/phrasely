@@ -1,9 +1,9 @@
-{{define "title"}}Phrasely — Your vocabulary, built from real life{{end}}
+{{define "title"}}Phrasely — Turn expressions into language you use{{end}}
 
 {{define "head"}}
-<meta name="description" content="Collect English phrases from real life, curate them with AI, and watch your vocabulary grow as a word cloud.">
-<meta property="og:title" content="Phrasely — Your vocabulary, built from real life">
-<meta property="og:description" content="Collect English phrases from real life, curate them with AI, and watch your vocabulary grow as a word cloud.">
+<meta name="description" content="Phrasely is an AI vocabulary companion that turns expressions you encounter into language you understand, remember, and actually use.">
+<meta property="og:title" content="Phrasely — Turn expressions into language you use">
+<meta property="og:description" content="Understand expressions in context, save the version that clicks, and encounter your personal vocabulary again until it becomes part of how you speak.">
 <meta property="og:image" content="https://getphrasely.com/static/bubble-preview.png">
 <meta property="og:url" content="https://getphrasely.com">
 <meta property="og:type" content="website">
@@ -23,21 +23,92 @@
   .hero {
     flex: 1; display: flex; flex-direction: column; align-items: center;
     justify-content: center; text-align: center;
-    padding: 5rem 1.5rem 4rem; max-width: 680px; margin: 0 auto;
+    padding: 5rem 1.5rem 4rem; max-width: 800px; margin: 0 auto;
   }
   .eyebrow { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal); margin-bottom: 1.25rem; }
   h1 { font-family: 'Lora', Georgia, serif; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.25; color: var(--navy); margin-bottom: 1.5rem; }
   h1 em { font-style: italic; color: var(--blue); }
-  .subtitle { font-size: clamp(1rem, 2.5vw, 1.15rem); line-height: 1.75; color: var(--muted); max-width: 480px; margin-bottom: 2.5rem; }
+  .subtitle { font-size: clamp(1rem, 2.5vw, 1.15rem); line-height: 1.75; color: var(--muted); max-width: 610px; margin-bottom: 2.5rem; }
   .cta-btn { display: inline-block; padding: 0.85rem 2rem; background: var(--blue); color: var(--white); font-family: inherit; font-size: 0.95rem; font-weight: 600; border-radius: 100px; text-decoration: none; transition: opacity 0.15s, box-shadow 0.15s; box-shadow: 0 4px 16px rgba(90,84,255,0.25); }
   .cta-btn:hover { opacity: 0.9; box-shadow: 0 6px 24px rgba(90,84,255,0.35); }
+  .hero-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 1rem 1.25rem; }
+  .hero-access-link { color: var(--blue); font-size: 0.82rem; font-weight: 600; }
+  .hero-access-link:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
+  .journey { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.55rem 0.75rem; width: 100%; margin-top: 4.5rem; padding: 1.2rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--navy); font-size: clamp(0.7rem, 1.6vw, 0.82rem); font-weight: 600; letter-spacing: 0.02em; }
+  .journey-arrow { color: var(--teal); }
 
-  .loop { display: flex; flex-direction: column; gap: 0; margin-top: 5rem; width: 100%; max-width: 520px; }
-  .loop-step { display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem 0; border-top: 1px solid var(--border); text-align: left; }
-  .loop-step:last-child { border-bottom: 1px solid var(--border); }
-  .step-num { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; color: var(--teal); margin-top: 0.25rem; flex-shrink: 0; width: 1.25rem; }
-  .step-body h3 { font-size: 0.9rem; font-weight: 600; color: var(--navy); margin-bottom: 0.2rem; }
-  .step-body p { font-size: 0.85rem; color: var(--muted); line-height: 1.55; }
+  .integration-showcase { width: 100%; padding: 6.5rem 2rem; border-top: 1px solid var(--border); background: #F6F6FF; color: var(--navy); }
+  .integration-showcase-inner { display: grid; grid-template-columns: minmax(240px, 0.82fr) minmax(0, 1.18fr); align-items: center; gap: clamp(3rem, 7vw, 7rem); width: 100%; max-width: 1120px; margin: 0 auto; }
+  .integration-showcase-copy { max-width: 430px; }
+  .integration-showcase-eyebrow { margin-bottom: 1.25rem; color: var(--teal); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .integration-showcase h2 { margin-bottom: 1.4rem; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: clamp(2.15rem, 5vw, 3.4rem); font-weight: 400; line-height: 1.12; }
+  .integration-showcase-description { color: var(--secondary); font-size: clamp(0.98rem, 2vw, 1.08rem); line-height: 1.75; }
+  .integration-preview-note { display: flex; align-items: flex-start; gap: 0.65rem; margin-top: 1.5rem; color: var(--muted); font-size: 0.72rem; line-height: 1.5; }
+  .integration-preview-dot { width: 0.42rem; height: 0.42rem; margin-top: 0.28rem; flex-shrink: 0; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); }
+  .integration-preview-note strong { color: var(--navy); }
+  .integration-access-link { display: inline-block; margin-top: 0.8rem; color: var(--blue); font-size: 0.78rem; font-weight: 600; }
+  .integration-access-link:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
+
+  .chat-demo { overflow: hidden; width: 100%; border: 1px solid var(--border); border-radius: 20px; background: var(--white); box-shadow: 0 24px 65px rgba(15,27,110,0.12); }
+  .chat-demo-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 3rem; padding: 0 1rem; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 0.65rem; }
+  .chat-demo-dots { display: flex; gap: 0.3rem; }
+  .chat-demo-dots span { width: 0.42rem; height: 0.42rem; border-radius: 50%; background: var(--border); }
+  .chat-demo-connected { justify-self: end; display: flex; align-items: center; gap: 0.35rem; }
+  .chat-demo-connected::before { content: ''; width: 0.35rem; height: 0.35rem; border-radius: 50%; background: #20A66A; }
+  .chat-demo-body { padding: 1.25rem; }
+  .chat-user-message { width: 82%; margin: 0 0 1.15rem auto; padding: 0.85rem 1rem; border-radius: 16px 16px 5px 16px; background: #E7F2FF; color: var(--text); font-size: 0.75rem; line-height: 1.55; }
+  .chat-user-message span { display: block; margin-bottom: 0.3rem; color: var(--secondary); font-size: 0.55rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .chat-tool-label { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.55rem; color: var(--secondary); font-size: 0.68rem; font-weight: 600; }
+  .chat-tool-label img { width: 1.65rem; height: 1.4rem; object-fit: contain; }
+  .chat-choice-card { padding: 1.15rem; border: 1px solid var(--border); border-radius: 14px; background: var(--white); }
+  .chat-choice-header { padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+  .chat-choice-header > span { color: var(--muted); font-size: 0.62rem; line-height: 1.4; }
+  .chat-choice-header h3 { margin-bottom: 0.2rem; font-size: 1rem; }
+  .chat-context { padding: 0.85rem 0; }
+  .chat-context + .chat-context { border-top: 1px solid var(--border); }
+  .chat-context-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1rem; }
+  .chat-context-kind { margin-bottom: 0.35rem; color: var(--teal); font-size: 0.58rem; font-weight: 700; letter-spacing: 0.04em; }
+  .chat-context-kind span { color: var(--blue); }
+  .chat-choice-sentence { font-family: 'Lora', Georgia, serif; font-size: clamp(0.84rem, 1.55vw, 1rem); line-height: 1.45; }
+  .chat-choice-sentence strong { text-decoration: underline; text-decoration-color: var(--teal); text-decoration-thickness: 2px; text-underline-offset: 0.15rem; }
+  .chat-context-headword { margin-top: 0.4rem; color: #078F89; font-size: 0.58rem; font-weight: 700; }
+  .chat-context-note { margin-top: 0.3rem; padding-left: 0.55rem; border-left: 1px solid var(--border); color: var(--muted); font-size: 0.56rem; line-height: 1.45; }
+  .chat-context-action { min-width: 4.8rem; text-align: center; }
+  .chat-context-button { display: inline-block; min-width: 4.5rem; padding: 0.55rem 0.65rem; border: 1px solid var(--blue); border-radius: 8px; color: var(--blue); background: var(--white); font-size: 0.6rem; font-weight: 600; white-space: nowrap; }
+  .chat-context-button.saved { border-color: #07847F; color: #07847F; background: #F0FBFA; }
+  .chat-context-saved-note { display: block; max-width: 5.5rem; margin: 0.25rem auto 0; color: var(--muted); font-size: 0.47rem; line-height: 1.3; }
+  .chat-assistant-note { margin: 0.8rem 0; color: var(--secondary); font-size: 0.65rem; }
+  .chat-composer { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.65rem; border: 1px solid var(--border); border-radius: 100px; color: var(--muted); font-size: 0.62rem; }
+  .chat-composer img { width: 1.4rem; height: 1.2rem; object-fit: contain; }
+  .chat-composer span:last-child { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; margin-left: auto; border-radius: 50%; background: var(--blue); color: var(--white); font-size: 0.85rem; }
+
+  .web-showcase { width: 100%; padding: 6.5rem 2rem; border-top: 1px solid var(--border); background: #F6F6FF; color: var(--navy); }
+  .web-showcase-inner { display: grid; grid-template-columns: minmax(240px, 0.76fr) minmax(0, 1.24fr); align-items: center; gap: clamp(3rem, 7vw, 7rem); width: 100%; max-width: 1120px; margin: 0 auto; }
+  .web-showcase-copy { max-width: 430px; }
+  .web-showcase-eyebrow { margin-bottom: 1.25rem; color: var(--teal); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .web-showcase h2 { margin-bottom: 1.4rem; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 400; line-height: 1.15; }
+  .web-showcase-description { color: var(--secondary); font-size: clamp(0.95rem, 2vw, 1.05rem); line-height: 1.75; }
+  .web-showcase-link { display: inline-block; margin-top: 1.4rem; color: var(--blue); font-size: 0.8rem; font-weight: 600; }
+  .web-showcase-link:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
+  .web-app-card { overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: var(--white); box-shadow: 0 20px 55px rgba(15,27,110,0.09); }
+  .web-app-bar { display: flex; align-items: center; justify-content: space-between; min-height: 3.25rem; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); }
+  .web-app-bar img { width: auto; height: 1.6rem; }
+  .web-app-nav { display: flex; gap: 0.9rem; color: var(--muted); font-size: 0.62rem; font-weight: 600; }
+  .web-app-nav strong { color: var(--navy); }
+  .web-app-body { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.16fr); align-items: center; gap: 0.8rem; padding: 1.25rem; }
+  .web-entry { min-height: 13rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--white); }
+  .web-entry-label { color: var(--teal); font-size: 0.55rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .web-rough-entry { display: flex; flex-direction: column; }
+  .web-rough-entry p { margin: 1.2rem 0; font-family: 'Lora', Georgia, serif; font-size: 0.95rem; line-height: 1.55; }
+  .web-rough-entry mark { padding: 0.05rem 0.2rem; border-radius: 3px; background: #E5E3FF; color: var(--blue); }
+  .web-curate-button { align-self: flex-start; margin-top: auto; padding: 0.55rem 0.75rem; border-radius: 7px; background: var(--blue); color: var(--white); font-size: 0.62rem; font-weight: 600; box-shadow: 0 4px 14px rgba(90,84,255,0.2); }
+  .web-flow-arrow { color: var(--muted); font-size: 1.1rem; transform: rotate(-90deg); }
+  .web-curated-entry > p { margin: 0.9rem 0 0.75rem; font-family: 'Lora', Georgia, serif; font-size: 0.95rem; line-height: 1.5; }
+  .web-curated-entry > p em { color: var(--definition); }
+  .web-curated-footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.7rem; padding-top: 0.65rem; border-top: 1px solid var(--border); }
+  .web-curated-definition { color: var(--muted); font-size: 0.55rem; line-height: 1.4; }
+  .web-curated-definition strong { display: block; color: var(--navy); font-size: 0.55rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .web-save-button { flex-shrink: 0; padding: 0.5rem 0.65rem; border: 1px solid var(--blue); border-radius: 7px; color: var(--blue); font-size: 0.58rem; font-weight: 600; }
 
   .bubble-showcase { width: 100%; padding: 6.5rem 2rem; border-top: 1px solid var(--border); background: #F6F6FF; color: var(--navy); }
   .bubble-showcase-inner { display: grid; grid-template-columns: minmax(240px, 0.78fr) minmax(0, 1.22fr); align-items: center; gap: clamp(3rem, 7vw, 7rem); width: 100%; max-width: 1120px; margin: 0 auto; }
@@ -76,6 +147,53 @@
   @media (hover: hover) { .shuffle-button-label--click { display: inline; } }
   @media (hover: none) { .shuffle-button-label--tap { display: inline; } }
 
+  .conversation-showcase { width: 100%; padding: 6.5rem 2rem; border-top: 1px solid var(--border); background: var(--white); color: var(--navy); }
+  .conversation-showcase-inner { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr); align-items: center; gap: clamp(3rem, 7vw, 7rem); width: 100%; max-width: 1120px; margin: 0 auto; }
+  .conversation-showcase-copy { max-width: 430px; }
+  .conversation-showcase-eyebrow { margin-bottom: 1.25rem; color: var(--teal); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .conversation-showcase h2 { margin-bottom: 1.4rem; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: clamp(2.15rem, 5vw, 3.25rem); font-weight: 400; line-height: 1.12; }
+  .conversation-showcase-description { color: var(--secondary); font-size: clamp(0.98rem, 2vw, 1.08rem); line-height: 1.75; }
+  .conversation-voice-note { display: inline-flex; align-items: center; gap: 0.55rem; margin-top: 1.35rem; color: var(--blue); font-size: 0.78rem; font-weight: 600; }
+  .conversation-voice-note::before { content: ''; width: 0.48rem; height: 0.48rem; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 4px rgba(90,84,255,0.12); }
+  .conversation-demo { overflow: hidden; width: 100%; border: 1px solid var(--border); border-radius: 20px; background: var(--white); box-shadow: 0 24px 65px rgba(15,27,110,0.1); }
+  .conversation-demo-body { display: flex; flex-direction: column; min-height: 430px; padding: 1.25rem; }
+  .conversation-user-message { width: 76%; margin: 0 0 0 auto; padding: 0.9rem 1rem; border-radius: 18px; background: #E5F2FF; color: #102A4E; font-size: 0.82rem; line-height: 1.52; }
+  .conversation-user-message strong { color: var(--navy); }
+  .conversation-plugin-mention { display: inline-flex; align-items: center; gap: 0.22rem; white-space: nowrap; vertical-align: -0.18rem; }
+  .conversation-plugin-mention img { width: 1.25rem; height: 1rem; object-fit: contain; }
+  .conversation-worked { margin: 2.3rem 0 1.25rem; color: #8B8B8B; font-size: 0.67rem; }
+  .conversation-worked span { margin-left: 0.28rem; color: #A3A3A3; }
+  .conversation-collection-status { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 1.85rem; color: #575757; font-size: 0.7rem; }
+  .conversation-tool-icon { color: #575757; font-size: 0.62rem; font-weight: 600; letter-spacing: -0.08em; }
+  .conversation-tool-chevron { color: #8B8B8B; font-size: 0.62rem; }
+  .conversation-reply { color: #171717; font-size: 0.86rem; line-height: 1.62; }
+  .conversation-reply strong { color: var(--navy); }
+  .conversation-bottom { margin-top: auto; padding-top: 2.25rem; }
+  .conversation-composer { display: flex; align-items: center; gap: 0.65rem; min-height: 2.85rem; padding: 0.38rem 0.42rem 0.38rem 0.8rem; border: 1px solid #E1E1E1; border-radius: 100px; color: #8A8A8A; background: var(--white); box-shadow: 0 7px 20px rgba(0,0,0,0.07); font-size: 0.67rem; }
+  .conversation-composer-plus { color: #333; font-size: 1.15rem; font-weight: 300; line-height: 1; }
+  .conversation-mode { margin-left: auto; color: #777; white-space: nowrap; }
+  .conversation-mode span { margin-left: 0.2rem; color: #9A9A9A; }
+  .conversation-mic { position: relative; width: 0.48rem; height: 0.7rem; margin: 0 0.35rem; border: 1.5px solid #222; border-radius: 100px; }
+  .conversation-mic::before { content: ''; position: absolute; left: 50%; bottom: -0.28rem; width: 0.65rem; height: 0.42rem; border: 1.5px solid #222; border-top: 0; border-radius: 0 0 100px 100px; transform: translateX(-50%); }
+  .conversation-mic::after { content: ''; position: absolute; left: 50%; bottom: -0.42rem; width: 0.38rem; height: 1.5px; background: #222; transform: translateX(-50%); }
+  .conversation-voice-button { display: flex; align-items: center; justify-content: center; gap: 0.1rem; width: 2.05rem; height: 2.05rem; flex-shrink: 0; border-radius: 50%; background: #3E8BFF; }
+  .conversation-voice-button span { display: block; width: 1.5px; border-radius: 2px; background: var(--white); }
+  .conversation-voice-button span:nth-child(1), .conversation-voice-button span:nth-child(5) { height: 0.38rem; }
+  .conversation-voice-button span:nth-child(2), .conversation-voice-button span:nth-child(4) { height: 0.72rem; }
+  .conversation-voice-button span:nth-child(3) { height: 0.95rem; }
+
+  .closing-showcase { width: 100%; padding: 6.5rem 2rem; border-top: 1px solid var(--border); background: var(--navy); color: var(--white); text-align: center; }
+  .closing-showcase-inner { width: 100%; max-width: 880px; margin: 0 auto; }
+  .closing-showcase-eyebrow { margin-bottom: 1.3rem; color: var(--teal); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .closing-showcase h2 { color: var(--white); font-family: 'Lora', Georgia, serif; font-size: clamp(1.85rem, 4.8vw, 3rem); font-weight: 400; line-height: 1.35; }
+  .closing-showcase h2 span { color: var(--teal); }
+  .closing-showcase-copy { max-width: 680px; margin: 1.5rem auto 2.25rem; color: #C9CDED; font-size: clamp(0.98rem, 2vw, 1.08rem); line-height: 1.75; }
+  .closing-showcase-copy strong { color: var(--white); }
+  .closing-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 1rem 1.3rem; }
+  .closing-cta { display: inline-block; padding: 0.85rem 1.6rem; border-radius: 100px; background: var(--white); color: var(--navy); font-size: 0.85rem; font-weight: 700; }
+  .closing-access-link { color: var(--teal); font-size: 0.8rem; font-weight: 600; }
+  .closing-access-link:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
+
   footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.45rem; text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
   footer a { color: inherit; text-decoration: underline; }
   .github-link { display: inline-flex; align-items: center; gap: 0.35rem; }
@@ -87,6 +205,16 @@
   @media (max-width: 600px) {
     nav { padding: 1rem 1.25rem; }
     .hero { padding: 3.5rem 1.25rem 3rem; }
+    .journey { gap: 0.45rem 0.55rem; margin-top: 3.5rem; }
+    .integration-showcase, .web-showcase, .conversation-showcase, .closing-showcase { padding: 4.75rem 1.25rem; }
+    .integration-showcase-inner, .web-showcase-inner, .conversation-showcase-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    .chat-user-message { width: 94%; }
+    .chat-context-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+    .chat-context-action { text-align: left; }
+    .chat-context-saved-note { margin-left: 0; text-align: left; }
+    .web-app-nav { display: none; }
+    .web-app-body { grid-template-columns: 1fr; }
+    .web-flow-arrow { justify-self: center; transform: none; }
     .bubble-showcase { padding: 4.75rem 1.25rem; }
     .bubble-showcase-inner { grid-template-columns: 1fr; gap: 2.5rem; }
     .bubble-word-field { min-height: 360px; padding: 0; }
@@ -95,6 +223,9 @@
     .habit-intro { padding: 0 0 3rem; }
     .shuffle-card { padding: 3rem 0 0; border-top: 1px solid var(--border); border-left: 0; }
     .shuffle-phrase { min-height: 8.5rem; }
+    .conversation-demo { order: 2; }
+    .conversation-showcase-copy { order: 1; }
+    .conversation-user-message { width: 92%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -110,49 +241,92 @@
 </nav>
 
 <div class="hero">
-  <p class="eyebrow">Personal vocabulary, powered by AI</p>
-  <h1>Build your personal vocabulary from <em>real life</em>.</h1>
+  <p class="eyebrow">Your AI vocabulary companion</p>
+  <h1>Turn expressions you encounter into language you <em>actually use</em>.</h1>
   <p class="subtitle">
-    You come across a phrase that just clicks, in a podcast, a book, a conversation. You write it down and forget it.
-    Phrasely fixes that. Capture any phrase, let AI curate it,
-    and watch your vocabulary grow into something you can actually see.
+    Bring Phrasely something you heard in a podcast, a film, a meeting, or a conversation. Understand it in context, save the version that clicks for you, and encounter it again until it becomes part of the way you speak.
   </p>
-  <a href="/login" class="cta-btn">Get started, it's free</a>
-
-  <div class="loop">
-    <div class="loop-step">
-      <span class="step-num">01</span>
-      <div class="step-body">
-        <h3>Capture</h3>
-        <p>Type a rough phrase you heard anywhere: a podcast, a book, a conversation.</p>
-      </div>
-    </div>
-    <div class="loop-step">
-      <span class="step-num">02</span>
-      <div class="step-body">
-        <h3>Curate with AI</h3>
-        <p>AI polishes it into a natural, memorable sentence with the meaning in context and a usage note you'll actually remember.</p>
-      </div>
-    </div>
-    <div class="loop-step">
-      <span class="step-num">03</span>
-      <div class="step-body">
-        <h3>Own it</h3>
-        <p>Your phrases live in a personal bubble that grows with you. The more you review and interact with a phrase, reading it, using it, the bigger it gets. Your vocabulary, made visible.</p>
-      </div>
-    </div>
+  <div class="hero-actions">
+    <a href="/login" class="cta-btn">Start on the web — free</a>
+    <a class="hero-access-link" href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access">Request ChatGPT access →</a>
   </div>
+
+  <p class="journey" aria-label="Hear it, understand it, save it, encounter it again, use it">
+    <span>Hear it</span><span class="journey-arrow" aria-hidden="true">→</span>
+    <span>Understand it</span><span class="journey-arrow" aria-hidden="true">→</span>
+    <span>Save it</span><span class="journey-arrow" aria-hidden="true">→</span>
+    <span>Encounter it again</span><span class="journey-arrow" aria-hidden="true">→</span>
+    <span>Use it</span>
+  </p>
 </div>
 
-<section class="bubble-showcase" aria-labelledby="bubble-showcase-heading">
-  <div class="bubble-showcase-inner">
-    <div class="bubble-showcase-copy">
-      <p class="bubble-showcase-eyebrow">Your vocabulary, made visible</p>
-      <h2 id="bubble-showcase-heading">See what you’re actually learning.</h2>
-      <p class="bubble-showcase-description">The expressions you revisit grow larger in your Bubble. A new word begins quietly. The language you keep returning to becomes impossible to miss.</p>
-      <p class="bubble-showcase-hint">Choose any expression to revisit it ↓</p>
+<section class="integration-showcase" aria-labelledby="integration-showcase-heading">
+  <div class="integration-showcase-inner">
+    <div class="integration-showcase-copy">
+      <p class="integration-showcase-eyebrow">Phrasely in ChatGPT · Private preview</p>
+      <h2 id="integration-showcase-heading">Hear something interesting? Just tell Phrasely.</h2>
+      <p class="integration-showcase-description">No need to switch apps or structure the phrase first. Tell Phrasely what you heard in your own words. It finds the useful expression, explains it in context, and helps you save the version that clicks.</p>
+
+      <p class="integration-preview-note"><span class="integration-preview-dot" aria-hidden="true"></span><span><strong>Available by invitation.</strong><br>Public access is coming soon.</span></p>
+      <a class="integration-access-link" href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access">Email me for access →</a>
     </div>
-    <div class="bubble-word-field" id="bubble-word-field" aria-label="Choose an expression to revisit in Shuffle"></div>
+
+    <div class="chat-demo" aria-label="Example Phrasely experience in ChatGPT">
+      <div class="chat-demo-bar">
+        <span class="chat-demo-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>ChatGPT</span>
+        <span class="chat-demo-connected">Phrasely connected</span>
+      </div>
+      <div class="chat-demo-body">
+        <p class="chat-user-message"><span>You · after a podcast</span>Hey, use Phrasely to explain <strong>beyond the pale</strong>. I heard it in a podcast about a politician, and the host said his comments were “beyond the pale.”</p>
+
+        <p class="chat-tool-label"><img src="/static/icon-128px.png" alt="">Phrasely</p>
+        <div class="chat-choice-card">
+          <div class="chat-choice-header">
+            <h3>Choose a phrase to save</h3>
+            <span>Pick the context you’ll be most likely to remember.</span>
+          </div>
+          <div class="chat-context">
+            <div class="chat-context-grid">
+              <div>
+                <p class="chat-context-kind">Original context <span>· ★ Recommended</span></p>
+                <p class="chat-choice-sentence">The host said the politician’s comments were <strong>beyond the pale</strong> (completely outside the limits of acceptable behaviour), even for such a heated debate.</p>
+                <p class="chat-context-headword">beyond the pale</p>
+                <p class="chat-context-note">“Beyond the pale” describes behaviour that crosses accepted moral or social limits.</p>
+              </div>
+              <div class="chat-context-action"><span class="chat-context-button">♡ Save</span></div>
+            </div>
+          </div>
+          <div class="chat-context">
+            <div class="chat-context-grid">
+              <div>
+                <p class="chat-context-kind">Everyday context</p>
+                <p class="chat-choice-sentence">Making fun of a colleague’s accent isn’t harmless office banter; it’s <strong>beyond the pale</strong> (completely unacceptable).</p>
+                <p class="chat-context-headword">beyond the pale</p>
+                <p class="chat-context-note">The expression makes an emphatic judgment, so it is stronger than simply calling something inappropriate or offensive.</p>
+              </div>
+              <div class="chat-context-action">
+                <span class="chat-context-button saved">✓ Saved</span>
+                <span class="chat-context-saved-note">Saved privately to Phrasely</span>
+              </div>
+            </div>
+          </div>
+          <div class="chat-context">
+            <div class="chat-context-grid">
+              <div>
+                <p class="chat-context-kind">A useful distinction</p>
+                <p class="chat-choice-sentence">His joke was <strong>out of line</strong> (inappropriate), but sharing her private messages publicly was <strong>beyond the pale</strong> (completely unacceptable).</p>
+                <p class="chat-context-headword">out of line · beyond the pale</p>
+                <p class="chat-context-note">“Out of line” is milder; “beyond the pale” suggests a serious violation of accepted standards.</p>
+              </div>
+              <div class="chat-context-action"><span class="chat-context-button">♡ Save</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="chat-assistant-note"><strong>“Beyond the pale”</strong> is a strong judgment: something has crossed the boundary of what people consider acceptable.</p>
+        <div class="chat-composer" aria-hidden="true"><img src="/static/icon-128px.png" alt=""><span>Ask Phrasely anything…</span><span>↑</span></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -162,7 +336,7 @@
       <div class="habit-content">
         <p class="habit-eyebrow">A better five-minute habit</p>
         <h2 id="habit-heading">Got five minutes?</h2>
-        <p class="habit-copy">Skip the infinite feed. Shuffle through words and expressions you deliberately wanted to remember. Calm, lightweight, and yours.</p>
+        <p class="habit-copy">Skip the infinite feed. Shuffle through random expressions from your own vocabulary: things you heard before, understood before, and decided were worth remembering. Five minutes a day adds up.</p>
       </div>
     </div>
 
@@ -176,6 +350,100 @@
         <span class="shuffle-button-label shuffle-button-label--tap">Tap to shuffle</span>
       </button>
     </section>
+  </div>
+</section>
+
+<section class="bubble-showcase" aria-labelledby="bubble-showcase-heading">
+  <div class="bubble-showcase-inner">
+    <div class="bubble-showcase-copy">
+      <p class="bubble-showcase-eyebrow">Your vocabulary, made visible</p>
+      <h2 id="bubble-showcase-heading">See what you’re reinforcing.</h2>
+      <p class="bubble-showcase-description">Expressions you revisit become more prominent in your Bubble, while neglected ones remain smaller. At a glance, you can see which parts of your vocabulary are becoming familiar and which ones need another encounter.</p>
+      <p class="bubble-showcase-hint">Choose any expression to revisit it ↓</p>
+    </div>
+    <div class="bubble-word-field" id="bubble-word-field" aria-label="Choose an expression to revisit in Shuffle"></div>
+  </div>
+</section>
+
+<section class="conversation-showcase" aria-labelledby="conversation-showcase-heading">
+  <div class="conversation-showcase-inner">
+    <div class="conversation-demo" aria-label="Example of Phrasely weaving saved expressions into a ChatGPT conversation">
+      <div class="chat-demo-bar">
+        <span class="chat-demo-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>ChatGPT</span>
+        <span class="chat-demo-connected">Phrasely connected</span>
+      </div>
+      <div class="conversation-demo-body">
+        <p class="conversation-user-message"><span class="conversation-plugin-mention"><img src="/static/icon-128px.png" alt=""><strong>Phrasely</strong></span>, pull all my saved phrases, but don’t list them. Briefly confirm how many you found, then tell me you’re ready to chat. During our conversation, naturally and subtly weave in phrases from my collection when they fit.</p>
+        <p class="conversation-worked">Worked for 5s <span aria-hidden="true">›</span></p>
+        <p class="conversation-collection-status"><span class="conversation-tool-icon" aria-hidden="true">{↕}</span><span>Called tool</span><span class="conversation-tool-chevron" aria-hidden="true">⌄</span></p>
+        <div class="conversation-reply">
+          <p>I found <strong>378 saved phrases</strong> in your Phrasely collection. I’ve got them in mind — ready to chat, and I’ll weave them in naturally when they fit rather than making the conversation feel contrived.</p>
+        </div>
+        <div class="conversation-bottom" aria-hidden="true">
+          <div class="conversation-composer">
+            <span class="conversation-composer-plus">＋</span>
+            <span>Ask ChatGPT</span>
+            <span class="conversation-mode">Instant <span>⌄</span></span>
+            <span class="conversation-mic"></span>
+            <span class="conversation-voice-button"><span></span><span></span><span></span><span></span><span></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="conversation-showcase-copy">
+      <p class="conversation-showcase-eyebrow">Your vocabulary, in conversation</p>
+      <h2 id="conversation-showcase-heading">Practise without turning it into a lesson.</h2>
+      <p class="conversation-showcase-description">Ask ChatGPT to pull your entire private Phrasely collection, then keep chatting. Phrasely subtly favours expressions you haven’t encountered lately, so your vocabulary keeps returning without turning the conversation into a quiz.</p>
+      <p class="conversation-voice-note">Type naturally or switch to voice and speak</p>
+    </div>
+  </div>
+</section>
+
+<section class="web-showcase" aria-labelledby="web-showcase-heading">
+  <div class="web-showcase-inner">
+    <div class="web-showcase-copy">
+      <p class="web-showcase-eyebrow">Phrasely on the web</p>
+      <h2 id="web-showcase-heading">Prefer to shape the phrase yourself?</h2>
+      <p class="web-showcase-description">The original Phrasely workflow is still there when you want a more deliberate workspace: write a rough sentence, mark the missing meaning, and review the AI-curated result before saving.</p>
+      <a class="web-showcase-link" href="/login">Open Phrasely on the web →</a>
+    </div>
+
+    <div class="web-app-card" aria-label="Example of adding and curating a phrase on the Phrasely website">
+      <div class="web-app-bar">
+        <img src="/static/logo.png" alt="Phrasely">
+        <div class="web-app-nav" aria-hidden="true"><span>Bubble</span><span>Shuffle</span><span>Phrases</span><strong>Add</strong></div>
+      </div>
+      <div class="web-app-body">
+        <div class="web-entry web-rough-entry">
+          <span class="web-entry-label">Rough phrase</span>
+          <p>That’s a fallacy, often used to <strong>muddy the waters</strong> <mark>??</mark> in an argument.</p>
+          <span class="web-curate-button">Curate with AI</span>
+        </div>
+        <span class="web-flow-arrow" aria-hidden="true">↓</span>
+        <div class="web-entry web-curated-entry">
+          <span class="web-entry-label">Review before saving</span>
+          <p>That’s a fallacy, often used to <strong>muddy the waters</strong><em> (make something unclear or complicated)</em> in an argument, leading to confusion rather than clarity.</p>
+          <div class="web-curated-footer">
+            <span class="web-curated-definition"><strong>Muddy the waters</strong>Complicate an issue or make it less clear.</span>
+            <span class="web-save-button">Save phrase</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="closing-showcase" aria-labelledby="closing-showcase-heading">
+  <div class="closing-showcase-inner">
+    <p class="closing-showcase-eyebrow">The idea is simple</p>
+    <h2 id="closing-showcase-heading">Hear it <span>→</span> understand it <span>→</span> save it <span>→</span> encounter it again <span>→</span> use it.</h2>
+    <p class="closing-showcase-copy">Recognising a great expression is easy. <strong>Making it part of the way you speak is the hard part.</strong> That’s what Phrasely is for.</p>
+    <div class="closing-actions">
+      <a class="closing-cta" href="/login">Start building your vocabulary</a>
+      <a class="closing-access-link" href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access">Request ChatGPT access →</a>
+    </div>
   </div>
 </section>
 
