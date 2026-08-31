@@ -169,14 +169,17 @@
   .conversation-reply { color: #171717; font-size: 0.86rem; line-height: 1.62; }
   .conversation-reply strong { color: var(--navy); }
   .conversation-bottom { margin-top: auto; padding-top: 2.25rem; }
-  .conversation-composer { display: flex; align-items: center; gap: 0.65rem; min-height: 2.85rem; padding: 0.38rem 0.42rem 0.38rem 0.8rem; border: 1px solid #E1E1E1; border-radius: 100px; color: #8A8A8A; background: var(--white); box-shadow: 0 7px 20px rgba(0,0,0,0.07); font-size: 0.67rem; }
-  .conversation-composer-plus { color: #333; font-size: 1.15rem; font-weight: 300; line-height: 1; }
-  .conversation-mode { margin-left: auto; color: #777; white-space: nowrap; }
-  .conversation-mode span { margin-left: 0.2rem; color: #9A9A9A; }
-  .conversation-mic { position: relative; width: 0.48rem; height: 0.7rem; margin: 0 0.35rem; border: 1.5px solid #222; border-radius: 100px; }
-  .conversation-mic::before { content: ''; position: absolute; left: 50%; bottom: -0.28rem; width: 0.65rem; height: 0.42rem; border: 1.5px solid #222; border-top: 0; border-radius: 0 0 100px 100px; transform: translateX(-50%); }
-  .conversation-mic::after { content: ''; position: absolute; left: 50%; bottom: -0.42rem; width: 0.38rem; height: 1.5px; background: #222; transform: translateX(-50%); }
-  .conversation-voice-button { display: flex; align-items: center; justify-content: center; gap: 0.1rem; width: 2.05rem; height: 2.05rem; flex-shrink: 0; border-radius: 50%; background: #3E8BFF; }
+  .conversation-composer { display: flex; align-items: center; gap: 0.8rem; min-height: 3.25rem; padding: 0.38rem 0.45rem 0.38rem 1rem; border: 1px solid #E5E5E5; border-radius: 100px; background: var(--white); box-shadow: 0 5px 18px rgba(0,0,0,0.08); font-size: 0.92rem; }
+  .conversation-composer-plus { display: grid; place-items: center; width: 1rem; flex-shrink: 0; color: #282828; font-size: 1.25rem; font-weight: 300; line-height: 1; }
+  .conversation-composer-placeholder { color: #8A8A8A; }
+  .conversation-mode { display: flex; align-items: center; gap: 0.42rem; margin-left: auto; color: #777; font-size: 0.88rem; line-height: 1; white-space: nowrap; }
+  .conversation-mode span { position: relative; top: -0.12rem; width: 0.42rem; height: 0.42rem; flex-shrink: 0; border-right: 1.4px solid #8E8E8E; border-bottom: 1.4px solid #8E8E8E; transform: rotate(45deg); }
+  .conversation-mic { position: relative; width: 1.15rem; height: 1.25rem; margin: 0 0.16rem; flex-shrink: 0; }
+  .conversation-mic::before { content: ''; position: absolute; left: 50%; top: 0.03rem; width: 0.44rem; height: 0.72rem; border: 1.5px solid #1E1E1E; border-radius: 100px; transform: translateX(-50%); }
+  .conversation-mic::after { content: ''; position: absolute; left: 50%; top: 0.32rem; width: 0.8rem; height: 0.62rem; border: 1.5px solid #1E1E1E; border-top: 0; border-radius: 0 0 100px 100px; transform: translateX(-50%); }
+  .conversation-mic span { position: absolute; left: 50%; top: 0.94rem; width: 1.5px; height: 0.22rem; background: #1E1E1E; transform: translateX(-50%); }
+  .conversation-mic span::after { content: ''; position: absolute; left: 50%; bottom: -0.04rem; width: 0.48rem; height: 1.5px; border-radius: 2px; background: #1E1E1E; transform: translateX(-50%); }
+  .conversation-voice-button { display: flex; align-items: center; justify-content: center; gap: 0.11rem; width: 2.3rem; height: 2.3rem; flex-shrink: 0; border-radius: 50%; background: #3E8BFF; }
   .conversation-voice-button span { display: block; width: 1.5px; border-radius: 2px; background: var(--white); }
   .conversation-voice-button span:nth-child(1), .conversation-voice-button span:nth-child(5) { height: 0.38rem; }
   .conversation-voice-button span:nth-child(2), .conversation-voice-button span:nth-child(4) { height: 0.72rem; }
@@ -382,10 +385,10 @@
         </div>
         <div class="conversation-bottom" aria-hidden="true">
           <div class="conversation-composer">
-            <span class="conversation-composer-plus">＋</span>
-            <span>Ask ChatGPT</span>
-            <span class="conversation-mode">Instant <span>⌄</span></span>
-            <span class="conversation-mic"></span>
+            <span class="conversation-composer-plus">+</span>
+            <span class="conversation-composer-placeholder">Ask ChatGPT</span>
+            <span class="conversation-mode">Instant <span aria-hidden="true"></span></span>
+            <span class="conversation-mic"><span></span></span>
             <span class="conversation-voice-button"><span></span><span></span><span></span><span></span><span></span></span>
           </div>
         </div>
