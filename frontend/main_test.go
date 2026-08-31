@@ -246,6 +246,7 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 		"378 saved phrases",
 		"making the conversation feel contrived",
 		`class="conversation-composer"`,
+		`class="conversation-composer-placeholder"`,
 		"Ask ChatGPT",
 		`class="closing-showcase"`,
 		"The idea is simple",
