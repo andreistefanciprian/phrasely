@@ -16,6 +16,10 @@
 
   .story { max-width: 640px; margin: 0 auto; padding: 4rem 2rem 6rem; }
   .story-auth { padding-top: 7rem; }
+  .story-byline { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.75rem; }
+  .story-byline img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .story-byline a { color: var(--blue); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+  .story-byline a:hover { text-decoration: underline; }
   .story h1 { font-family: 'Lora', Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 600; color: var(--navy); line-height: 1.25; margin-bottom: 2.5rem; }
   .story p { font-size: 1rem; line-height: 1.85; color: #2D3561; margin-bottom: 0.85rem; }
   .story p.emphasis { font-family: 'Lora', Georgia, serif; font-size: 1.1rem; font-style: italic; color: var(--navy); }
@@ -62,6 +66,11 @@
 <div class="story{{if .Authenticated}} story-auth{{end}}">
   <h1>Why I built Phrasely</h1>
 
+  <div class="story-byline">
+    <img src="/static/gh-profile-pic.jpg" alt="Cip, founder of Phrasely">
+    <a href="https://www.linkedin.com/in/andreistefanciprian/" target="_blank" rel="noopener">Connect on LinkedIn →</a>
+  </div>
+
   <p>I'm Cip (pronounced Chip), from Romania.</p>
   <p>I left in 2013 and have lived in six countries since, eventually settling in Australia. English was never my mother tongue, but wanting to communicate clearly and articulate my thoughts has been a constant.</p>
   <p>For years I collected phrases.</p>
@@ -73,7 +82,9 @@
   <p>Then I started using AI to explain phrases, add context, identify the important word, and help me practise it. Suddenly things started to stick. A forgotten note became a memorable expression. A single word became a story. A phrase became something I could actually use.</p>
   <p>But every conversation started from scratch. Nothing carried over.</p>
   <p>So I built Phrasely.</p>
-  <p>A place where rough notes become memorable language. Paste a phrase, a fragment, or even a single word, and AI helps uncover what makes it worth remembering. Then, instead of burying it inside another endless list, Phrasely helps you revisit it until it becomes part of how you think and speak.</p>
+  <p>A place where rough notes become memorable language. Paste a phrase, a fragment, or even a single word, and AI helps uncover what makes it worth remembering.</p>
+  <p>These days I rarely add phrases through the app itself. Most of that happens right inside ChatGPT, where I review, learn, understand, and add new phrases without ever leaving the conversation. Sometimes I ask it to weave phrases from my collection into what we're talking about. Other times I just ask it to pick a few at random and practice them with me through the chat.</p>
+  <p>I still open Phrasely itself too, mostly Shuffle and occasionally the bubble page to see where I stand with using and reviewing my phrases. Shuffle especially has become my replacement for social media, a few idle minutes spent flipping through my own phrases instead of doom scrolling someone else's feed.</p>
   <p>I built it for myself. But it isn't just for people learning English. It's for anyone who's ever heard a great expression and thought: "I want that to be part of my vocabulary."</p>
 
   <div class="cta-row">
