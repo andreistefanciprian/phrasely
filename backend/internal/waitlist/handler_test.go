@@ -157,6 +157,26 @@ func TestJoin_DefaultsSourceWhenMissing(t *testing.T) {
 	}
 }
 
+func TestJoin_UnrecognizedSourceFallsBackToUnknown(t *testing.T) {
+	var gotSource string
+	store := &mockStore{
+		addWaitlistSignup: func(_ context.Context, _, source string) error {
+			gotSource = source
+			return nil
+		},
+	}
+	h := NewHandler(store)
+
+	rec := doRequest(t, h, `{"email":"jane@example.com","source":"<script>alert(1)</script>"}`)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if gotSource != "unknown" {
+		t.Errorf("source = %q, want %q — only hero/integration/closing should pass through", gotSource, "unknown")
+	}
+}
+
 func TestJoin_InvalidEmail(t *testing.T) {
 	store := &mockStore{
 		addWaitlistSignup: func(_ context.Context, _, _ string) error {
@@ -184,7 +204,7 @@ func TestJoin_RepeatSubmissionStillReturns200(t *testing.T) {
 	}
 	h := NewHandler(store)
 
-	rec := doRequest(t, h, `{"email":"jane@example.com","source":"footer"}`)
+	rec := doRequest(t, h, `{"email":"jane@example.com","source":"closing"}`)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)

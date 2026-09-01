@@ -146,15 +146,6 @@ type DigestRecipient struct {
 	LastSentAt *time.Time
 }
 
-// WaitlistSignup is one address collected from the landing page's
-// "join the ChatGPT list" capture.
-type WaitlistSignup struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Source    string    `json:"source"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
 // Store is the interface all database implementations must satisfy.
 // Methods for each domain (phrases, collections, etc.) will be added here as we build them.
 type Store interface {

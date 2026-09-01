@@ -134,7 +134,7 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 | POST | `/api/v1/phrases/curate` | JWT | Curate a raw phrase via OpenAI |
 | GET | `/api/v1/settings/email` | JWT | Get digest preferences (frequency) |
 | POST | `/api/v1/settings/email` | JWT | Save digest preferences |
-| POST | `/waitlist` | public | Join the ChatGPT-access waiting list (email + source); idempotent per email |
+| POST | `/waitlist` | public | Join the ChatGPT-access waiting list (email + source); idempotent per email; `source` must be `hero`/`integration`/`closing` or it's recorded as `unknown` |
 
 ## MCP tools
 
