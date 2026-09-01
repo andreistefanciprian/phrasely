@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.0...frontend-v0.12.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **frontend:** polish landing page waitlist UI ([5629ea4](https://github.com/andreistefanciprian/phrasely/commit/5629ea430aeae1e022967d257ab37e7bb619dd86))
+
 ## [0.12.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.11.1...frontend-v0.12.0) (2026-09-01)
 
 
