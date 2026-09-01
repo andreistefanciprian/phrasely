@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.4...backend-v0.8.0) (2026-09-01)
+
+
+### Features
+
+* **backend:** add waitlist signup endpoint ([96669cf](https://github.com/andreistefanciprian/phrasely/commit/96669cf0db78d88e5fccce6f3ffea10337f3a866))
+
+
+### Bug Fixes
+
+* **backend:** validate waitlist source values, drop unused struct ([8906c14](https://github.com/andreistefanciprian/phrasely/commit/8906c14d49e4131b7aca615156f0127e153c9f61))
+* **frontend:** align empty collection states ([324fde0](https://github.com/andreistefanciprian/phrasely/commit/324fde05c751f3d755314e33155a63dc1a8a4efe))
+
 ## [0.7.4](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.3...backend-v0.7.4) (2026-08-16)
 
 
