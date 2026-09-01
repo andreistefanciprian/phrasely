@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.11.1...frontend-v0.12.0) (2026-09-01)
+
+
+### Features
+
+* **frontend:** add public navbar, How to Use guide, and unify footer ([039c1da](https://github.com/andreistefanciprian/phrasely/commit/039c1daa431a3957034cafe9829a92af1f1c5c12))
+
 ## [0.11.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.11.0...frontend-v0.11.1) (2026-09-01)
 
 
