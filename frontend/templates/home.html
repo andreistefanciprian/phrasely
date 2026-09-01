@@ -197,6 +197,69 @@
   .closing-access-link { color: var(--teal); font-size: 0.8rem; font-weight: 600; }
   .closing-access-link:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
 
+  /* ── Waitlist capture (shared across hero / integration / closing) ── */
+  @keyframes waitlistFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .waitlist-fade-in { animation: waitlistFade 0.28s ease both; }
+  @media (prefers-reduced-motion: reduce) { .waitlist-fade-in { animation: none; } }
+
+  /* A `display` declaration on any of these classes outranks the browser's
+     built-in `[hidden] { display: none }` rule — same specificity, but author
+     origin always beats user-agent origin regardless of source order. Without
+     these overrides every state renders at once instead of just the active one. */
+  .waitlist-link[hidden],
+  .waitlist-form[hidden],
+  .waitlist-confirmed[hidden],
+  .integration-preview-note[hidden] { display: none; }
+
+  .waitlist-link { display: inline-block; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+
+  .waitlist-form { display: flex; align-items: center; gap: 0.6rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-hover); transition: border-color 0.15s; }
+  .waitlist-form.is-error { border-bottom-color: #C4324F; }
+  .waitlist-input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--navy); font-family: inherit; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.01em; }
+  .waitlist-input::placeholder { color: var(--muted); }
+  .waitlist-input:focus { outline: none; }
+  .waitlist-input:-webkit-autofill,
+  .waitlist-input:-webkit-autofill:hover,
+  .waitlist-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--navy);
+    caret-color: var(--navy);
+    box-shadow: 0 0 0 100px var(--white) inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  [data-waitlist-placement="primary"] .waitlist-input:-webkit-autofill,
+  [data-waitlist-placement="primary"] .waitlist-input:-webkit-autofill:hover,
+  [data-waitlist-placement="primary"] .waitlist-input:-webkit-autofill:focus { box-shadow: 0 0 0 100px #F6F6FF inset; }
+  .waitlist-submit { flex-shrink: 0; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--blue); color: var(--white); font-size: 0.8rem; line-height: 1; cursor: pointer; box-shadow: 0 3px 10px rgba(90,84,255,0.28); transition: opacity 0.15s; }
+  .waitlist-submit:hover { opacity: 0.9; }
+  .waitlist-submit:disabled { opacity: 0.6; cursor: default; }
+
+  [data-waitlist-placement="primary"] { min-height: 7.4rem; }
+  [data-waitlist-placement="primary"] .waitlist-form { max-width: 330px; }
+  .waitlist-hint-row { display: flex; align-items: baseline; gap: 0.9rem; margin-top: 0.6rem; max-width: 330px; }
+  .waitlist-hint { color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
+  .waitlist-hint.is-error { color: #C4324F; }
+  .waitlist-cancel { margin-left: auto; background: none; border: 0; padding: 0; color: var(--muted); font-family: inherit; font-size: 0.68rem; cursor: pointer; }
+  .waitlist-cancel:hover { color: var(--secondary); }
+
+  .waitlist-compact { display: inline-flex; align-items: center; }
+  .waitlist-form-compact { width: 260px; max-width: 60vw; }
+  .waitlist-confirmed { display: inline-flex; align-items: center; gap: 0.5rem; cursor: default; }
+  .waitlist-confirmed-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); flex-shrink: 0; }
+
+  .waitlist-on-navy .waitlist-form { border-bottom-color: rgba(255,255,255,0.28); }
+  .waitlist-on-navy .waitlist-input { color: var(--white); }
+  .waitlist-on-navy .waitlist-input::placeholder { color: rgba(255,255,255,0.5); }
+  .waitlist-on-navy .waitlist-input:-webkit-autofill,
+  .waitlist-on-navy .waitlist-input:-webkit-autofill:hover,
+  .waitlist-on-navy .waitlist-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--white);
+    caret-color: var(--white);
+    box-shadow: 0 0 0 100px var(--navy) inset;
+  }
+  .waitlist-on-navy .waitlist-submit { background: var(--teal); color: var(--navy); box-shadow: none; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
   footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.45rem; text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
   footer a { color: inherit; text-decoration: underline; }
   .github-link { display: inline-flex; align-items: center; gap: 0.35rem; }
@@ -250,8 +313,19 @@
     Bring Phrasely something you heard in a podcast, a film, a meeting, or a conversation. Understand it in context, save the version that clicks for you, and encounter it again until it becomes part of the way you speak.
   </p>
   <div class="hero-actions">
-    <a href="/login" class="cta-btn">Start on the web — free</a>
-    <a class="hero-access-link" href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access">Request ChatGPT access →</a>
+    <a href="/login" class="cta-btn">Start on the web. It’s free</a>
+    <div class="waitlist waitlist-compact" data-waitlist data-waitlist-placement="hero">
+      <button type="button" class="hero-access-link waitlist-link" data-waitlist-open>Join ChatGPT plugin waiting list →</button>
+
+      <form class="waitlist-form waitlist-form-compact" data-waitlist-form hidden novalidate>
+        <input class="waitlist-input" type="email" name="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" aria-label="Email address" required>
+        <button type="submit" class="waitlist-submit" aria-label="Join the list">→</button>
+      </form>
+
+      <span class="hero-access-link waitlist-confirmed" data-waitlist-done hidden tabindex="-1"><span class="waitlist-confirmed-dot" aria-hidden="true"></span>You're on the ChatGPT plugin waiting list</span>
+
+      <p class="sr-only" role="status" aria-live="polite" data-waitlist-live></p>
+    </div>
   </div>
 
   <p class="journey" aria-label="Hear it, understand it, save it, encounter it again, use it">
@@ -270,8 +344,26 @@
       <h2 id="integration-showcase-heading">Hear something interesting? Just tell Phrasely.</h2>
       <p class="integration-showcase-description">No need to switch apps or structure the phrase first. Tell Phrasely what you heard in your own words. It finds the useful expression, explains it in context, and helps you save the version that clicks.</p>
 
-      <p class="integration-preview-note"><span class="integration-preview-dot" aria-hidden="true"></span><span><strong>Available by invitation.</strong><br>Public access is coming soon.</span></p>
-      <a class="integration-access-link" href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access">Email me for access →</a>
+      <div class="waitlist" data-waitlist data-waitlist-placement="primary">
+        <p class="integration-preview-note" data-waitlist-idle><span class="integration-preview-dot" aria-hidden="true"></span><span><strong>Still in private testing.</strong><br>Not open to everyone yet.</span></p>
+        <button type="button" class="integration-access-link waitlist-link" data-waitlist-open>Join ChatGPT plugin waiting list →</button>
+
+        <div class="waitlist-panel" data-waitlist-open-panel hidden>
+          <p class="integration-preview-note"><span class="integration-preview-dot" aria-hidden="true"></span><span><strong>Still in private testing.</strong><br>Leave your address and we'll add you to the list.</span></p>
+          <form class="waitlist-form" data-waitlist-form novalidate>
+            <input class="waitlist-input" type="email" name="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" aria-label="Email address" required>
+            <button type="submit" class="waitlist-submit" aria-label="Join the list">→</button>
+          </form>
+          <div class="waitlist-hint-row">
+            <span class="waitlist-hint" data-waitlist-hint>One email when ChatGPT access opens. Nothing else.</span>
+            <button type="button" class="waitlist-cancel" data-waitlist-cancel>Cancel</button>
+          </div>
+        </div>
+
+        <p class="integration-preview-note" data-waitlist-done hidden tabindex="-1"><span class="integration-preview-dot" aria-hidden="true"></span><span><strong>You're on the list.</strong><br>We'll email <span data-waitlist-email></span> when ChatGPT access opens up.</span></p>
+
+        <p class="sr-only" role="status" aria-live="polite" data-waitlist-live></p>
+      </div>
     </div>
 
     <div class="chat-demo" aria-label="Example Phrasely experience in ChatGPT">
@@ -445,7 +537,18 @@
     <p class="closing-showcase-copy">Recognising a great expression is easy. <strong>Making it part of the way you speak is the hard part.</strong> That’s what Phrasely is for.</p>
     <div class="closing-actions">
       <a class="closing-cta" href="/login">Start building your vocabulary</a>
-      <a class="closing-access-link" href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access">Request ChatGPT access →</a>
+      <div class="waitlist waitlist-compact waitlist-on-navy" data-waitlist data-waitlist-placement="closing">
+        <button type="button" class="closing-access-link waitlist-link" data-waitlist-open>Join ChatGPT plugin waiting list →</button>
+
+        <form class="waitlist-form waitlist-form-compact" data-waitlist-form hidden novalidate>
+          <input class="waitlist-input" type="email" name="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" aria-label="Email address" required>
+          <button type="submit" class="waitlist-submit" aria-label="Join the list">→</button>
+        </form>
+
+        <span class="closing-access-link waitlist-confirmed" data-waitlist-done hidden tabindex="-1"><span class="waitlist-confirmed-dot" aria-hidden="true"></span>You're on the ChatGPT plugin waiting list</span>
+
+        <p class="sr-only" role="status" aria-live="polite" data-waitlist-live></p>
+      </div>
     </div>
   </div>
 </section>
@@ -525,6 +628,187 @@
         currentIndex = next.index;
       }
       renderPhrase(phrases[currentIndex]);
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    const STORAGE_KEY = 'phrasely-waitlist-email';
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const roots = Array.from(document.querySelectorAll('[data-waitlist]'));
+    if (!roots.length) return;
+
+    let state = { stage: 'idle', email: '' };
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) state = { stage: 'done', email: saved };
+    } catch (e) { /* localStorage unavailable — falls back to idle */ }
+
+    function fadeIn(el) {
+      el.classList.remove('waitlist-fade-in');
+      void el.offsetWidth; // restart the animation if it's already applied
+      el.classList.add('waitlist-fade-in');
+    }
+
+    function setHidden(el, hide, animate) {
+      if (!el) return;
+      const wasHidden = el.hidden;
+      el.hidden = hide;
+      if (!hide && wasHidden && animate) fadeIn(el);
+    }
+
+    // A root's own dataset.open overrides the shared stage — this is what
+    // lets "Use a different address" show the form again without disturbing
+    // the other two placements, which stay confirmed.
+    function stageFor(root) {
+      if (root.dataset.open === 'true') return 'open';
+      return state.stage === 'done' ? 'done' : 'idle';
+    }
+
+    function render(root, opts) {
+      opts = opts || {};
+      const stage = stageFor(root);
+      const animate = opts.animate !== false;
+
+      const openTrigger = root.querySelector('[data-waitlist-open]');
+      const idleExtra = root.querySelector('[data-waitlist-idle]');
+      const panel = root.querySelector('[data-waitlist-open-panel]');
+      const form = root.querySelector('[data-waitlist-form]');
+      const done = root.querySelector('[data-waitlist-done]');
+      const emailSlot = root.querySelector('[data-waitlist-email]');
+
+      setHidden(openTrigger, stage !== 'idle', animate);
+      setHidden(idleExtra, stage !== 'idle', animate);
+
+      if (panel) setHidden(panel, stage !== 'open', animate);
+      else setHidden(form, stage !== 'open', animate);
+
+      setHidden(done, stage !== 'done', animate);
+
+      if (emailSlot) emailSlot.textContent = state.email;
+
+      if (stage === 'open') {
+        const input = form && form.querySelector('.waitlist-input');
+        if (input && opts.focusInput) {
+          if (!input.value) input.value = state.email || '';
+          input.focus();
+        }
+      } else if (stage === 'idle' && opts.focusTrigger && openTrigger) {
+        openTrigger.focus();
+      } else if (stage === 'done' && opts.focusDone && done) {
+        done.focus();
+      }
+    }
+
+    function announce(root, msg) {
+      const live = root.querySelector('[data-waitlist-live]');
+      if (live) live.textContent = msg;
+    }
+
+    // Initial paint: no animation, so a returning visitor's localStorage-backed
+    // "done" state renders immediately without a fade from the idle link.
+    roots.forEach(root => render(root, { animate: false }));
+
+    roots.forEach(root => {
+      const placement = root.dataset.waitlistPlacement || 'unknown';
+      const openTrigger = root.querySelector('[data-waitlist-open]');
+      const cancelBtn = root.querySelector('[data-waitlist-cancel]');
+      const form = root.querySelector('[data-waitlist-form]');
+      const input = form ? form.querySelector('.waitlist-input') : null;
+      const hint = root.querySelector('[data-waitlist-hint]');
+      const defaultHint = hint ? hint.textContent : '';
+
+      function resetError() {
+        if (hint) { hint.textContent = defaultHint; hint.classList.remove('is-error'); }
+        if (form) form.classList.remove('is-error');
+      }
+
+      function open() {
+        root.dataset.open = 'true';
+        resetError();
+        render(root, { focusInput: true });
+      }
+
+      function close(opts) {
+        root.dataset.open = 'false';
+        render(root, opts);
+      }
+
+      if (openTrigger) openTrigger.addEventListener('click', open);
+      if (cancelBtn) cancelBtn.addEventListener('click', () => close({ focusTrigger: true }));
+
+      if (input) {
+        input.addEventListener('input', resetError);
+
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Escape') close({ focusTrigger: true });
+        });
+
+        // Compact placements (hero/closing) have no Cancel button — an empty
+        // field that loses focus quietly reverts to idle instead of staying
+        // stuck open. Skipped while a submit is in flight (input.disabled).
+        if (!cancelBtn) {
+          input.addEventListener('blur', e => {
+            if (input.disabled) return;
+            if (root.dataset.open !== 'true') return;
+            if (root.contains(e.relatedTarget)) return;
+            if (input.value.trim()) return;
+            close({ animate: false });
+          });
+        }
+      }
+
+      if (form) {
+        form.addEventListener('submit', e => {
+          e.preventDefault();
+          const value = (input.value || '').trim().toLowerCase();
+
+          if (!EMAIL_RE.test(value)) {
+            if (hint) {
+              hint.textContent = 'That address doesn’t look right.';
+              hint.classList.add('is-error');
+            } else {
+              form.classList.add('is-error');
+            }
+            announce(root, 'That address doesn’t look right.');
+            input.focus();
+            return;
+          }
+
+          resetError();
+          const submitBtn = form.querySelector('.waitlist-submit');
+          if (submitBtn) submitBtn.disabled = true;
+          input.disabled = true;
+          announce(root, 'Joining the list…');
+
+          fetch('/waitlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: value, source: placement })
+          }).then(res => {
+            if (!res.ok) throw new Error('waitlist request failed: ' + res.status);
+          }).then(() => {
+            state = { stage: 'done', email: value };
+            try { localStorage.setItem(STORAGE_KEY, value); } catch (err) { /* ignore */ }
+            roots.forEach(r => {
+              r.dataset.open = 'false';
+              render(r, { focusDone: r === root });
+              announce(r, "You're on the list.");
+            });
+          }).catch(() => {
+            if (submitBtn) submitBtn.disabled = false;
+            input.disabled = false;
+            if (hint) {
+              hint.textContent = 'Something went wrong. Try again.';
+              hint.classList.add('is-error');
+            } else {
+              form.classList.add('is-error');
+            }
+            announce(root, 'Something went wrong. Try again.');
+          });
+        });
+      }
     });
   })();
 </script>

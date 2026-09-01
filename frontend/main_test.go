@@ -203,11 +203,15 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 		"Turn expressions you encounter into language you",
 		"actually use",
 		"Encounter it again",
-		"Start on the web — free",
-		"Request ChatGPT access",
+		"Start on the web. It’s free",
+		"Join ChatGPT plugin waiting list",
 		`class="integration-showcase"`,
 		"Phrasely in ChatGPT · Private preview",
 		"Hear something interesting? Just tell Phrasely.",
+		"Still in private testing.",
+		`data-waitlist-placement="primary"`,
+		`data-waitlist-placement="hero"`,
+		`data-waitlist-placement="closing"`,
 		"Choose a phrase to save",
 		"Pick the context you’ll be most likely to remember.",
 		"beyond the pale",
@@ -216,7 +220,6 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 		"out of line",
 		"Saved privately to Phrasely",
 		`class="chat-context-button saved"`,
-		`href="mailto:cip@getphrasely.com?subject=Phrasely%20ChatGPT%20access"`,
 		`class="web-showcase"`,
 		"Phrasely on the web",
 		"Prefer to shape the phrase yourself?",
@@ -263,7 +266,7 @@ func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
 			t.Errorf("response does not contain %q", want)
 		}
 	}
-	for _, unwanted := range []string{"Build your personal vocabulary from", "See what you’re actually learning.", "Chat with your collection", "Practise on demand", "dwell on", "morass", "ad nauseam", "vantage point", "find your groove", "Sources", "ChatGPT can make mistakes. Check important info.", `class="integration-uses"`, `class="loop-step"`} {
+	for _, unwanted := range []string{"Build your personal vocabulary from", "See what you’re actually learning.", "Chat with your collection", "Practise on demand", "dwell on", "morass", "ad nauseam", "vantage point", "find your groove", "Sources", "ChatGPT can make mistakes. Check important info.", `class="integration-uses"`, `class="loop-step"`, "mailto:", "Available by invitation", "Email me for access", "Use a different address", `data-waitlist-reopen`} {
 		if strings.Contains(body, unwanted) {
 			t.Errorf("response unexpectedly contains %q", unwanted)
 		}
