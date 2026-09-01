@@ -213,8 +213,7 @@
 
   .waitlist-link { display: inline-block; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 
-  .waitlist-form { display: flex; align-items: center; gap: 0.6rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-hover); transition: border-color 0.15s; }
-  .waitlist-form.is-error { border-bottom-color: #C4324F; }
+  .waitlist-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-hover); }
   .waitlist-input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--navy); font-family: inherit; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.01em; }
   .waitlist-input::placeholder { color: var(--muted); }
   .waitlist-input:focus { outline: none; }
@@ -226,15 +225,15 @@
     box-shadow: 0 0 0 100px var(--white) inset;
     transition: background-color 9999s ease-in-out 0s;
   }
-  [data-waitlist-placement="primary"] .waitlist-input:-webkit-autofill,
-  [data-waitlist-placement="primary"] .waitlist-input:-webkit-autofill:hover,
-  [data-waitlist-placement="primary"] .waitlist-input:-webkit-autofill:focus { box-shadow: 0 0 0 100px #F6F6FF inset; }
+  [data-waitlist-placement="integration"] .waitlist-input:-webkit-autofill,
+  [data-waitlist-placement="integration"] .waitlist-input:-webkit-autofill:hover,
+  [data-waitlist-placement="integration"] .waitlist-input:-webkit-autofill:focus { box-shadow: 0 0 0 100px #F6F6FF inset; }
   .waitlist-submit { flex-shrink: 0; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--blue); color: var(--white); font-size: 0.8rem; line-height: 1; cursor: pointer; box-shadow: 0 3px 10px rgba(90,84,255,0.28); transition: opacity 0.15s; }
   .waitlist-submit:hover { opacity: 0.9; }
   .waitlist-submit:disabled { opacity: 0.6; cursor: default; }
 
-  [data-waitlist-placement="primary"] { min-height: 7.4rem; }
-  [data-waitlist-placement="primary"] .waitlist-form { max-width: 330px; }
+  [data-waitlist-placement="integration"] { min-height: 7.4rem; }
+  [data-waitlist-placement="integration"] .waitlist-form { max-width: 330px; }
   .waitlist-hint-row { display: flex; align-items: baseline; gap: 0.9rem; margin-top: 0.6rem; max-width: 330px; }
   .waitlist-hint { color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
   .waitlist-hint.is-error { color: #C4324F; }
@@ -243,10 +242,13 @@
 
   .waitlist-compact { display: inline-flex; align-items: center; }
   .waitlist-form-compact { width: 260px; max-width: 60vw; }
+  .waitlist-hint-compact { flex-basis: 100%; margin-top: 0.3rem; }
   .waitlist-confirmed { display: inline-flex; align-items: center; gap: 0.5rem; cursor: default; }
   .waitlist-confirmed-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); flex-shrink: 0; }
 
   .waitlist-on-navy .waitlist-form { border-bottom-color: rgba(255,255,255,0.28); }
+  .waitlist-on-navy .waitlist-hint { color: rgba(255,255,255,0.5); }
+  .waitlist-on-navy .waitlist-hint.is-error { color: #FF9AAA; }
   .waitlist-on-navy .waitlist-input { color: var(--white); }
   .waitlist-on-navy .waitlist-input::placeholder { color: rgba(255,255,255,0.5); }
   .waitlist-on-navy .waitlist-input:-webkit-autofill,
@@ -320,6 +322,7 @@
       <form class="waitlist-form waitlist-form-compact" data-waitlist-form hidden novalidate>
         <input class="waitlist-input" type="email" name="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" aria-label="Email address" required>
         <button type="submit" class="waitlist-submit" aria-label="Join the list">→</button>
+        <span class="waitlist-hint waitlist-hint-compact" data-waitlist-hint></span>
       </form>
 
       <span class="hero-access-link waitlist-confirmed" data-waitlist-done hidden tabindex="-1"><span class="waitlist-confirmed-dot" aria-hidden="true"></span>You're on the ChatGPT plugin waiting list</span>
@@ -344,7 +347,7 @@
       <h2 id="integration-showcase-heading">Hear something interesting? Just tell Phrasely.</h2>
       <p class="integration-showcase-description">No need to switch apps or structure the phrase first. Tell Phrasely what you heard in your own words. It finds the useful expression, explains it in context, and helps you save the version that clicks.</p>
 
-      <div class="waitlist" data-waitlist data-waitlist-placement="primary">
+      <div class="waitlist" data-waitlist data-waitlist-placement="integration">
         <p class="integration-preview-note" data-waitlist-idle><span class="integration-preview-dot" aria-hidden="true"></span><span><strong>Still in private testing.</strong><br>Not open to everyone yet.</span></p>
         <button type="button" class="integration-access-link waitlist-link" data-waitlist-open>Join ChatGPT plugin waiting list →</button>
 
@@ -543,6 +546,7 @@
         <form class="waitlist-form waitlist-form-compact" data-waitlist-form hidden novalidate>
           <input class="waitlist-input" type="email" name="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" aria-label="Email address" required>
           <button type="submit" class="waitlist-submit" aria-label="Join the list">→</button>
+          <span class="waitlist-hint waitlist-hint-compact" data-waitlist-hint></span>
         </form>
 
         <span class="closing-access-link waitlist-confirmed" data-waitlist-done hidden tabindex="-1"><span class="waitlist-confirmed-dot" aria-hidden="true"></span>You're on the ChatGPT plugin waiting list</span>
@@ -635,7 +639,6 @@
 <script>
   (() => {
     const STORAGE_KEY = 'phrasely-waitlist-email';
-    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
     const roots = Array.from(document.querySelectorAll('[data-waitlist]'));
     if (!roots.length) return;
 
@@ -721,7 +724,6 @@
 
       function resetError() {
         if (hint) { hint.textContent = defaultHint; hint.classList.remove('is-error'); }
-        if (form) form.classList.remove('is-error');
       }
 
       function open() {
@@ -763,13 +765,12 @@
         form.addEventListener('submit', e => {
           e.preventDefault();
           const value = (input.value || '').trim().toLowerCase();
+          input.value = value;
 
-          if (!EMAIL_RE.test(value)) {
+          if (!input.checkValidity()) {
             if (hint) {
               hint.textContent = 'That address doesn’t look right.';
               hint.classList.add('is-error');
-            } else {
-              form.classList.add('is-error');
             }
             announce(root, 'That address doesn’t look right.');
             input.focus();
@@ -794,7 +795,7 @@
             roots.forEach(r => {
               r.dataset.open = 'false';
               render(r, { focusDone: r === root });
-              announce(r, "You're on the list.");
+              announce(r, "You're on the ChatGPT plugin waiting list.");
             });
           }).catch(() => {
             if (submitBtn) submitBtn.disabled = false;
@@ -802,8 +803,6 @@
             if (hint) {
               hint.textContent = 'Something went wrong. Try again.';
               hint.classList.add('is-error');
-            } else {
-              form.classList.add('is-error');
             }
             announce(root, 'Something went wrong. Try again.');
           });
