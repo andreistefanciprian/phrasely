@@ -113,6 +113,9 @@ func (m *mockStore) ListDigestRecipients(_ context.Context) ([]db.DigestRecipien
 func (m *mockStore) MarkDigestSent(_ context.Context, _ string, _ time.Time) error {
 	panic("not expected in auth tests")
 }
+func (m *mockStore) AddWaitlistSignup(_ context.Context, _, _ string) error {
+	panic("not expected in auth tests")
+}
 
 // spySender records calls to SendMagicLink for assertions.
 type spySender struct {

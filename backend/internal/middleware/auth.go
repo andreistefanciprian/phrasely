@@ -63,6 +63,9 @@ func UserIDFromContext(ctx context.Context) string {
 func isUnprotected(path string) bool {
 	return path == "/health" ||
 		strings.HasPrefix(path, "/auth/") ||
+		// /waitlist — called from the public landing page before the visitor
+		// has an account, same as /auth/request.
+		path == "/waitlist" ||
 		// /internal/oauth/register — Dynamic Client Registration, called by mcp before
 		// any user session exists. Network isolation is the access control.
 		path == "/internal/oauth/register" ||

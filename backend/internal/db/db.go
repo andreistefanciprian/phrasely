@@ -146,6 +146,15 @@ type DigestRecipient struct {
 	LastSentAt *time.Time
 }
 
+// WaitlistSignup is one address collected from the landing page's
+// "join the ChatGPT list" capture.
+type WaitlistSignup struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Source    string    `json:"source"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // Store is the interface all database implementations must satisfy.
 // Methods for each domain (phrases, collections, etc.) will be added here as we build them.
 type Store interface {
@@ -201,6 +210,12 @@ type Store interface {
 	UpsertDigestPreferences(ctx context.Context, userID, frequency string) (*DigestPreferences, error)
 	ListDigestRecipients(ctx context.Context) ([]DigestRecipient, error)
 	MarkDigestSent(ctx context.Context, userID string, sentAt time.Time) error
+
+	// Waitlist methods
+	//
+	// AddWaitlistSignup records an email for the ChatGPT-access waitlist.
+	// Idempotent per email — a repeat submission is a no-op, not an error.
+	AddWaitlistSignup(ctx context.Context, email, source string) error
 }
 
 type PostgresStore struct {
@@ -774,6 +789,21 @@ func (s *PostgresStore) MarkDigestSent(ctx context.Context, userID string, sentA
 	}
 	if tag.RowsAffected() == 0 {
 		return ErrNotFound
+	}
+	return nil
+}
+
+// AddWaitlistSignup records an email for the ChatGPT-access waitlist.
+// ON CONFLICT DO NOTHING makes a repeat submission of the same address a no-op.
+func (s *PostgresStore) AddWaitlistSignup(ctx context.Context, email, source string) error {
+	_, err := s.Pool.Exec(ctx,
+		`INSERT INTO waitlist_signups (email, source)
+		 VALUES ($1, $2)
+		 ON CONFLICT (email) DO NOTHING`,
+		email, source,
+	)
+	if err != nil {
+		return fmt.Errorf("add waitlist signup: %w", err)
 	}
 	return nil
 }
