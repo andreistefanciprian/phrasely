@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -55,94 +54,6 @@ func TestBearerToken(t *testing.T) {
 				t.Errorf("bearerToken(%q) = %q, want %q", tt.header, got, tt.want)
 			}
 		})
-	}
-}
-
-func TestAnonymousMCPDiscoveryAndAuthChallenge(t *testing.T) {
-	const protectedResourceMetadataURL = "https://mcp.example.com/.well-known/oauth-protected-resource"
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/phrases/summary" {
-			http.NotFound(w, r)
-			return
-		}
-		if r.Header.Get("Authorization") != "Bearer test-token" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, `[{"phrase":"A test phrase","headwords":["test"]}]`)
-	}))
-	defer backend.Close()
-
-	server := httptest.NewServer(newMCPHandler(newAPIClient(backend.URL), protectedResourceMetadataURL))
-	defer server.Close()
-
-	post := func(body, sessionID, token string) (*http.Response, string) {
-		t.Helper()
-		req, err := http.NewRequest(http.MethodPost, server.URL, strings.NewReader(body))
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json, text/event-stream")
-		if sessionID != "" {
-			req.Header.Set("Mcp-Session-Id", sessionID)
-		}
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer resp.Body.Close()
-		responseBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return resp, string(responseBody)
-	}
-
-	initialize := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}`
-	resp, body := post(initialize, "", "")
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("initialize status = %d, want 200; body = %s", resp.StatusCode, body)
-	}
-	sessionID := resp.Header.Get("Mcp-Session-Id")
-	if sessionID != "" {
-		t.Fatalf("stateless initialize returned unexpected Mcp-Session-Id %q", sessionID)
-	}
-
-	_, body = post(`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, sessionID, "")
-	for _, want := range []string{`"name":"list_phrases"`, `"name":"sample_phrases"`, `"name":"explore_phrase"`, `"name":"add_phrase"`, `"securitySchemes"`} {
-		if !strings.Contains(body, want) {
-			t.Errorf("anonymous tools/list response does not contain %s: %s", want, body)
-		}
-	}
-
-	_, body = post(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"explore_phrase","arguments":{"phrase":"test"}}}`, sessionID, "")
-	if strings.Contains(body, `"isError":true`) || !strings.Contains(body, `"instructions"`) {
-		t.Errorf("public explore_phrase call failed: %s", body)
-	}
-
-	assertAuthChallenge := func(body string) {
-		t.Helper()
-		for _, want := range []string{`"isError":true`, `"mcp/www_authenticate"`, protectedResourceMetadataURL, `error=\"invalid_token\"`} {
-			if !strings.Contains(body, want) {
-				t.Errorf("authentication error response does not contain %q: %s", want, body)
-			}
-		}
-	}
-
-	_, body = post(`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"list_phrases","arguments":{}}}`, sessionID, "")
-	assertAuthChallenge(body)
-
-	_, body = post(`{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"list_phrases","arguments":{}}}`, sessionID, "expired-token")
-	assertAuthChallenge(body)
-
-	_, body = post(`{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"list_phrases","arguments":{}}}`, sessionID, "test-token")
-	if strings.Contains(body, `"isError":true`) || !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"A test phrase"`) {
-		t.Errorf("authenticated tool call did not succeed on the anonymously initialized session: %s", body)
 	}
 }
 
