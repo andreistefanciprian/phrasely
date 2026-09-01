@@ -127,7 +127,33 @@
 
 .menu-button { color: var(--secondary); }
 
-/* ── Bottom tab bar (mobile) ── */
+.menu-item-cta {
+  margin-top: 0.3rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  color: var(--blue);
+  font-weight: 700;
+}
+.menu-item-cta:hover { color: var(--blue); }
+
+/* ── Footer ── */
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  text-align: center;
+  padding: 2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+footer a { color: inherit; text-decoration: underline; }
+.github-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+.github-link svg { flex: 0 0 auto; display: block; }
+
+/* ── Bottom tab bar (mobile, signed-in only) ── */
 #tab-bar { display: none; }
 
 @media (max-width: 600px) {
@@ -177,5 +203,12 @@
   .tab:hover { color: var(--secondary); }
   .tab.active { color: var(--navy); }
 
-  body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+  /* Only signed-in pages render #tab-bar — scope the body offset to it so
+     public pages (no tab bar) don't get a phantom gap at the bottom. */
+  body:has(#tab-bar) { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+
+  /* A page reachable while signed in (Story, Privacy, Terms, Guide) can
+     render both a footer and the tab bar on mobile — the tab bar already
+     covers navigation there, so hide the footer instead of stacking both. */
+  body:has(#tab-bar) footer { display: none; }
 }

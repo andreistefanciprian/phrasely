@@ -256,6 +256,7 @@ func (app *application) storyPage(w http.ResponseWriter, r *http.Request) {
 	authenticated := hasAuthCookie(r)
 	data := map[string]any{
 		"Authenticated":     authenticated,
+		"Page":              "story",
 		"InitialIndex":      initialIndex,
 		"InitialPhrase":     sample.Phrase,
 		"InitialKeyword":    sample.Keyword,
@@ -271,7 +272,7 @@ func (app *application) storyPage(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) privacyPage(w http.ResponseWriter, r *http.Request) {
 	authenticated := hasAuthCookie(r)
-	data := map[string]any{"Authenticated": authenticated}
+	data := map[string]any{"Authenticated": authenticated, "Page": "privacy"}
 	if authenticated {
 		app.renderAuth(w, "privacy.html", data)
 		return
@@ -281,12 +282,22 @@ func (app *application) privacyPage(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) termsPage(w http.ResponseWriter, r *http.Request) {
 	authenticated := hasAuthCookie(r)
-	data := map[string]any{"Authenticated": authenticated}
+	data := map[string]any{"Authenticated": authenticated, "Page": "terms"}
 	if authenticated {
 		app.renderAuth(w, "terms.html", data)
 		return
 	}
 	app.render(w, "terms.html", data)
+}
+
+func (app *application) guidePage(w http.ResponseWriter, r *http.Request) {
+	authenticated := hasAuthCookie(r)
+	data := map[string]any{"Authenticated": authenticated, "Page": "guide"}
+	if authenticated {
+		app.renderAuth(w, "guide.html", data)
+		return
+	}
+	app.render(w, "guide.html", data)
 }
 
 func (app *application) bubblePage(w http.ResponseWriter, r *http.Request) {
