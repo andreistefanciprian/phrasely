@@ -32,6 +32,12 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 // enough to catch typos, not a full RFC 5322 validator.
 var emailRe = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]{2,}$`)
 
+// validSources are the landing page's three capture placements. Anything
+// else — a bug, a stale client, or someone poking the endpoint directly —
+// falls back to "unknown" rather than polluting attribution reporting with
+// arbitrary strings.
+var validSources = map[string]bool{"hero": true, "integration": true, "closing": true}
+
 type joinRequest struct {
 	Email  string `json:"email"`
 	Source string `json:"source"`
@@ -57,7 +63,7 @@ func (h *Handler) join(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req.Source = strings.TrimSpace(req.Source)
-	if req.Source == "" {
+	if !validSources[req.Source] {
 		req.Source = "unknown"
 	}
 
