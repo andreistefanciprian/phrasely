@@ -345,6 +345,28 @@ func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
+// waitlistJoin handles POST /waitlist — the landing page's inline "join the
+// ChatGPT list" capture. Public: visitors submitting this have no account
+// yet. Body and status are relayed verbatim from the private API, which owns
+// validation and idempotency, so there's nothing to duplicate here.
+func (app *application) waitlistJoin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	status, body, err := app.api.Proxy(http.MethodPost, "/waitlist", "", r.Body, "application/json")
+	if err != nil {
+		slog.Error("join waitlist", "error", err)
+		http.Error(w, "upstream error", http.StatusBadGateway)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write(body)
+}
+
 // addPage is a placeholder — full implementation in next step.
 func (app *application) addPage(w http.ResponseWriter, r *http.Request) {
 	app.renderAuth(w, "add.html", map[string]any{"Page": "add"})

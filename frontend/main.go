@@ -81,6 +81,7 @@ func main() {
 	mux.HandleFunc("/terms", app.termsPage)
 	mux.HandleFunc("/auth-verify", app.authVerify) // magic link landing (what the API emails)
 	mux.HandleFunc("/sign-out", app.signOut)
+	mux.HandleFunc("/waitlist", app.waitlistJoin) // landing page "join the ChatGPT list" capture
 
 	// OAuth 2.1 consent screen — auth check is handled inside the handler so
 	// we can show proper errors for bad params before redirecting to login.
