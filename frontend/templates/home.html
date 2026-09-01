@@ -38,7 +38,7 @@
   .integration-preview-note { display: flex; align-items: flex-start; gap: 0.65rem; margin-top: 1.5rem; color: var(--muted); font-size: 0.72rem; line-height: 1.5; }
   .integration-preview-dot { width: 0.42rem; height: 0.42rem; margin-top: 0.28rem; flex-shrink: 0; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); }
   .integration-preview-note strong { color: var(--navy); }
-  .integration-access-link { display: inline-block; margin-top: 0.8rem; color: var(--blue); font-size: 0.78rem; font-weight: 600; }
+  .waitlist-link.integration-access-link { display: block; width: max-content; margin-top: 1.3rem; color: var(--blue); font-size: 0.78rem; font-weight: 600; }
   .integration-access-link:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
 
   .chat-demo { overflow: hidden; width: 100%; border: 1px solid var(--border); border-radius: 20px; background: var(--white); box-shadow: 0 24px 65px rgba(15,27,110,0.12); }
@@ -155,9 +155,6 @@
   .conversation-plugin-mention img { width: 1.25rem; height: 1rem; object-fit: contain; }
   .conversation-worked { margin: 2.3rem 0 1.25rem; color: #8B8B8B; font-size: 0.67rem; }
   .conversation-worked span { margin-left: 0.28rem; color: #A3A3A3; }
-  .conversation-collection-status { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 1.85rem; color: #575757; font-size: 0.7rem; }
-  .conversation-tool-icon { color: #575757; font-size: 0.62rem; font-weight: 600; letter-spacing: -0.08em; }
-  .conversation-tool-chevron { color: #8B8B8B; font-size: 0.62rem; }
   .conversation-reply { color: #171717; font-size: 0.86rem; line-height: 1.62; }
   .conversation-reply strong { color: var(--navy); }
   .conversation-bottom { margin-top: auto; padding-top: 2.25rem; }
@@ -205,7 +202,7 @@
 
   .waitlist-link { display: inline-block; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 
-  .waitlist-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-hover); }
+  .waitlist-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
   .waitlist-input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--navy); font-family: inherit; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.01em; }
   .waitlist-input::placeholder { color: var(--muted); }
   .waitlist-input:focus { outline: none; }
@@ -226,19 +223,16 @@
 
   [data-waitlist-placement="integration"] { min-height: 7.4rem; }
   [data-waitlist-placement="integration"] .waitlist-form { max-width: 330px; }
-  .waitlist-hint-row { display: flex; align-items: baseline; gap: 0.9rem; margin-top: 0.6rem; max-width: 330px; }
-  .waitlist-hint { color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
+  .waitlist-hint { flex-basis: 100%; margin-top: 0.6rem; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
+  .waitlist-hint:empty { display: none; }
   .waitlist-hint.is-error { color: #C4324F; }
-  .waitlist-cancel { margin-left: auto; background: none; border: 0; padding: 0; color: var(--muted); font-family: inherit; font-size: 0.68rem; cursor: pointer; }
-  .waitlist-cancel:hover { color: var(--secondary); }
 
   .waitlist-compact { display: inline-flex; align-items: center; }
   .waitlist-form-compact { width: 260px; max-width: 60vw; }
-  .waitlist-hint-compact { flex-basis: 100%; margin-top: 0.3rem; }
+  .waitlist-hint-compact { margin-top: 0.3rem; }
   .waitlist-confirmed { display: inline-flex; align-items: center; gap: 0.5rem; cursor: default; }
   .waitlist-confirmed-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); flex-shrink: 0; }
 
-  .waitlist-on-navy .waitlist-form { border-bottom-color: rgba(255,255,255,0.28); }
   .waitlist-on-navy .waitlist-hint { color: rgba(255,255,255,0.5); }
   .waitlist-on-navy .waitlist-hint.is-error { color: #FF9AAA; }
   .waitlist-on-navy .waitlist-input { color: var(--white); }
@@ -339,11 +333,8 @@
           <form class="waitlist-form" data-waitlist-form novalidate>
             <input class="waitlist-input" type="email" name="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" aria-label="Email address" required>
             <button type="submit" class="waitlist-submit" aria-label="Join the list">→</button>
+            <span class="waitlist-hint" data-waitlist-hint></span>
           </form>
-          <div class="waitlist-hint-row">
-            <span class="waitlist-hint" data-waitlist-hint>One email when ChatGPT access opens. Nothing else.</span>
-            <button type="button" class="waitlist-cancel" data-waitlist-cancel>Cancel</button>
-          </div>
         </div>
 
         <p class="integration-preview-note" data-waitlist-done hidden tabindex="-1"><span class="integration-preview-dot" aria-hidden="true"></span><span><strong>You're on the list.</strong><br>We'll email <span data-waitlist-email></span> when ChatGPT access opens up.</span></p>
@@ -457,7 +448,6 @@
       <div class="conversation-demo-body">
         <p class="conversation-user-message"><span class="conversation-plugin-mention"><img src="/static/icon-128px.png" alt=""><strong>Phrasely</strong></span>, pull all my saved phrases, but don’t list them. Briefly confirm how many you found, then tell me you’re ready to chat. During our conversation, naturally and subtly weave in phrases from my collection when they fit.</p>
         <p class="conversation-worked">Worked for 5s <span aria-hidden="true">›</span></p>
-        <p class="conversation-collection-status"><span class="conversation-tool-icon" aria-hidden="true">{↕}</span><span>Called tool</span><span class="conversation-tool-chevron" aria-hidden="true">⌄</span></p>
         <div class="conversation-reply">
           <p>I found <strong>378 saved phrases</strong> in your Phrasely collection. I’ve got them in mind — ready to chat, and I’ll weave them in naturally when they fit rather than making the conversation feel contrived.</p>
         </div>
