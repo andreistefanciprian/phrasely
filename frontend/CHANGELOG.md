@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.10.2...frontend-v0.11.0) (2026-09-01)
+
+
+### Features
+
+* **frontend:** add inline ChatGPT waiting list capture ([1263d5a](https://github.com/andreistefanciprian/phrasely/commit/1263d5a23b6e83a226c87f523142a930e7967ac1))
+* **frontend:** tell complete vocabulary journey ([fe6e59c](https://github.com/andreistefanciprian/phrasely/commit/fe6e59c3ae6439f73254e35306ac0847bc43359b))
+
+
+### Bug Fixes
+
+* **frontend:** highlight full landing expressions ([0361cfc](https://github.com/andreistefanciprian/phrasely/commit/0361cfc02033de8969ea3478b46811640a11e913))
+* **frontend:** refine ChatGPT composer ([53e182d](https://github.com/andreistefanciprian/phrasely/commit/53e182df9764319597b303690b5c2d84cc52ae90))
+* **frontend:** show waitlist errors visibly, disclose in privacy policy ([a01e914](https://github.com/andreistefanciprian/phrasely/commit/a01e914328983d8cf2f13be9676e7d0a75876179))
+
 ## [0.10.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.10.1...frontend-v0.10.2) (2026-08-25)
 
 
