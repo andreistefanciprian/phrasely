@@ -19,6 +19,7 @@ backend/cmd/send-phrase-digest/main.go  — cron worker entry point; builds DB +
 backend/internal/db/db.go               — Store interface + all PostgresStore SQL implementations
 backend/internal/phrases/handler.go     — phrase CRUD handlers
 backend/internal/settings/handler.go    — GET/POST /api/v1/settings/email (digest preferences)
+backend/internal/waitlist/handler.go    — POST /waitlist (ChatGPT-access waiting list capture)
 backend/internal/phrasedigest/service.go — SendDue logic: isDue check, email + mark-sent
 backend/internal/email/digest.go        — SendPhraseDigest on ResendSender and LogSender; HTML template
 backend/internal/embeddings/service.go  — OpenAI text-embedding-3-small wrapper; PhraseText() builds the string to embed
@@ -133,6 +134,7 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 | POST | `/api/v1/phrases/curate` | JWT | Curate a raw phrase via OpenAI |
 | GET | `/api/v1/settings/email` | JWT | Get digest preferences (frequency) |
 | POST | `/api/v1/settings/email` | JWT | Save digest preferences |
+| POST | `/waitlist` | public | Join the ChatGPT-access waiting list (email + source); idempotent per email |
 
 ## MCP tools
 
@@ -193,6 +195,7 @@ release-please runs on every push to `main` and tracks `frontend/`, `backend/`, 
 - **Shuffle page** — on load, all of the user's phrases are fetched in one SQL query and embedded as JSON into the HTML; all subsequent shuffles are client-side `Math.random()` with no further network calls, which is intentional: adding a per-shuffle random DB endpoint (`ORDER BY RANDOM()`) would add network latency per tap and cost more overall at small scale.
 - **Search in Phrases page** — headword substring match runs first, client-side against the in-memory phrases array. Semantic search (`GET /api/v1/phrases/search?q=`) only fires if the local match returns nothing. This means semantically related phrases with different headwords are invisible when a headword match exists — by design, to avoid unnecessary API calls and keep the common case instant.
 - **Siblings vs. related phrases** — siblings are phrases that share the exact same headword set, computed client-side by string comparison against the in-memory phrases array. "You may also like" is a live API call to `GET /api/v1/phrases/{id}/related` which uses cosine similarity on stored embeddings. Because siblings share a headword they are semantically very close, so they would almost always appear in both sections. To avoid showing the same phrase twice, `fetchRelated` client-side filters out any result whose headword set matches the current phrase's headwords before rendering. The distance threshold for related results is `RELATED_MAX_DISTANCE` (default `0.45`, cosine distance); phrases beyond this threshold are excluded entirely rather than shown as noise.
+- **Waitlist has no rate limiting** — `POST /waitlist` is unauthenticated by design (visitors have no account yet) and deliberately ships without any rate limiter, IP-based or otherwise. This was a scope call, not an oversight: the ChatGPT integration this waitlist exists for is expected to launch soon, which shortens how long the endpoint needs to stay publicly exposed, and it may turn out a limiter isn't needed at all. Revisit only if abuse is actually observed.
 
 ## Open questions
 

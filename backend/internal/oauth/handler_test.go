@@ -115,6 +115,9 @@ func (m *mockStore) ListDigestRecipients(_ context.Context) ([]db.DigestRecipien
 func (m *mockStore) MarkDigestSent(_ context.Context, _ string, _ time.Time) error {
 	panic("not expected in oauth tests")
 }
+func (m *mockStore) AddWaitlistSignup(_ context.Context, _, _ string) error {
+	panic("not expected in oauth tests")
+}
 
 func callRevokeTokens(store db.Store, userID, clientID string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()

@@ -17,6 +17,7 @@ import (
 	"github.com/andreistefanciprian/phrasely/internal/oauth"
 	"github.com/andreistefanciprian/phrasely/internal/phrases"
 	"github.com/andreistefanciprian/phrasely/internal/settings"
+	"github.com/andreistefanciprian/phrasely/internal/waitlist"
 	"github.com/gorilla/mux"
 )
 
@@ -88,6 +89,7 @@ func buildRouter(cfg config, store db.Store) http.Handler {
 
 	phrases.NewHandler(store, embedder, cfg.relatedMaxDistance).RegisterRoutes(r)
 	settings.NewHandler(store).RegisterRoutes(r)
+	waitlist.NewHandler(store).RegisterRoutes(r)
 
 	return r
 }

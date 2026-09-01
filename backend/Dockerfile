@@ -16,6 +16,7 @@ COPY internal/curate/*.go ./internal/curate/
 COPY internal/embeddings ./internal/embeddings
 COPY internal/settings ./internal/settings
 COPY internal/phrasedigest ./internal/phrasedigest
+COPY internal/waitlist ./internal/waitlist
 COPY migrations ./migrations
 # CGO_ENABLED=0  — static binary, no C runtime dependency
 # -trimpath      — removes local file paths from the binary
