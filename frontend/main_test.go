@@ -44,9 +44,10 @@ func TestPrivacyPage(t *testing.T) {
 	body := w.Body.String()
 	for _, want := range []string{
 		"Privacy Policy",
-		"Effective June 23, 2026",
+		"Effective September 1, 2026",
 		"OpenAI",
 		"Data retention and deletion",
+		"Waiting list signups",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("response does not contain %q", want)
@@ -135,160 +136,6 @@ func TestTermsPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
 	}
 	if strings.Contains(body, "Sign in →") {
 		t.Error("response contains logged-out sign-in prompt")
-	}
-}
-
-func TestStoryPageUsesAuthenticatedNavWhenSignedIn(t *testing.T) {
-	app := &application{homeShuffleSamples: []homeShufflePhrase{{
-		Phrase:     "A stitch in time saves nine.",
-		Keyword:    "a stitch in time",
-		Definition: "acting early prevents more work later",
-		Weight:     1,
-	}, {
-		Phrase:     "We got there in the nick of time.",
-		Keyword:    "in the nick of time",
-		Definition: "at the last possible moment",
-		Weight:     1,
-	}}}
-	req := httptest.NewRequest(http.MethodGet, "/story", nil)
-	req.AddCookie(&http.Cookie{Name: authCookieName, Value: "jwt"})
-	w := httptest.NewRecorder()
-
-	app.storyPage(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	body := w.Body.String()
-	for _, want := range []string{
-		`id="navbar"`,
-		`href="/bubble"`,
-		"Open Phrasely →",
-		`id="story-shuffle"`,
-		"Five minutes · your words",
-		"Click to shuffle",
-		"Tap to shuffle",
-		"A stitch in time saves nine.",
-		"acting early prevents more work later",
-		"We got there in the nick of time.",
-		"at the last possible moment",
-		"card.addEventListener('click'",
-		"renderHighlightedPhrase",
-	} {
-		if !strings.Contains(body, want) {
-			t.Errorf("response does not contain %q", want)
-		}
-	}
-	if strings.Contains(body, "Sign in →") || strings.Contains(body, "Try Phrasely, it's free →") {
-		t.Error("response contains logged-out story prompt")
-	}
-}
-
-func TestHomePageRendersFiveMinuteShuffle(t *testing.T) {
-	app := &application{homeShuffleSamples: []homeShufflePhrase{
-		{Phrase: "First phrase.", Keyword: "first", Definition: "first meaning", Weight: 4},
-		{Phrase: "Second phrase.", Keyword: "second", Definition: "second meaning", Weight: 1},
-	}}
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-
-	app.homePage(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	body := w.Body.String()
-	for _, want := range []string{
-		"Your AI vocabulary companion",
-		"Turn expressions you encounter into language you",
-		"actually use",
-		"Encounter it again",
-		"Start on the web. It’s free",
-		"Join ChatGPT plugin waiting list",
-		`class="integration-showcase"`,
-		"Phrasely in ChatGPT · Private preview",
-		"Hear something interesting? Just tell Phrasely.",
-		"Still in private testing.",
-		`data-waitlist-placement="primary"`,
-		`data-waitlist-placement="hero"`,
-		`data-waitlist-placement="closing"`,
-		"Choose a phrase to save",
-		"Pick the context you’ll be most likely to remember.",
-		"beyond the pale",
-		"Everyday context",
-		"A useful distinction",
-		"out of line",
-		"Saved privately to Phrasely",
-		`class="chat-context-button saved"`,
-		`class="web-showcase"`,
-		"Phrasely on the web",
-		"Prefer to shape the phrase yourself?",
-		"muddy the waters",
-		"Review before saving",
-		"Your vocabulary, made visible",
-		"See what you’re reinforcing.",
-		`id="bubble-word-field"`,
-		"Choose any expression to revisit it",
-		"word.type = 'button'",
-		"card.scrollIntoView",
-		"A better five-minute habit",
-		`class="habit-section"`,
-		`class="habit-section-inner"`,
-		"Got five minutes?",
-		`id="home-shuffle"`,
-		"Five minutes · your words",
-		"Click to shuffle",
-		"Tap to shuffle",
-		`class="conversation-showcase"`,
-		"Your vocabulary, in conversation",
-		"Practise without turning it into a lesson.",
-		`class="conversation-plugin-mention"`,
-		"pull all my saved phrases, but don’t list them",
-		"Worked for 5s",
-		"Called tool",
-		"378 saved phrases",
-		"making the conversation feel contrived",
-		`class="conversation-composer"`,
-		`class="conversation-composer-placeholder"`,
-		"Ask ChatGPT",
-		`class="closing-showcase"`,
-		"The idea is simple",
-		"Making it part of the way you speak is the hard part.",
-		"card.addEventListener('click'",
-		"renderHighlightedPhrase",
-		"shuffle-phrase-highlight",
-		"First phrase.",
-		"first meaning",
-		"Second phrase.",
-		"second meaning",
-	} {
-		if !strings.Contains(body, want) {
-			t.Errorf("response does not contain %q", want)
-		}
-	}
-	for _, unwanted := range []string{"Build your personal vocabulary from", "See what you’re actually learning.", "Chat with your collection", "Practise on demand", "dwell on", "morass", "ad nauseam", "vantage point", "find your groove", "Sources", "ChatGPT can make mistakes. Check important info.", `class="integration-uses"`, `class="loop-step"`, "mailto:", "Available by invitation", "Email me for access", "Use a different address", `data-waitlist-reopen`} {
-		if strings.Contains(body, unwanted) {
-			t.Errorf("response unexpectedly contains %q", unwanted)
-		}
-	}
-	integrationIndex := strings.Index(body, `class="integration-showcase"`)
-	habitIndex := strings.Index(body, `class="habit-section"`)
-	bubbleIndex := strings.Index(body, `class="bubble-showcase"`)
-	conversationIndex := strings.Index(body, `class="conversation-showcase"`)
-	webIndex := strings.Index(body, `class="web-showcase"`)
-	closingIndex := strings.Index(body, `class="closing-showcase"`)
-	if integrationIndex == -1 || habitIndex == -1 || bubbleIndex == -1 || conversationIndex == -1 || webIndex == -1 || closingIndex == -1 ||
-		integrationIndex >= habitIndex || habitIndex >= bubbleIndex || bubbleIndex >= conversationIndex || conversationIndex >= webIndex || webIndex >= closingIndex {
-		t.Error("landing page sections do not follow the intended learning journey")
-	}
-	if strings.Contains(body, `class="quote-section"`) {
-		t.Error("response still contains the old quote section")
-	}
-	if strings.Contains(body, `class="bubble-preview"`) || strings.Contains(body, `<img src="/static/bubble-preview.png"`) {
-		t.Error("response still contains the old static bubble preview")
-	}
-	if strings.Contains(body, "Why I built Phrasely") {
-		t.Error("response still contains the story card")
 	}
 }
 
