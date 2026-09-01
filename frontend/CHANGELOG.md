@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.11.0...frontend-v0.11.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **frontend:** add founder photo and update story page copy ([26b4f4d](https://github.com/andreistefanciprian/phrasely/commit/26b4f4d493ff6adf7e0136ec4874dbecea2d6529))
+
 ## [0.11.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.10.2...frontend-v0.11.0) (2026-09-01)
 
 
