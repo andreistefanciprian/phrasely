@@ -5,17 +5,7 @@
 <style>
   body { color: #2D3561; }
 
-  .public-nav {
-    position: sticky; top: 0;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1rem 2rem; background: var(--white); border-bottom: 1px solid var(--border); z-index: 10;
-  }
-  .public-nav img { height: auto; width: auto; display: block; }
-  .nav-cta { font-size: 0.875rem; font-weight: 600; color: var(--blue); text-decoration: none; transition: opacity 0.15s; }
-  .nav-cta:hover { opacity: 0.75; }
-
-  .story { max-width: 640px; margin: 0 auto; padding: 4rem 2rem 6rem; }
-  .story-auth { padding-top: 7rem; }
+  .story { max-width: 640px; margin: 0 auto; padding: 7rem 2rem 6rem; }
   .story-byline { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.75rem; }
   .story-byline img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
   .story-byline a { color: var(--blue); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
@@ -42,28 +32,18 @@
   @media (hover: hover) { .shuffle-button-label--click { display: inline; } }
   @media (hover: none) { .shuffle-button-label--tap { display: inline; } }
 
-  footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.45rem; text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border); }
-  footer a { color: inherit; text-decoration: underline; }
-  .github-link { display: inline-flex; align-items: center; gap: 0.35rem; }
-  .github-link svg { flex: 0 0 auto; display: block; }
-
   @media (max-width: 600px) {
-    .public-nav { padding: 1rem 1.25rem; }
-    .story { padding: 2.5rem 1.25rem 4rem; }
-    .story-auth { padding-top: 5rem; }
+    .story { padding: 5rem 1.25rem 4rem; }
   }
 </style>
 {{end}}
 
 {{define "content"}}
 {{if not .Authenticated}}
-<nav class="public-nav">
-  <a href="/"><img src="/static/logo.png" alt="Phrasely"></a>
-  <a href="/login" class="nav-cta">Sign in →</a>
-</nav>
+{{template "navbar" .}}
 {{end}}
 
-<div class="story{{if .Authenticated}} story-auth{{end}}">
+<div class="story">
   <h1>Why I built Phrasely</h1>
 
   <div class="story-byline">
@@ -84,7 +64,7 @@
   <p>So I built Phrasely.</p>
   <p>A place where rough notes become memorable language. Paste a phrase, a fragment, or even a single word, and AI helps uncover what makes it worth remembering.</p>
   <p>These days I rarely add phrases through the app itself. Most of that happens right inside ChatGPT, where I review, learn, understand, and add new phrases without ever leaving the conversation. Sometimes I ask it to weave phrases from my collection into what we're talking about. Other times I just ask it to pick a few at random and practice them with me through the chat.</p>
-  <p>I still open Phrasely itself too, mostly Shuffle and occasionally the bubble page to see where I stand with using and reviewing my phrases. Shuffle especially has become my replacement for social media, a few idle minutes spent flipping through my own phrases instead of doom scrolling someone else's feed.</p>
+  <p>I still open Phrasely itself too, mostly Shuffle and occasionally the Bubble page to see where I stand with using and reviewing my phrases. Shuffle especially has become my replacement for social media, a few idle minutes spent flipping through my own phrases instead of doom scrolling someone else's feed.</p>
   <p>I built it for myself. But it isn't just for people learning English. It's for anyone who's ever heard a great expression and thought: "I want that to be part of my vocabulary."</p>
 
   <div class="cta-row">
@@ -109,7 +89,7 @@
   </div>
 </section>
 
-<footer><span>&copy; 2026 Phrasely</span><span aria-hidden="true">·</span><a href="/privacy">Privacy</a><span aria-hidden="true">·</span><a href="/terms">Terms</a><span aria-hidden="true">·</span><a href="https://github.com/andreistefanciprian/phrasely" target="_blank" rel="noopener" class="github-link"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.6 7.6 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>Source code on GitHub</a></footer>
+{{template "footer" .}}
 
 <script type="application/json" id="story-phrase-samples">{{ .PhraseSamples }}</script>
 <script>

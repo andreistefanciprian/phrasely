@@ -77,6 +77,7 @@ func main() {
 	mux.HandleFunc("/", app.homePage)
 	mux.HandleFunc("/login", app.loginPage)
 	mux.HandleFunc("/story", app.storyPage)
+	mux.HandleFunc("/guide", app.guidePage)
 	mux.HandleFunc("/privacy", app.privacyPage)
 	mux.HandleFunc("/terms", app.termsPage)
 	mux.HandleFunc("/auth-verify", app.authVerify) // magic link landing (what the API emails)
@@ -160,12 +161,30 @@ func parseLogLevel(s string) slog.Level {
 
 // render renders a public page (base.html + page template).
 func (app *application) render(w http.ResponseWriter, name string, data any) {
-	app.renderWith("base.html", w, name, data)
+	app.renderWith("base.html", w, name, withAuthenticated(data, false))
 }
 
 // renderAuth renders an authenticated page (base-auth.html + navbar + page template).
 func (app *application) renderAuth(w http.ResponseWriter, name string, data any) {
-	app.renderWith("base-auth.html", w, name, data)
+	app.renderWith("base-auth.html", w, name, withAuthenticated(data, true))
+}
+
+// withAuthenticated backfills the "Authenticated" key so the shared navbar
+// template can tell private pages (Bubble, Phrases, Add, Shuffle, Settings —
+// none of which set it themselves, since they're only ever reached already
+// authenticated) from public ones without every handler repeating itself.
+// A handler that already set the key (story/privacy/terms/guide, which serve
+// both states) wins. Non-map data (the OAuth consent struct, nil for 404)
+// passes through unchanged — those pages never render the navbar.
+func withAuthenticated(data any, authenticated bool) any {
+	m, ok := data.(map[string]any)
+	if !ok {
+		return data
+	}
+	if _, exists := m["Authenticated"]; !exists {
+		m["Authenticated"] = authenticated
+	}
+	return m
 }
 
 func (app *application) renderWith(base string, w http.ResponseWriter, name string, data any) {

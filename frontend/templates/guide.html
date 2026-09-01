@@ -1,0 +1,104 @@
+{{define "title"}}How to Use Phrasely — Phrasely{{end}}
+
+{{define "head"}}
+<meta name="description" content="A quick walkthrough of Phrasely: add a phrase, review it in Bubble, practise with Shuffle, find it again in Phrases, and use it in ChatGPT.">
+<link rel="canonical" href="https://getphrasely.com/guide">
+<style>
+  body { color: var(--text); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 7rem 2rem 6rem; }
+  h1 { font-family: 'Lora', Georgia, serif; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--navy); margin-bottom: 0.5rem; }
+  .lede { color: var(--muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 2.75rem; }
+
+  .step { display: flex; gap: 1.25rem; padding: 1.75rem 0; border-top: 1px solid var(--border); }
+  .step:first-of-type { border-top: 0; padding-top: 0; }
+  .step-number { flex-shrink: 0; width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: 50%; background: #F0FBFA; color: #07847F; font-family: 'Lora', Georgia, serif; font-size: 1rem; font-weight: 600; }
+  .step h2 { color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .step p { font-size: 0.95rem; line-height: 1.75; color: var(--text); margin-bottom: 0.5rem; }
+  .step p:last-child { margin-bottom: 0; }
+  .step a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
+  .step code { padding: 0.1rem 0.35rem; border-radius: 4px; background: var(--surface); color: var(--navy); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85em; }
+  .step-note { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 10px; background: #F6F6FF; color: var(--secondary); font-size: 0.85rem; line-height: 1.55; }
+  .step-note-dot { width: 0.42rem; height: 0.42rem; margin-top: 0.35rem; flex-shrink: 0; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); }
+  .step-note strong { color: var(--navy); }
+
+  .cta-row { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+  .cta-row a { display: inline-block; padding: 0.75rem 1.75rem; background: var(--blue); color: var(--white); font-size: 0.875rem; font-weight: 600; border-radius: 100px; text-decoration: none; transition: opacity 0.15s; }
+  .cta-row a:hover { opacity: 0.88; }
+
+  @media (max-width: 600px) {
+    main { padding: 5rem 1.25rem 4rem; }
+    .step { gap: 0.9rem; }
+  }
+</style>
+{{end}}
+
+{{define "content"}}
+{{if not .Authenticated}}
+{{template "navbar" .}}
+{{end}}
+
+<main>
+  <h1>How to Use Phrasely</h1>
+  <p class="lede">Phrasely turns expressions you hear into vocabulary you actually use. Here's the whole loop, from first save to second nature.</p>
+
+  <div class="step">
+    <div class="step-number">1</div>
+    <div>
+      <h2>Add a phrase</h2>
+      <p>Heard something worth keeping in a podcast, a film, or a conversation? Paste it into <a href="/add">Add</a> just as you heard it, even as a rough fragment. Mark the part you want explained with <code>??</code>, for example "He was being cagey ?? about the decision." AI curation turns that into a clear definition, identifies the headword, and links a dictionary source, so you don't have to structure it yourself.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">2</div>
+    <div>
+      <h2>See it grow in Bubble</h2>
+      <p><a href="/bubble">Bubble</a> shows your whole collection at a glance. Expressions you revisit often grow larger; ones you've neglected stay small, so it's easy to see what's sticking and what needs another look.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">3</div>
+    <div>
+      <h2>Practise with Shuffle</h2>
+      <p><a href="/shuffle">Shuffle</a> is a five-minute habit: flip through random phrases from your own collection instead of someone else's feed. Every tap favours expressions you haven't encountered lately.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">4</div>
+    <div>
+      <h2>Find it again in Phrases</h2>
+      <p><a href="/phrases">Phrases</a> is your full collection, browsable and searchable. Search by headword, or fall back to semantic search when you remember the meaning but not the exact words. Open any entry to see related phrases you've saved nearby.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">5</div>
+    <div>
+      <h2>Use it inside ChatGPT</h2>
+      <p>Connect Phrasely to ChatGPT and skip the app entirely: ask it to explain something you just heard, weave your saved phrases into the conversation, or quiz you on a few at random. New phrases you discover mid-conversation get saved straight back to your collection.</p>
+      <p class="step-note"><span class="step-note-dot" aria-hidden="true"></span><span><strong>Still in private testing.</strong> The ChatGPT plugin isn't open to everyone yet. Join the waiting list on the <a href="/">home page</a> and we'll email you when it's ready. Soon.</span></p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">6</div>
+    <div>
+      <h2>Stay on top of it in Settings</h2>
+      <p><a href="/settings">Settings</a> lets you get a phrase from your collection emailed to you on a schedule (daily, weekly, or monthly) so review happens even on days you don't open the app. You can also export your whole collection at any time as CSV, JSON, or plain text, so your phrase list is never locked in.</p>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    {{if .Authenticated}}
+    <a href="/bubble">Open Phrasely →</a>
+    {{else}}
+    <a href="/login">Try Phrasely, it's free →</a>
+    {{end}}
+  </div>
+</main>
+
+{{template "footer" .}}
+{{end}}
