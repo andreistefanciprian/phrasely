@@ -202,7 +202,7 @@
 
   .waitlist-link { display: inline-block; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 
-  .waitlist-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+  .waitlist-form { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
   .waitlist-input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--navy); font-family: inherit; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.01em; }
   .waitlist-input::placeholder { color: var(--muted); }
   .waitlist-input:focus { outline: none; }
@@ -225,16 +225,29 @@
   [data-waitlist-placement="integration"] .waitlist-form { align-items: flex-start; max-width: 330px; margin-top: 1.3rem; }
   .waitlist-hint { flex-basis: 100%; margin-top: 0.6rem; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
   .waitlist-hint:empty { display: none; }
-  .waitlist-hint.is-error { color: #C4324F; }
+  .waitlist-hint.is-error {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    box-sizing: border-box;
+    padding: 0.45rem 0.6rem;
+    border-left: 2px solid rgba(90,84,255,0.45);
+    border-radius: 6px;
+    background: rgba(90,84,255,0.07);
+    color: var(--secondary);
+    font-weight: 600;
+    text-align: left;
+  }
 
   .waitlist-compact { display: inline-flex; align-items: center; }
-  .waitlist-form-compact { position: relative; width: 260px; max-width: 60vw; }
-  .waitlist-hint-compact { position: absolute; top: 100%; right: 0; left: 0; margin-top: 0.3rem; }
+  .waitlist-form-compact { width: 260px; max-width: 60vw; }
+  .waitlist-hint-compact { margin-top: 0.3rem; }
   .waitlist-confirmed { display: inline-flex; align-items: center; gap: 0.5rem; cursor: default; }
   .waitlist-confirmed-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); flex-shrink: 0; }
 
   .waitlist-on-navy .waitlist-hint { color: rgba(255,255,255,0.5); }
-  .waitlist-on-navy .waitlist-hint.is-error { color: #FF9AAA; }
+  .waitlist-on-navy .waitlist-hint.is-error { border-left-color: rgba(31,211,204,0.72); background: rgba(255,255,255,0.07); color: #DDE0F8; }
   .waitlist-on-navy .waitlist-input { color: var(--white); }
   .waitlist-on-navy .waitlist-input::placeholder { color: rgba(255,255,255,0.5); }
   .waitlist-on-navy .waitlist-input:-webkit-autofill,
@@ -696,6 +709,7 @@
       const defaultHint = hint ? hint.textContent : '';
 
       function resetError() {
+        if (input) input.removeAttribute('aria-invalid');
         if (hint) { hint.textContent = defaultHint; hint.classList.remove('is-error'); }
       }
 
@@ -741,11 +755,12 @@
           input.value = value;
 
           if (!input.checkValidity()) {
+            input.setAttribute('aria-invalid', 'true');
             if (hint) {
-              hint.textContent = 'That address doesn’t look right.';
+              hint.textContent = 'Hmm, that email doesn’t look quite right.';
               hint.classList.add('is-error');
             }
-            announce(root, 'That address doesn’t look right.');
+            announce(root, 'Hmm, that email doesn’t look quite right.');
             input.focus();
             return;
           }
