@@ -187,7 +187,7 @@
   .closing-access-link:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
 
   /* ── Waitlist capture (shared across hero / integration / closing) ── */
-  @keyframes waitlistFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes waitlistFade { from { opacity: 0; } to { opacity: 1; } }
   .waitlist-fade-in { animation: waitlistFade 0.28s ease both; }
   @media (prefers-reduced-motion: reduce) { .waitlist-fade-in { animation: none; } }
 
@@ -222,7 +222,7 @@
   .waitlist-submit:disabled { opacity: 0.6; cursor: default; }
 
   [data-waitlist-placement="integration"] { min-height: 7.4rem; }
-  [data-waitlist-placement="integration"] .waitlist-form { max-width: 330px; }
+  [data-waitlist-placement="integration"] .waitlist-form { align-items: flex-start; max-width: 330px; margin-top: 1.3rem; }
   .waitlist-hint { flex-basis: 100%; margin-top: 0.6rem; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
   .waitlist-hint:empty { display: none; }
   .waitlist-hint.is-error { color: #C4324F; }
