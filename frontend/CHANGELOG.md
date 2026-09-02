@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.1...frontend-v0.12.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **frontend:** keep waitlist form position stable ([0c8ab69](https://github.com/andreistefanciprian/phrasely/commit/0c8ab695271e0392b013d84949d97d76a084c0b5))
+* **frontend:** keep waitlist validation aligned ([88a588f](https://github.com/andreistefanciprian/phrasely/commit/88a588f0b8e0921639ab803da74880342bcf5bc3))
+* **frontend:** soften waitlist validation warning ([5939580](https://github.com/andreistefanciprian/phrasely/commit/5939580533b57770a0c5aa57ff5418ffd3172b1d))
+
 ## [0.12.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.0...frontend-v0.12.1) (2026-09-01)
 
 
