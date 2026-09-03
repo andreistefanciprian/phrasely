@@ -5,43 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your Phrase Digest</title>
 </head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Inter,-apple-system,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#ffffff;">
     <tr>
-      <td align="center" style="padding:48px 24px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
-
-          <tr>
-            <td style="padding-bottom:24px;">
-              <p style="margin:0;font-size:0.8rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#9DA3CC;">Phrase Digest</p>
-            </td>
-          </tr>
-
+      <td align="center" style="padding:40px 18px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:520px;">
           {{range .Phrases}}
           <tr>
-            <td style="background:#F8F9FF;border-radius:12px;padding:28px 32px;margin-bottom:12px;display:block;">
-              <p style="margin:0 0 8px;font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#9DA3CC;">{{.Headword}}</p>
-              <p style="margin:0;font-size:1rem;color:#0F1B6E;line-height:1.7;font-family:Georgia,serif;">{{.Phrase}}</p>
+            <td align="center" style="padding:32px 28px 34px;background:#F6F7FF;border-radius:24px;text-align:center;">
+              <p style="margin:0;color:#777EB2;font-size:11px;font-weight:700;letter-spacing:0.15em;line-height:1.4;text-transform:uppercase;">Today's phrase</p>
+
+              <p aria-hidden="true" style="height:44px;margin:0;color:#D8DBFF;font-family:Georgia,'Times New Roman',serif;font-size:58px;font-weight:700;line-height:1;">“</p>
+
+              <p style="max-width:34em;margin:16px auto 23px;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.7;text-align:center;">{{.Phrase}}</p>
+
+              <p style="margin:0;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:{{if .Single}}32px{{else}}29px{{end}};font-weight:400;letter-spacing:-0.02em;line-height:1.2;text-align:center;">
+                {{range .Headwords}}<span style="white-space:nowrap;">{{if not .First}}<span style="color:#7D78E9;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;">•</span>&nbsp;&nbsp;{{end}}{{.Text}}</span>{{end}}
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:10px auto 24px;">
+                <tr>
+                  <td width="34" height="3" bgcolor="#28CEC4" style="width:34px;height:3px;border-radius:999px;font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td align="center" bgcolor="#5A54FF" style="border-radius:999px;">
+                    <a href="{{$.OpenURL}}" style="display:inline-block;min-width:176px;padding:15px 22px;box-sizing:border-box;color:#ffffff;font-size:13px;font-weight:700;line-height:1;text-align:center;text-decoration:none;">Open in Phrasely</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          <tr><td style="height:10px;"></td></tr>
+          <tr><td style="height:14px;"></td></tr>
           {{end}}
 
           <tr>
-            <td style="padding-top:16px;">
-              <a href="{{.OpenURL}}"
-                 style="font-size:0.8rem;color:#9DA3CC;text-decoration:none;">
-                Open this phrase in Phrasely →
-              </a>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding-top:16px;">
-              <p style="margin:0;font-size:0.8rem;color:#9DA3CC;">
-                You are receiving this email because you are subscribed to Phrasely.
-                <a href="https://getphrasely.com/settings" style="color:#9DA3CC;text-decoration:underline;">Manage your email settings</a>.
-              </p>
+            <td align="center" style="padding:10px 18px 0;color:#9BA0B1;font-size:10px;line-height:1.7;">
+              <p style="margin:0;">You are receiving this because you subscribed to the Phrasely daily phrase.</p>
+              <p style="margin:0;"><a href="https://getphrasely.com/settings" style="color:#777D96;text-decoration:underline;">Manage digest settings or unsubscribe</a></p>
+              <p style="margin:7px 0 0;">© 2026 Phrasely</p>
             </td>
           </tr>
         </table>
