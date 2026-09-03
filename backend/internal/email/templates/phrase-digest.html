@@ -3,24 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Your Phrase Digest</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body,
+      .email-background {
+        background-color: #0E1122 !important;
+      }
+
+      .phrase-card {
+        background-color: #1A1F3D !important;
+      }
+
+      .eyebrow {
+        color: #AEB5E8 !important;
+      }
+
+      .quote-mark {
+        color: #4D568D !important;
+      }
+
+      .phrase-copy,
+      .headword-row {
+        color: #F4F5FF !important;
+      }
+
+      .inline-meaning,
+      .headword-bullet {
+        color: #B6B2FF !important;
+      }
+
+      .cta-cell,
+      .cta-link {
+        background-color: #6862FF !important;
+        color: #FFFFFF !important;
+      }
+
+      .email-footer {
+        color: #9299BB !important;
+      }
+
+      .footer-link {
+        color: #BCC2EA !important;
+      }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#ffffff;">
+<body class="email-background" style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table class="email-background" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#ffffff;">
     <tr>
-      <td align="center" style="padding:40px 18px;">
+      <td class="email-background" align="center" style="padding:40px 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:520px;">
           {{range .Phrases}}
           <tr>
-            <td align="center" style="padding:32px 28px 34px;background:#F6F7FF;border-radius:24px;text-align:center;">
-              <p style="margin:0;color:#777EB2;font-size:11px;font-weight:700;letter-spacing:0.15em;line-height:1.4;text-transform:uppercase;">Today's phrase</p>
+            <td class="phrase-card" align="center" style="padding:32px 28px 34px;background:#F6F7FF;border-radius:24px;text-align:center;">
+              <p class="eyebrow" style="margin:0;color:#777EB2;font-size:11px;font-weight:700;letter-spacing:0.15em;line-height:1.4;text-transform:uppercase;">Today's phrase</p>
 
-              <p aria-hidden="true" style="height:44px;margin:0;color:#D8DBFF;font-family:Georgia,'Times New Roman',serif;font-size:58px;font-weight:700;line-height:1;">“</p>
+              <p class="quote-mark" aria-hidden="true" style="height:44px;margin:0;color:#D8DBFF;font-family:Georgia,'Times New Roman',serif;font-size:58px;font-weight:700;line-height:1;">“</p>
 
-              <p style="max-width:34ch;margin:16px auto 23px;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.7;text-align:center;">{{.Phrase}}</p>
+              <p class="phrase-copy" style="max-width:34ch;margin:16px auto 23px;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.7;text-align:center;">{{.Phrase}}</p>
 
-              <p style="margin:0;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:{{if eq (len .Headwords) 1}}32px{{else}}29px{{end}};font-weight:400;letter-spacing:-0.02em;line-height:1.2;text-align:center;">
-                {{range $i, $headword := .Headwords}}<span style="white-space:nowrap;">{{if $i}}<span style="color:#7D78E9;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;">•</span>&nbsp;&nbsp;{{end}}{{$headword}}</span>{{end}}
+              <p class="headword-row" style="margin:0;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:{{if eq (len .Headwords) 1}}32px{{else}}29px{{end}};font-weight:400;letter-spacing:-0.02em;line-height:1.2;text-align:center;">
+                {{range $i, $headword := .Headwords}}<span style="white-space:nowrap;">{{if $i}}<span class="headword-bullet" style="color:#7D78E9;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;">•</span>&nbsp;&nbsp;{{end}}{{$headword}}</span>{{end}}
               </p>
 
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:10px auto 24px;">
@@ -31,8 +82,8 @@
 
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
                 <tr>
-                  <td align="center" bgcolor="#5A54FF" style="border-radius:999px;">
-                    <a href="{{$.OpenURL}}" style="display:inline-block;min-width:176px;padding:15px 22px;box-sizing:border-box;color:#ffffff;font-size:13px;font-weight:700;line-height:1;text-align:center;text-decoration:none;">Open in Phrasely</a>
+                  <td class="cta-cell" align="center" bgcolor="#5A54FF" style="border-radius:999px;">
+                    <a class="cta-link" href="{{$.OpenURL}}" style="display:inline-block;min-width:176px;padding:15px 22px;box-sizing:border-box;color:#ffffff;font-size:13px;font-weight:700;line-height:1;text-align:center;text-decoration:none;">Open in Phrasely</a>
                   </td>
                 </tr>
               </table>
@@ -42,9 +93,9 @@
           {{end}}
 
           <tr>
-            <td align="center" style="padding:10px 18px 0;color:#9BA0B1;font-size:10px;line-height:1.7;">
+            <td class="email-footer" align="center" style="padding:10px 18px 0;color:#9BA0B1;font-size:10px;line-height:1.7;">
               <p style="margin:0;">You are receiving this because you subscribed to the Phrasely daily phrase.</p>
-              <p style="margin:0;"><a href="https://getphrasely.com/settings" style="color:#777D96;text-decoration:underline;">Manage digest settings or unsubscribe</a></p>
+              <p style="margin:0;"><a class="footer-link" href="https://getphrasely.com/settings" style="color:#777D96;text-decoration:underline;">Manage digest settings or unsubscribe</a></p>
               <p style="margin:7px 0 0;">© 2026 Phrasely</p>
             </td>
           </tr>

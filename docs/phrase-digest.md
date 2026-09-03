@@ -65,6 +65,8 @@ set so clients get a clean 400 rather than a constraint error.
   so the worker will try again the next day.
 - **One phrase** → subject: `"Your phrase for today: {headword}"`; phrases with
   multiple headwords join them with ` • `.
+- **Dark mode** → supporting email clients use the recipient's system preference;
+  the light palette remains the fallback for other clients.
 - **RESEND_API_KEY unset** → falls back to `LogSender`, which logs the recipient and headwords to stdout (not the full phrase text).
   Useful for local dev and CI.
 

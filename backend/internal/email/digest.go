@@ -134,7 +134,7 @@ func prepareDigestPhrase(phrase DigestPhrase) digestPhraseView {
 		formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[match.start:match.headwordEnd]))
 		formatted.WriteString(`</strong>`)
 		if match.meaning != "" {
-			formatted.WriteString(` <span style="color:#625CD9;font-size:0.88em;font-style:normal;">(`)
+			formatted.WriteString(` <span class="inline-meaning" style="color:#625CD9;font-size:0.88em;font-style:normal;">(`)
 			formatted.WriteString(template.HTMLEscapeString(match.meaning))
 			formatted.WriteString(`)</span>`)
 		}
