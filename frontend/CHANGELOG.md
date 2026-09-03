@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.3...frontend-v0.13.0) (2026-09-03)
+
+
+### Features
+
+* add system-aware dark mode ([5f547cc](https://github.com/andreistefanciprian/phrasely/commit/5f547cc818cdac3c1d745069306a4f486b86a540))
+
 ## [0.12.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.2...frontend-v0.12.3) (2026-09-03)
 
 
