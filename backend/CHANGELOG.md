@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.9.0...backend-v0.10.0) (2026-09-03)
+
+
+### Features
+
+* add system-aware dark mode ([5f547cc](https://github.com/andreistefanciprian/phrasely/commit/5f547cc818cdac3c1d745069306a4f486b86a540))
+* **backend:** add phrase digest dark mode ([ae194ff](https://github.com/andreistefanciprian/phrasely/commit/ae194ff2425a7a725463a828c7a89a0c1847e435))
+
+
+### Bug Fixes
+
+* **backend:** keep digest CTA rounded in dark mode ([fb6f2b4](https://github.com/andreistefanciprian/phrasely/commit/fb6f2b4163a9074cd9230dd2db7aef9713865dee))
+
 ## [0.9.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.8.0...backend-v0.9.0) (2026-09-03)
 
 
