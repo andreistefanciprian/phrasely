@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.3](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.2...frontend-v0.12.3) (2026-09-03)
+
+
+### Bug Fixes
+
+* **frontend:** match grouped headwords from bubble ([d49f1e7](https://github.com/andreistefanciprian/phrasely/commit/d49f1e78dc37db215d18c733a7fe605f23646b1c))
+
 ## [0.12.2](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.1...frontend-v0.12.2) (2026-09-02)
 
 
