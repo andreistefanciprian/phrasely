@@ -50,6 +50,7 @@
 
 <script>
   const phrases = {{.PhrasesJSON}};
+  const headwordSeparator = ' · ';
 
   function escapeHtml(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -80,7 +81,7 @@
     headwords.forEach((w, i) => {
       if (i > 0) {
         const sep = document.createElement('span');
-        sep.textContent = ' vs ';
+        sep.textContent = headwordSeparator;
         sep.style.cssText = 'color:var(--muted);font-size:0.7rem;letter-spacing:0.08em';
         keywordEl.appendChild(sep);
       }
@@ -99,8 +100,8 @@
 
     noteEl.textContent = item.note;
 
-    const label = headwords.join(' vs ');
-    const siblings = phrases.filter(p => (p.headwords || []).join(' vs ') === label && p.id !== item.id);
+    const label = headwords.join(headwordSeparator);
+    const siblings = phrases.filter(p => (p.headwords || []).join(headwordSeparator) === label && p.id !== item.id);
     siblingsEl.innerHTML = siblings.length > 0
       ? `<div class="siblings-label">Also with this headword</div>` +
         siblings.map(s => `<a class="sibling-phrase" href="/shuffle?id=${escapeHtml(s.id)}" data-phrase-id="${escapeHtml(s.id)}">${format(s.phrase)}</a>`).join('')
@@ -116,7 +117,7 @@
     if (!item) return;
     history.pushState({}, '', `/shuffle?id=${encodeURIComponent(id)}`);
     show(item);
-    fetchRelated(id, (item.headwords || []).join(' vs '));
+    fetchRelated(id, (item.headwords || []).join(headwordSeparator));
   }
 
   async function fetchRelated(phraseId, siblingLabel) {
@@ -127,7 +128,7 @@
       if (!res.ok) return;
       const items = await res.json();
       if (!items || items.length === 0) return;
-      const filtered = items.filter(p => (p.headwords || []).join(' vs ') !== siblingLabel);
+      const filtered = items.filter(p => (p.headwords || []).join(headwordSeparator) !== siblingLabel);
       if (filtered.length === 0) return;
       relatedEl.innerHTML =
         `<div class="related-label">You may also like</div>` +
@@ -143,9 +144,13 @@
   if (id) {
     const item = phrases.find(p => p.id === id);
     show(item || phrases[Math.floor(Math.random() * phrases.length)]);
-    fetchRelated(id, (item?.headwords || []).join(' vs '));
+    fetchRelated(id, (item?.headwords || []).join(headwordSeparator));
   } else if (q) {
-    const matches = phrases.filter(p => (p.headwords || []).some(w => w.toLowerCase() === q.toLowerCase()));
+    const normalizedQuery = q.toLowerCase();
+    const matches = phrases.filter(p => {
+      const headwords = p.headwords || [];
+      return headwords.join(headwordSeparator).toLowerCase() === normalizedQuery;
+    });
     show(matches.length > 0 ? matches[Math.floor(Math.random() * matches.length)] : phrases[Math.floor(Math.random() * phrases.length)]);
   } else {
     show();

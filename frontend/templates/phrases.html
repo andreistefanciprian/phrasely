@@ -92,7 +92,7 @@
     list.innerHTML = display.map(p => {
       const id        = escapeHtml(p.id);
       const phrase    = format(p.phrase);
-      const meta      = escapeHtml((p.headwords || []).join(' vs '));
+      const meta      = escapeHtml((p.headwords || []).join(' · '));
       const note      = escapeHtml(p.note || '');
       const hwVal     = escapeHtml((p.headwords || []).join(', '));
       const urlsVal   = escapeHtml((p.source_urls || []).join(', '));

@@ -146,7 +146,7 @@
     headwords.forEach((w, i) => {
       if (i > 0) {
         const sep = document.createElement('span');
-        sep.textContent = ' vs ';
+        sep.textContent = ' · ';
         sep.style.cssText = 'color:var(--muted);font-size:0.7rem;letter-spacing:0.08em';
         hwEl.appendChild(sep);
       }

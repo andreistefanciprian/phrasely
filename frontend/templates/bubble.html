@@ -37,6 +37,7 @@
 {{if ne .Count 0}}
 <script>
   const phrases = {{.PhrasesJSON}};
+  const headwordSeparator = ' · ';
 
   const palette = {
     high: ['#0F1B6E', '#1A2878'],
@@ -64,7 +65,7 @@
 
     const seen = {};
     phrases.forEach(p => {
-      const label = Array.isArray(p.headwords) ? p.headwords.join(' vs ') : p.headwords;
+      const label = Array.isArray(p.headwords) ? p.headwords.join(headwordSeparator) : p.headwords;
       seen[label] = true;
     });
 
