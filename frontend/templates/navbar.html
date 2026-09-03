@@ -1,8 +1,15 @@
+{{define "brand-lockup"}}
+<span class="brand-lockup">
+  <img src="/static/icon-259px.png" alt="" aria-hidden="true">
+  <span class="brand-wordmark">Phrasely</span>
+</span>
+{{end}}
+
 {{define "navbar"}}
 <nav id="navbar" aria-label="Top navigation">
   <div id="navbar-inner">
     <div id="logo">
-      <a href="{{if .Authenticated}}/bubble{{else}}/{{end}}"><img src="/static/logo.png" alt="Phrasely"></a>
+      <a href="{{if .Authenticated}}/bubble{{else}}/{{end}}">{{template "brand-lockup"}}</a>
     </div>
     {{if .Authenticated}}
     <a href="/bubble"  class="nav-link{{if eq .Page "bubble"}} active{{end}}">Bubble</a>

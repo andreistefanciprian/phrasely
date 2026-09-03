@@ -8,7 +8,7 @@
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; }
   .search-input { flex: 1; padding: 0.45rem 0.75rem; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; color: var(--navy); background: transparent; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
   .search-input::placeholder { color: var(--muted); font-weight: 400; }
-  .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(90,84,255,0.1); }
+  .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--focus-ring-soft); }
   .count { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; white-space: nowrap; }
   .search-mode-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); text-align: center; margin-bottom: 1.5rem; display: none; }
   .search-mode-label.visible { display: block; }
@@ -26,27 +26,27 @@
   .btn-edit { color: var(--blue); }
   .btn-edit:hover { color: var(--navy); }
   .btn-delete { color: var(--muted); }
-  .btn-delete:hover { color: #e53e3e; }
+  .btn-delete:hover { color: var(--danger); }
 
   .confirm-delete { display: none; font-size: 0.8rem; color: var(--navy); gap: 0.5rem; align-items: center; }
   .confirm-delete.visible { display: flex; }
-  .btn-confirm-yes { font-size: 0.8rem; font-weight: 600; color: #e53e3e; background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
+  .btn-confirm-yes { font-size: 0.8rem; font-weight: 600; color: var(--danger); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
   .btn-confirm-no { font-size: 0.8rem; color: var(--muted); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
 
   .edit-form { display: none; margin-top: 0.75rem; padding: 1rem; background: var(--surface); border-radius: 10px; gap: 0.75rem; flex-direction: column; }
   .edit-form.visible { display: flex; }
   .edit-form label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 0.3rem; }
-  .edit-form textarea, .edit-form input[type="text"] { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 7px; font-family: 'Lora', Georgia, serif; font-size: 0.95rem; color: var(--navy); background: var(--white); outline: none; resize: vertical; transition: border-color 0.15s, box-shadow 0.15s; }
+  .edit-form textarea, .edit-form input[type="text"] { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 7px; font-family: 'Lora', Georgia, serif; font-size: 0.95rem; color: var(--navy); background: var(--surface-raised); outline: none; resize: vertical; transition: border-color 0.15s, box-shadow 0.15s; }
   .edit-form input[type="text"] { font-family: 'Inter', sans-serif; font-size: 0.875rem; }
-  .edit-form textarea:focus, .edit-form input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(90,84,255,0.1); }
+  .edit-form textarea:focus, .edit-form input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--focus-ring-soft); }
   .edit-form-actions { display: flex; gap: 0.6rem; margin-top: 0.25rem; }
 
-  .btn-save { padding: 0.5rem 1.1rem; background: var(--blue); color: #fff; border: none; border-radius: 7px; font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+  .btn-save { padding: 0.5rem 1.1rem; background: var(--blue); color: var(--on-brand); border: none; border-radius: 7px; font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
   .btn-save:hover { opacity: 0.88; }
   .btn-save:disabled { opacity: 0.5; cursor: default; }
   .btn-cancel { padding: 0.5rem 1rem; background: none; border: 1px solid var(--border); border-radius: 7px; font-family: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer; transition: color 0.15s; }
   .btn-cancel:hover { color: var(--navy); }
-  .edit-error { font-size: 0.8rem; color: #e53e3e; }
+  .edit-error { font-size: 0.8rem; color: var(--danger); }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 </style>

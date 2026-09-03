@@ -3,21 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Sign in to Phrasely</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body,
+      .email-background {
+        background-color: #0E1122 !important;
+      }
+
+      .sign-in-card {
+        background-color: #1A1F3D !important;
+      }
+
+      .email-title {
+        color: #F4F5FF !important;
+      }
+
+      .email-copy,
+      .email-footer {
+        color: #9299BB !important;
+      }
+
+      .sign-in-link {
+        background-color: #B6B2FF !important;
+        color: #0E1122 !important;
+      }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Inter,-apple-system,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+<body class="email-background" style="margin:0;padding:0;background:#ffffff;font-family:Inter,-apple-system,sans-serif;">
+  <table class="email-background" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
     <tr>
       <td align="center" style="padding:48px 24px;">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
 
           <tr>
-            <td style="background:#F8F9FF;border-radius:12px;padding:40px 36px;text-align:center;">
-              <p style="margin:0 0 8px;font-size:1.1rem;font-weight:600;color:#0F1B6E;">Sign in to Phrasely</p>
-              <p style="margin:0 0 32px;font-size:0.9rem;color:#9DA3CC;line-height:1.6;">
+            <td class="sign-in-card" style="background:#F8F9FF;border-radius:12px;padding:40px 36px;text-align:center;">
+              <p class="email-title" style="margin:0 0 8px;font-size:1.1rem;font-weight:600;color:#0F1B6E;">Sign in to Phrasely</p>
+              <p class="email-copy" style="margin:0 0 32px;font-size:0.9rem;color:#9DA3CC;line-height:1.6;">
                 Click the button below to sign in. This link expires in 15 minutes and can only be used once.
               </p>
-              <a href="{{.Link}}"
+              <a class="sign-in-link" href="{{.Link}}"
                  style="display:inline-block;padding:14px 32px;background:#5A54FF;color:#ffffff;font-size:0.9rem;font-weight:600;border-radius:100px;text-decoration:none;">
                 Sign in to Phrasely
               </a>
@@ -26,7 +59,7 @@
 
           <tr>
             <td align="center" style="padding-top:24px;">
-              <p style="margin:0;font-size:0.75rem;color:#9DA3CC;line-height:1.6;">
+              <p class="email-footer" style="margin:0;font-size:0.75rem;color:#9DA3CC;line-height:1.6;">
                 If you didn't request this email, you can safely ignore it.<br>
                 This link was requested for <strong>{{.To}}</strong>.
               </p>

@@ -3,7 +3,7 @@
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 4.5rem;
-  background: var(--white);
+  background: var(--surface-raised);
   border-bottom: 1px solid var(--border);
   z-index: 100;
 }
@@ -19,7 +19,33 @@
   gap: 0.75rem;
 }
 
-#logo img { height: auto; width: auto; display: block; flex-shrink: 0; }
+#logo a { display: inline-flex; align-items: center; }
+
+.brand-lockup {
+  --brand-mark-height: 2.75rem;
+  --brand-word-size: 1.55rem;
+  --brand-gap: 0.42rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--brand-gap);
+  white-space: nowrap;
+}
+
+.brand-lockup img {
+  display: block;
+  width: auto;
+  height: var(--brand-mark-height);
+  flex: 0 0 auto;
+}
+
+.brand-wordmark {
+  color: var(--text-strong);
+  font-family: 'Quicksand', 'Avenir Next', sans-serif;
+  font-size: var(--brand-word-size);
+  font-weight: 600;
+  letter-spacing: -0.07em;
+  line-height: 1;
+}
 
 .nav-link {
   font-family: 'Inter', -apple-system, sans-serif;
@@ -55,11 +81,11 @@
   padding: 0;
   border: 1.5px solid var(--border);
   border-radius: 16px 16px 16px 9px;
-  background: var(--white);
+  background: var(--surface-raised);
   color: var(--muted);
   cursor: pointer;
   user-select: none;
-  box-shadow: 0 2px 8px rgba(45, 53, 97, 0.04);
+  box-shadow: 0 2px 8px var(--shadow-soft);
   transform: rotate(-2deg);
   transition: color 0.15s, transform 0.15s, background 0.15s, box-shadow 0.15s;
 }
@@ -83,7 +109,7 @@
 #account-menu[open] summary {
   color: var(--secondary);
   background: var(--surface);
-  box-shadow: 0 6px 18px rgba(45, 53, 97, 0.08);
+  box-shadow: 0 6px 18px var(--shadow-hover);
 }
 
 #account-menu summary:hover { transform: translateY(-1px) rotate(-2deg); }
@@ -94,10 +120,10 @@
   right: 0;
   min-width: 11rem;
   padding: 0.45rem;
-  background: var(--white);
+  background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(45, 53, 97, 0.14);
+  box-shadow: 0 16px 40px var(--shadow-raised);
 }
 
 #account-menu-panel form { margin: 0; }
@@ -174,7 +200,7 @@ footer a { color: inherit; text-decoration: underline; }
     position: fixed;
     bottom: 0; left: 0; right: 0;
     height: calc(4rem + env(safe-area-inset-bottom));
-    background: var(--white);
+    background: var(--surface-raised);
     border-top: 1px solid var(--border);
     z-index: 100;
     padding-bottom: env(safe-area-inset-bottom);

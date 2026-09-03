@@ -3,7 +3,7 @@
 {{define "head"}}
 <meta name="robots" content="noindex">
 <style>
-  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--white); }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--background); }
 
   #bubble { position: fixed; top: 4.5rem; left: 0; right: 0; bottom: 0; }
   #bubble > .empty-state { position: absolute; top: 50%; left: 50%; width: 100%; padding: 0 1.5rem; transform: translate(-50%, -50%); }
@@ -40,13 +40,13 @@
   const headwordSeparator = ' · ';
 
   const palette = {
-    high: ['#0F1B6E', '#1A2878'],
-    mid:  ['#5A54FF', '#6F6BFF', '#1FD3CC'],
-    low:  ['#7A80D4', '#9DA3CC', '#6ECFCB', '#6170B8'],
+    high: ['var(--bubble-high-1)', 'var(--bubble-high-2)'],
+    mid:  ['var(--bubble-mid-1)', 'var(--bubble-mid-2)', 'var(--bubble-mid-3)'],
+    low:  ['var(--bubble-low-1)', 'var(--bubble-low-2)', 'var(--bubble-low-3)', 'var(--bubble-low-4)'],
   };
 
   function pickColor(count, max) {
-    if (count === 0) return '#D0D3EA';
+    if (count === 0) return 'var(--bubble-unseen)';
     const t = count / max;
     const arr = t > 0.6 ? palette.high : t > 0.25 ? palette.mid : palette.low;
     return arr[Math.floor(Math.random() * arr.length)];
