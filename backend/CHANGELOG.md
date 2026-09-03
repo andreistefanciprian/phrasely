@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.8.0...backend-v0.9.0) (2026-09-03)
+
+
+### Features
+
+* **backend:** redesign phrase digest email ([b431091](https://github.com/andreistefanciprian/phrasely/commit/b43109157812dd9427675c5d29411783acf5a98c))
+
 ## [0.8.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.7.4...backend-v0.8.0) (2026-09-01)
 
 
