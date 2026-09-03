@@ -12,18 +12,18 @@
 
   .step { display: flex; gap: 1.25rem; padding: 1.75rem 0; border-top: 1px solid var(--border); }
   .step:first-of-type { border-top: 0; padding-top: 0; }
-  .step-number { flex-shrink: 0; width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: 50%; background: #F0FBFA; color: #07847F; font-family: 'Lora', Georgia, serif; font-size: 1rem; font-weight: 600; }
+  .step-number { flex-shrink: 0; width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: 50%; background: var(--success-surface); color: var(--success-strong); font-family: 'Lora', Georgia, serif; font-size: 1rem; font-weight: 600; }
   .step h2 { color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
   .step p { font-size: 0.95rem; line-height: 1.75; color: var(--text); margin-bottom: 0.5rem; }
   .step p:last-child { margin-bottom: 0; }
   .step a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
   .step code { padding: 0.1rem 0.35rem; border-radius: 4px; background: var(--surface); color: var(--navy); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85em; }
-  .step-note { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 10px; background: #F6F6FF; color: var(--secondary); font-size: 0.85rem; line-height: 1.55; }
-  .step-note-dot { width: 0.42rem; height: 0.42rem; margin-top: 0.35rem; flex-shrink: 0; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(31,211,204,0.14); }
+  .step-note { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 10px; background: var(--surface-subtle); color: var(--secondary); font-size: 0.85rem; line-height: 1.55; }
+  .step-note-dot { width: 0.42rem; height: 0.42rem; margin-top: 0.35rem; flex-shrink: 0; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px var(--accent-ring); }
   .step-note strong { color: var(--navy); }
 
   .cta-row { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--border); }
-  .cta-row a { display: inline-block; padding: 0.75rem 1.75rem; background: var(--blue); color: var(--white); font-size: 0.875rem; font-weight: 600; border-radius: 100px; text-decoration: none; transition: opacity 0.15s; }
+  .cta-row a { display: inline-block; padding: 0.75rem 1.75rem; background: var(--blue); color: var(--on-brand); font-size: 0.875rem; font-weight: 600; border-radius: 100px; text-decoration: none; transition: opacity 0.15s; }
   .cta-row a:hover { opacity: 0.88; }
 
   @media (max-width: 600px) {

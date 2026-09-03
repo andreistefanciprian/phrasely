@@ -16,7 +16,7 @@
     transition: background 0.12s, color 0.12s;
   }
   .fmt-btn + .fmt-btn { border-left: 1px solid var(--border); }
-  .fmt-btn.active { background: var(--blue); color: #fff; }
+  .fmt-btn.active { background: var(--blue); color: var(--on-brand); }
 
   .export-actions { display: flex; gap: 0.5rem; align-items: center; }
   .btn-export {
@@ -29,7 +29,7 @@
   .btn-export:disabled { opacity: 0.5; cursor: default; }
 
   .export-status { margin-top: 0.75rem; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
-  .export-status.error { color: #e53e3e; }
+  .export-status.error { color: var(--danger); }
 
   .section-divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
 
@@ -48,8 +48,8 @@
   .btn-save:hover    { border-color: var(--blue); color: var(--blue); }
   .btn-save:disabled { opacity: 0.5; cursor: default; }
   .digest-status { margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
-  .digest-status.error   { color: #e53e3e; }
-  .digest-status.success { color: #2f855a; }
+  .digest-status.error   { color: var(--danger); }
+  .digest-status.success { color: var(--success); }
 </style>
 {{end}}
 
