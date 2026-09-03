@@ -74,7 +74,7 @@ func TestRenderPhraseDigestShowsMeaningOnce(t *testing.T) {
 	if strings.Count(html, "sort and filter") != 1 {
 		t.Errorf("meaning count = %d, want 1", strings.Count(html, "sort and filter"))
 	}
-	if !strings.Contains(html, `font-size:0.88em;font-style:normal;">(sort and filter)</span>`) {
+	if !strings.Contains(html, `class="inline-meaning" style="color:#625CD9;font-size:0.88em;font-style:normal;">(sort and filter)</span>`) {
 		t.Error("rendered meaning does not use the smaller inline style")
 	}
 	if !strings.Contains(html, "https://getphrasely.com/shuffle?id=phrase-1") {
@@ -82,6 +82,29 @@ func TestRenderPhraseDigestShowsMeaningOnce(t *testing.T) {
 	}
 	if strings.Count(html, "Manage digest settings or unsubscribe") != 1 {
 		t.Error("rendered email should contain one combined settings link")
+	}
+}
+
+func TestRenderPhraseDigestIncludesDarkModeStyles(t *testing.T) {
+	html, err := renderPhraseDigest([]DigestPhrase{{
+		ID:        "phrase-dark",
+		Headwords: []string{"sieve"},
+		Phrase:    "I have to sieve (sort and filter) the useful information from the noise.",
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`name="color-scheme" content="light dark"`,
+		`name="supported-color-schemes" content="light dark"`,
+		`@media (prefers-color-scheme: dark)`,
+		`class="phrase-card"`,
+		`class="inline-meaning"`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered email is missing dark-mode marker %q", want)
+		}
 	}
 }
 
