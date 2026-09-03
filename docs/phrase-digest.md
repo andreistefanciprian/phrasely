@@ -63,7 +63,8 @@ set so clients get a clean 400 rather than a constraint error.
 
 - **No phrases** → user is skipped silently (Debug log). `last_sent_at` is NOT updated,
   so the worker will try again the next day.
-- **One phrase** → subject: `"Your phrase for today: {headword}"`.
+- **One phrase** → subject: `"Your phrase for today: {headword}"`; phrases with
+  multiple headwords join them with ` • `.
 - **RESEND_API_KEY unset** → falls back to `LogSender`, which logs the recipient and headwords to stdout (not the full phrase text).
   Useful for local dev and CI.
 

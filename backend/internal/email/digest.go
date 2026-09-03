@@ -66,23 +66,15 @@ type phraseDigestView struct {
 }
 
 type digestPhraseView struct {
-	Headwords []digestHeadwordView
+	Headwords []string
 	Phrase    template.HTML
-	Single    bool
-}
-
-type digestHeadwordView struct {
-	Text    string
-	Meaning string
-	First   bool
 }
 
 type phraseMatch struct {
-	start         int
-	end           int
-	headwordStart int
-	headwordEnd   int
-	meaning       string
+	start       int
+	end         int
+	headwordEnd int
+	meaning     string
 }
 
 func renderPhraseDigest(phrases []DigestPhrase) (string, error) {
@@ -104,42 +96,29 @@ func renderPhraseDigest(phrases []DigestPhrase) (string, error) {
 }
 
 func prepareDigestPhrase(phrase DigestPhrase) digestPhraseView {
-	headwords := make([]digestHeadwordView, len(phrase.Headwords))
 	matches := make([]phraseMatch, 0, len(phrase.Headwords))
 
-	for i, headword := range phrase.Headwords {
-		meaning := ""
-		if strings.TrimSpace(headword) != "" {
-			pattern := `(?i)(\b` + regexp.QuoteMeta(headword) + `\b)[\s\x{00A0}]*(?:\*|_)?\(([^()]*)\)(?:\*|_)?`
-			re := regexp.MustCompile(pattern)
-			match := re.FindStringSubmatchIndex(phrase.Phrase)
-			if match != nil {
-				meaning = strings.TrimSpace(phrase.Phrase[match[4]:match[5]])
-				matches = append(matches, phraseMatch{
-					start:         match[0],
-					end:           match[1],
-					headwordStart: match[2],
-					headwordEnd:   match[3],
-					meaning:       meaning,
-				})
-			} else {
-				headwordMatch := regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(headword) + `\b`).FindStringIndex(phrase.Phrase)
-				if headwordMatch != nil {
-					matches = append(matches, phraseMatch{
-						start:         headwordMatch[0],
-						end:           headwordMatch[1],
-						headwordStart: headwordMatch[0],
-						headwordEnd:   headwordMatch[1],
-					})
-				}
-			}
+	for _, headword := range phrase.Headwords {
+		if strings.TrimSpace(headword) == "" {
+			continue
 		}
 
-		headwords[i] = digestHeadwordView{
-			Text:    headword,
-			Meaning: meaning,
-			First:   i == 0,
+		pattern := `(?i)(\b` + regexp.QuoteMeta(headword) + `\b)(?:[\s\x{00A0}]*(?:\*|_)?\(([^()]*)\)(?:\*|_)?)?`
+		match := regexp.MustCompile(pattern).FindStringSubmatchIndex(phrase.Phrase)
+		if match == nil {
+			continue
 		}
+
+		meaning := ""
+		if match[4] >= 0 {
+			meaning = strings.TrimSpace(phrase.Phrase[match[4]:match[5]])
+		}
+		matches = append(matches, phraseMatch{
+			start:       match[0],
+			end:         match[1],
+			headwordEnd: match[3],
+			meaning:     meaning,
+		})
 	}
 
 	sort.Slice(matches, func(i, j int) bool { return matches[i].start < matches[j].start })
@@ -152,7 +131,7 @@ func prepareDigestPhrase(phrase DigestPhrase) digestPhraseView {
 		}
 		formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[position:match.start]))
 		formatted.WriteString(`<strong style="font-weight:700;">`)
-		formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[match.headwordStart:match.headwordEnd]))
+		formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[match.start:match.headwordEnd]))
 		formatted.WriteString(`</strong>`)
 		if match.meaning != "" {
 			formatted.WriteString(` <span style="color:#625CD9;font-size:0.88em;font-style:normal;">(`)
@@ -164,10 +143,9 @@ func prepareDigestPhrase(phrase DigestPhrase) digestPhraseView {
 	formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[position:]))
 
 	return digestPhraseView{
-		Headwords: headwords,
+		Headwords: phrase.Headwords,
 		// Phrase is safe because every user-provided segment is escaped before
 		// being combined with the fixed formatting tags above.
 		Phrase: template.HTML(formatted.String()),
-		Single: len(headwords) == 1,
 	}
 }

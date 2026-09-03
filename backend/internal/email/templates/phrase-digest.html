@@ -17,10 +17,10 @@
 
               <p aria-hidden="true" style="height:44px;margin:0;color:#D8DBFF;font-family:Georgia,'Times New Roman',serif;font-size:58px;font-weight:700;line-height:1;">“</p>
 
-              <p style="max-width:34em;margin:16px auto 23px;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.7;text-align:center;">{{.Phrase}}</p>
+              <p style="max-width:34ch;margin:16px auto 23px;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.7;text-align:center;">{{.Phrase}}</p>
 
-              <p style="margin:0;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:{{if .Single}}32px{{else}}29px{{end}};font-weight:400;letter-spacing:-0.02em;line-height:1.2;text-align:center;">
-                {{range .Headwords}}<span style="white-space:nowrap;">{{if not .First}}<span style="color:#7D78E9;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;">•</span>&nbsp;&nbsp;{{end}}{{.Text}}</span>{{end}}
+              <p style="margin:0;color:#111B5F;font-family:Georgia,'Times New Roman',serif;font-size:{{if eq (len .Headwords) 1}}32px{{else}}29px{{end}};font-weight:400;letter-spacing:-0.02em;line-height:1.2;text-align:center;">
+                {{range $i, $headword := .Headwords}}<span style="white-space:nowrap;">{{if $i}}<span style="color:#7D78E9;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;">•</span>&nbsp;&nbsp;{{end}}{{$headword}}</span>{{end}}
               </p>
 
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:10px auto 24px;">

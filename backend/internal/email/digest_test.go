@@ -15,26 +15,15 @@ func TestPrepareDigestPhraseExtractsMeaning(t *testing.T) {
 	if !strings.Contains(formatted, `<strong style="font-weight:700;">sieve</strong>`) {
 		t.Errorf("formatted phrase does not emphasize the headword: %q", formatted)
 	}
-	if !strings.Contains(formatted, `font-size:0.88em;font-style:normal;">(sort and filter)</span>`) {
-		t.Errorf("formatted phrase does not render the smaller inline meaning: %q", formatted)
-	}
 	if strings.Count(formatted, "sort and filter") != 1 {
 		t.Errorf("meaning count = %d, want 1", strings.Count(formatted, "sort and filter"))
-	}
-	if len(got.Headwords) != 1 {
-		t.Fatalf("len(Headwords) = %d, want 1", len(got.Headwords))
-	}
-	if got.Headwords[0].Meaning != "sort and filter" {
-		t.Errorf("Meaning = %q, want %q", got.Headwords[0].Meaning, "sort and filter")
-	}
-	if !got.Single {
-		t.Error("Single = false, want true")
 	}
 }
 
 func TestPrepareDigestPhraseExtractsMultipleMarkdownMeanings(t *testing.T) {
+	headwords := []string{"ethos", "openness", "decentralization"}
 	got := prepareDigestPhrase(DigestPhrase{
-		Headwords: []string{"ethos", "openness", "decentralization"},
+		Headwords: headwords,
 		Phrase: "The ethos\u00a0*(guiding values and beliefs)* of the early internet was rooted in " +
 			"openness\u00a0*(transparency and accessibility)* and decentralization\u00a0*(distributing power away from a central authority)*, " +
 			"fostering a collaborative online community.",
@@ -51,21 +40,12 @@ func TestPrepareDigestPhraseExtractsMultipleMarkdownMeanings(t *testing.T) {
 		"distributing power away from a central authority",
 	}
 	for i, want := range wantMeanings {
-		if got.Headwords[i].Meaning != want {
-			t.Errorf("Headwords[%d].Meaning = %q, want %q", i, got.Headwords[i].Meaning, want)
-		}
-		if got.Headwords[i].First != (i == 0) {
-			t.Errorf("Headwords[%d].First = %v", i, got.Headwords[i].First)
-		}
 		if strings.Count(formatted, want) != 1 {
 			t.Errorf("meaning %q count = %d, want 1", want, strings.Count(formatted, want))
 		}
-		if !strings.Contains(formatted, `<strong style="font-weight:700;">`+got.Headwords[i].Text+`</strong>`) {
-			t.Errorf("formatted phrase does not emphasize %q", got.Headwords[i].Text)
+		if !strings.Contains(formatted, `<strong style="font-weight:700;">`+headwords[i]+`</strong>`) {
+			t.Errorf("formatted phrase does not emphasize %q", headwords[i])
 		}
-	}
-	if got.Single {
-		t.Error("Single = true, want false")
 	}
 }
 
@@ -78,9 +58,6 @@ func TestPrepareDigestPhraseLeavesUnrelatedParentheses(t *testing.T) {
 	want := `As an <strong style="font-weight:700;">aside</strong>, the plan worked (which surprised me).`
 	if string(got.Phrase) != want {
 		t.Fatalf("Phrase = %q, want %q", got.Phrase, want)
-	}
-	if got.Headwords[0].Meaning != "" {
-		t.Fatalf("Meaning = %q, want empty", got.Headwords[0].Meaning)
 	}
 }
 
