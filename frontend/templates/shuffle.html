@@ -51,6 +51,7 @@
 <script>
   const phrases = {{.PhrasesJSON}};
   const headwordSeparator = ' · ';
+  let relatedRequest = 0;
 
   function escapeHtml(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -107,6 +108,8 @@
         siblings.map(s => `<a class="sibling-phrase" href="/shuffle?id=${escapeHtml(s.id)}" data-phrase-id="${escapeHtml(s.id)}">${format(s.phrase)}</a>`).join('')
       : '';
 
+    fetchRelated(item.id, label);
+
     const views = JSON.parse(localStorage.getItem('pf_views') || '{}');
     views[label] = (views[label] || 0) + 1;
     localStorage.setItem('pf_views', JSON.stringify(views));
@@ -117,16 +120,18 @@
     if (!item) return;
     history.pushState({}, '', `/shuffle?id=${encodeURIComponent(id)}`);
     show(item);
-    fetchRelated(id, (item.headwords || []).join(headwordSeparator));
   }
 
   async function fetchRelated(phraseId, siblingLabel) {
     const relatedEl = document.getElementById('related');
+    const request = ++relatedRequest;
     relatedEl.innerHTML = '';
     try {
       const res = await fetch(`/fd/phrases/${phraseId}/related?limit=5`);
+      if (request !== relatedRequest) return;
       if (!res.ok) return;
       const items = await res.json();
+      if (request !== relatedRequest) return;
       if (!items || items.length === 0) return;
       const filtered = items.filter(p => (p.headwords || []).join(headwordSeparator) !== siblingLabel);
       if (filtered.length === 0) return;
@@ -144,7 +149,6 @@
   if (id) {
     const item = phrases.find(p => p.id === id);
     show(item || phrases[Math.floor(Math.random() * phrases.length)]);
-    fetchRelated(id, (item?.headwords || []).join(headwordSeparator));
   } else if (q) {
     const normalizedQuery = q.toLowerCase();
     const matches = phrases.filter(p => {
@@ -161,7 +165,6 @@
     if (phraseLink) { e.preventDefault(); showById(phraseLink.dataset.phraseId); return; }
     if (e.target.closest('a')) return;
     show();
-    document.getElementById('related').innerHTML = '';
   });
 
   document.getElementById('related').addEventListener('click', e => {
@@ -174,7 +177,6 @@
       if (document.activeElement?.closest('a')) return;
       e.preventDefault();
       show();
-      document.getElementById('related').innerHTML = '';
     }
   });
 </script>
