@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.13.0...frontend-v0.14.0) (2026-09-08)
+
+
+### Features
+
+* **frontend:** add light/dark/system theme toggle button ([7e0c37a](https://github.com/andreistefanciprian/phrasely/commit/7e0c37adc08f8e42703509dffa0e343fcc06afe9))
+
+
+### Bug Fixes
+
+* **frontend:** refresh related phrases on shuffle ([b744ff5](https://github.com/andreistefanciprian/phrasely/commit/b744ff59533e6d985d08ce86cfb4f50217f581ae))
+* **frontend:** show current and next theme in toggle tooltip ([a8c8784](https://github.com/andreistefanciprian/phrasely/commit/a8c8784ba9734ce07305839d3c755f555a0a1689))
+
 ## [0.13.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.12.3...frontend-v0.13.0) (2026-09-03)
 
 
