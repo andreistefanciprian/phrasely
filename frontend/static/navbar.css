@@ -64,9 +64,24 @@
 .nav-link:hover { color: var(--secondary); }
 .nav-link.active { color: var(--navy); font-weight: 700; }
 
+#theme-toggle {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+#theme-toggle:hover { color: var(--secondary); }
+#theme-toggle svg { display: block; }
+
 #account-menu {
   position: relative;
-  margin-left: auto;
   flex-shrink: 0;
 }
 
@@ -194,6 +209,8 @@ footer a { color: inherit; text-decoration: underline; }
     width: 46px;
     height: 44px;
   }
+
+  #theme-toggle { width: 44px; height: 44px; }
 
   #tab-bar {
     display: flex;
