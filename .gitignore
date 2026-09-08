@@ -1,4 +1,9 @@
 .env
+.env.backup
+.env.backup.*
+!.env.backup.example
+backups/
+*.dump
 bin/
 target/
 .claude/

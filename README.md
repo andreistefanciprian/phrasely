@@ -56,6 +56,7 @@ flowchart TB
 
 ## Documentation
 
+- [Database backup usage](docs/database-backups.md) — configuration, connectivity checks, backups, and restore
 - [docs/local-development.md](docs/local-development.md) — local setup and day-to-day commands
 - [docs/frontend-architecture.md](docs/frontend-architecture.md) — frontend/API flow and cookie auth model
 - [docs/auth-magic-link.md](docs/auth-magic-link.md) — magic link authentication flow
