@@ -73,6 +73,7 @@
       system: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>'
     };
     const order = ['light', 'dark', 'system'];
+    const labels = { light: 'Light', dark: 'Dark', system: 'System' };
 
     function stored() {
       try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
@@ -85,8 +86,10 @@
         document.documentElement.removeAttribute('data-theme');
       }
       svg.innerHTML = icons[theme];
-      btn.setAttribute('aria-label', `Theme: ${theme}`);
-      btn.title = `Theme: ${theme}`;
+      const next = order[(order.indexOf(theme) + 1) % order.length];
+      const text = `Theme: ${labels[theme]} (click for ${labels[next]})`;
+      btn.setAttribute('aria-label', text);
+      btn.title = text;
     }
 
     let current = stored() === 'light' || stored() === 'dark' ? stored() : 'system';
