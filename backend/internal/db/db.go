@@ -379,10 +379,6 @@ func (s *PostgresStore) UpdatePhrase(ctx context.Context, userID string, id stri
 
 // CreatePhrase inserts a phrase owned by userID and returns the full record.
 func (s *PostgresStore) CreatePhrase(ctx context.Context, userID string, req CreatePhraseRequest) (*Phrase, error) {
-	if req.Headwords == nil {
-		req.Headwords = []Headword{}
-	}
-
 	var p Phrase
 	err := s.Pool.QueryRow(ctx,
 		`INSERT INTO phrases (phrase, headwords, note, user_id)

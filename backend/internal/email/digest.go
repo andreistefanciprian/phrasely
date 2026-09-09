@@ -74,11 +74,10 @@ type digestPhraseView struct {
 }
 
 type phraseMatch struct {
-	start       int
-	end         int
-	headwordEnd int
-	meaning     string
-	index       int
+	start   int
+	end     int
+	meaning string
+	index   int
 }
 
 func renderPhraseDigest(phrases []DigestPhrase) (string, error) {
@@ -111,7 +110,7 @@ func prepareDigestPhrase(phrase DigestPhrase) digestPhraseView {
 			if !wordBoundary(phrase.Phrase, match[0], match[1]) {
 				continue
 			}
-			matches = append(matches, phraseMatch{start: match[0], end: match[1], headwordEnd: match[1], meaning: headword.Meaning, index: index})
+			matches = append(matches, phraseMatch{start: match[0], end: match[1], meaning: headword.Meaning, index: index})
 		}
 	}
 
@@ -131,7 +130,7 @@ func prepareDigestPhrase(phrase DigestPhrase) digestPhraseView {
 		}
 		formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[position:match.start]))
 		formatted.WriteString(`<strong style="font-weight:700;">`)
-		formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[match.start:match.headwordEnd]))
+		formatted.WriteString(template.HTMLEscapeString(phrase.Phrase[match.start:match.end]))
 		formatted.WriteString(`</strong>`)
 		if match.meaning != "" && !seen[match.index] {
 			formatted.WriteString(` <span class="inline-meaning" style="color:#625CD9;font-size:0.88em;font-style:normal;">(`)
