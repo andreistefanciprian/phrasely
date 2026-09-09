@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.11.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.10.0...backend-v0.11.0) (2026-09-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* phrase headwords are now structured objects and source_urls is removed from the API contract.
+
+### Features
+
+* implement structured headwords ([5ddcab2](https://github.com/andreistefanciprian/phrasely/commit/5ddcab2fdb1ae880265084805ee8cbde12f131b5))
+
 ## [0.10.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.9.0...backend-v0.10.0) (2026-09-03)
 
 
