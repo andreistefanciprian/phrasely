@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.15.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.14.0...frontend-v0.15.0) (2026-09-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* phrase headwords are now structured objects and source_urls is removed from the API contract.
+
+### Features
+
+* implement structured headwords ([5ddcab2](https://github.com/andreistefanciprian/phrasely/commit/5ddcab2fdb1ae880265084805ee8cbde12f131b5))
+
+
+### Bug Fixes
+
+* **mcp:** validate phrase choice headwords ([2fe93c1](https://github.com/andreistefanciprian/phrasely/commit/2fe93c14d2993cb264bef7c11dbb99b09b3ae2fa))
+
 ## [0.14.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.13.0...frontend-v0.14.0) (2026-09-08)
 
 
