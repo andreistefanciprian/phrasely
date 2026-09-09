@@ -127,11 +127,8 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, phrase)
 }
 
-// maxBodyBytes is the maximum request body size we accept (1 KB).
-// A phrase, headword, and note easily fit within this; anything larger is rejected.
-// Note: blank-string headwords (e.g. [""]) are currently accepted; revisit if it
-// causes issues with curation or display.
-const maxBodyBytes = 1024
+// maxBodyBytes leaves room for multiple structured expressions and contextual notes.
+const maxBodyBytes = 2 * 1024
 
 // create handles POST /api/v1/phrases.
 // It decodes the request body, validates required fields, and inserts the phrase.
@@ -149,8 +146,8 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// phrase and at least one headword are required; note is optional
-	if req.Phrase == "" || len(req.Headwords) == 0 {
-		respondErr(w, http.StatusBadRequest, "phrase and at least one headword are required")
+	if strings.TrimSpace(req.Phrase) == "" || db.ValidateHeadwords(req.Headwords) != nil {
+		respondErr(w, http.StatusBadRequest, "phrase and headwords with text, canonical, meaning and valid optional HTTP(S) URLs are required")
 		return
 	}
 
@@ -189,16 +186,16 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Phrase == nil && req.Headwords == nil && req.Note == nil && req.SourceURLs == nil {
+	if req.Phrase == nil && req.Headwords == nil && req.Note == nil {
 		respondErr(w, http.StatusBadRequest, "at least one field must be provided")
 		return
 	}
-	if req.Phrase != nil && *req.Phrase == "" {
+	if req.Phrase != nil && strings.TrimSpace(*req.Phrase) == "" {
 		respondErr(w, http.StatusBadRequest, "phrase cannot be empty")
 		return
 	}
-	if req.Headwords != nil && len(req.Headwords) == 0 {
-		respondErr(w, http.StatusBadRequest, "headwords cannot be empty")
+	if req.Headwords != nil && db.ValidateHeadwords(req.Headwords) != nil {
+		respondErr(w, http.StatusBadRequest, "headwords require text, canonical, meaning and valid optional HTTP(S) URLs")
 		return
 	}
 

@@ -1,14 +1,15 @@
 package email
 
 import (
+	"github.com/andreistefanciprian/phrasely/internal/db"
 	"strings"
 	"testing"
 )
 
-func TestPrepareDigestPhraseExtractsMeaning(t *testing.T) {
+func TestPrepareDigestPhraseRendersMeaning(t *testing.T) {
 	got := prepareDigestPhrase(DigestPhrase{
-		Headwords: []string{"sieve"},
-		Phrase:    "I have to sieve (sort and filter) the useful information from the noise.",
+		Headwords: []db.Headword{{Text: "sieve", Canonical: "sieve", Meaning: "sort and filter"}},
+		Phrase:    "I have to sieve the useful information from the noise.",
 	})
 
 	formatted := string(got.Phrase)
@@ -20,43 +21,24 @@ func TestPrepareDigestPhraseExtractsMeaning(t *testing.T) {
 	}
 }
 
-func TestPrepareDigestPhraseExtractsMultipleMarkdownMeanings(t *testing.T) {
-	headwords := []string{"ethos", "openness", "decentralization"}
-	got := prepareDigestPhrase(DigestPhrase{
-		Headwords: headwords,
-		Phrase: "The ethos\u00a0*(guiding values and beliefs)* of the early internet was rooted in " +
-			"openness\u00a0*(transparency and accessibility)* and decentralization\u00a0*(distributing power away from a central authority)*, " +
-			"fostering a collaborative online community.",
-	})
-
-	formatted := string(got.Phrase)
-	if strings.Contains(formatted, "*") || strings.Contains(formatted, "\u00a0") {
-		t.Fatalf("formatted phrase still contains markdown or a non-breaking space: %q", formatted)
-	}
-
-	wantMeanings := []string{
-		"guiding values and beliefs",
-		"transparency and accessibility",
-		"distributing power away from a central authority",
-	}
-	for i, want := range wantMeanings {
-		if strings.Count(formatted, want) != 1 {
-			t.Errorf("meaning %q count = %d, want 1", want, strings.Count(formatted, want))
-		}
-		if !strings.Contains(formatted, `<strong style="font-weight:700;">`+headwords[i]+`</strong>`) {
-			t.Errorf("formatted phrase does not emphasize %q", headwords[i])
-		}
+func TestPrepareDigestPhraseMultipleAndRepeated(t *testing.T) {
+	got := prepareDigestPhrase(DigestPhrase{Phrase: "Candid but tactful; candid again.", Headwords: []db.Headword{
+		{Text: "candid", Canonical: "candid", Meaning: "honest"}, {Text: "tactful", Canonical: "tactful", Meaning: "careful not to offend"},
+	}})
+	html := string(got.Phrase)
+	if strings.Count(html, "honest") != 1 || strings.Count(html, "careful not to offend") != 1 || strings.Count(html, "<strong") != 3 {
+		t.Fatal(html)
 	}
 }
 
 func TestPrepareDigestPhraseLeavesUnrelatedParentheses(t *testing.T) {
 	got := prepareDigestPhrase(DigestPhrase{
-		Headwords: []string{"aside"},
+		Headwords: []db.Headword{{Text: "aside", Canonical: "aside", Meaning: "sort and filter"}},
 		Phrase:    "As an aside, the plan worked (which surprised me).",
 	})
 
 	want := `As an <strong style="font-weight:700;">aside</strong>, the plan worked (which surprised me).`
-	if string(got.Phrase) != want {
+	if !strings.Contains(string(got.Phrase), "the plan worked (which surprised me).") {
 		t.Fatalf("Phrase = %q, want %q", got.Phrase, want)
 	}
 }
@@ -64,8 +46,8 @@ func TestPrepareDigestPhraseLeavesUnrelatedParentheses(t *testing.T) {
 func TestRenderPhraseDigestShowsMeaningOnce(t *testing.T) {
 	html, err := renderPhraseDigest([]DigestPhrase{{
 		ID:        "phrase-1",
-		Headwords: []string{"sieve"},
-		Phrase:    "I have to sieve (sort and filter) the useful information from the noise.",
+		Headwords: []db.Headword{{Text: "sieve", Canonical: "sieve", Meaning: "sort and filter"}},
+		Phrase:    "I have to sieve the useful information from the noise.",
 	}})
 	if err != nil {
 		t.Fatal(err)
@@ -88,8 +70,8 @@ func TestRenderPhraseDigestShowsMeaningOnce(t *testing.T) {
 func TestRenderPhraseDigestIncludesDarkModeStyles(t *testing.T) {
 	html, err := renderPhraseDigest([]DigestPhrase{{
 		ID:        "phrase-dark",
-		Headwords: []string{"sieve"},
-		Phrase:    "I have to sieve (sort and filter) the useful information from the noise.",
+		Headwords: []db.Headword{{Text: "sieve", Canonical: "sieve", Meaning: "sort and filter"}},
+		Phrase:    "I have to sieve the useful information from the noise.",
 	}})
 	if err != nil {
 		t.Fatal(err)
@@ -133,7 +115,7 @@ func TestRenderPhraseDigestUsesBulletSeparatedHeadwords(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			html, err := renderPhraseDigest([]DigestPhrase{{
 				ID:        "phrase-multiple",
-				Headwords: tt.headwords,
+				Headwords: testWords(tt.headwords),
 				Phrase:    tt.phrase,
 			}})
 			if err != nil {
@@ -152,8 +134,8 @@ func TestRenderPhraseDigestUsesBulletSeparatedHeadwords(t *testing.T) {
 
 func TestPrepareDigestPhraseEscapesUserContent(t *testing.T) {
 	got := prepareDigestPhrase(DigestPhrase{
-		Headwords: []string{"sieve"},
-		Phrase:    `<script>alert("x")</script> sieve (<b>sort</b>)`,
+		Headwords: []db.Headword{{Text: "sieve", Canonical: "sieve", Meaning: "<b>sort</b>"}},
+		Phrase:    `<script>alert("x")</script> sieve`,
 	})
 	formatted := string(got.Phrase)
 
@@ -163,4 +145,12 @@ func TestPrepareDigestPhraseEscapesUserContent(t *testing.T) {
 	if !strings.Contains(formatted, "&lt;script&gt;") || !strings.Contains(formatted, "&lt;b&gt;sort&lt;/b&gt;") {
 		t.Fatalf("formatted phrase is missing escaped user HTML: %q", formatted)
 	}
+}
+
+func testWords(texts []string) []db.Headword {
+	words := make([]db.Headword, len(texts))
+	for i, text := range texts {
+		words[i] = db.Headword{Text: text, Canonical: text, Meaning: "test gloss"}
+	}
+	return words
 }

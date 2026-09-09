@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	phraseChoicesTemplateURI  = "ui://phrasely/phrase-choices-v2.html"
+	phraseChoicesTemplateURI  = "ui://phrasely/phrase-choices-v3.html"
 	phraseChoicesWidgetDomain = "https://mcp.getphrasely.com"
 	mcpAppHTMLMIMEType        = "text/html;profile=mcp-app"
 )

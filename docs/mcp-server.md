@@ -158,7 +158,7 @@ exchange. An intercepted `code` is useless without the `code_verifier`.
 | `sample_phrases(count?)` | Randomly pick N phrases (1–10) for practice or quizzing | `GET /api/v1/phrases/random` |
 | `explore_phrase(phrase)` | Return learning instructions for understanding an expression and generating memorable contexts — no backend call, no data persisted | — |
 | `render_phrase_choices(choices)` | Render three save-ready cards: an original-or-personal context, a distinct personal context, and a personal learning connection — no backend call, no data persisted | — |
-| `add_phrase(phrase, headwords, note?, source_urls?)` | Save a finished phrase constructed locally by the assistant | `POST /api/v1/phrases` |
+| `add_phrase(phrase, headwords, note?)` | Save a finished phrase constructed locally by the assistant | `POST /api/v1/phrases` |
 
 ### Exploration and save flow
 
@@ -176,14 +176,14 @@ Exploration, presentation, and saving are separate stages:
 
 The phrase-choice component is a versioned MCP resource:
 
-- URI: `ui://phrasely/phrase-choices-v2.html`
+- URI: `ui://phrasely/phrase-choices-v3.html`
 - MIME type: `text/html;profile=mcp-app`
 - Source: `mcp/ui/phrase-choices.html`, embedded into the MCP binary with `go:embed`
 - Owner: only `render_phrase_choices` references the resource through `_meta.ui.resourceUri`
 
 The render tool returns the same three `choices` in `structuredContent` that the
 component consumes. Each choice contains `phrase`, `headwords`, optional `note`,
-optional `source_urls`, a short label, and an optional `recommended` flag. Choice
+per-headword optional `source_url`, a short label, and an optional `recommended` flag. Choice
 3 uses its label for the connection category and its note to explain the
 relationship. The component treats all structured content as untrusted and
 constructs the DOM with text nodes rather than injecting HTML.
@@ -205,3 +205,5 @@ On load, the component completes the MCP Apps `ui/initialize` /
 
 See [mcp/README.md](../mcp/README.md) for local setup, quick JWT testing, MCP Inspector
 usage, and Claude Desktop configuration.
+
+Structured headwords use `{text, canonical, meaning, source_url?}`. The sentence has no added definitions; cards render contextual meanings separately. The first two cards compare canonical sets, allowing inflection and gloss differences. See the [structured-headword contract](structured-headwords.md).

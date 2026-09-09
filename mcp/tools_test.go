@@ -45,7 +45,7 @@ func TestExplorationInstructionsRequireOneUsefulConnection(t *testing.T) {
 func TestExplorationInstructionsRequireCanonicalHeadwordsAcrossChoices(t *testing.T) {
 	for _, want := range []string{
 		`"unbeknownst to me" and "unbeknownst to the engineering team" both use the headword "unbeknownst to"`,
-		`Reuse the exact same canonical headwords`,
+		`Reuse the exact same canonical headword set`,
 	} {
 		if !strings.Contains(explorePhraseInstructions, want) {
 			t.Errorf("exploration instructions do not contain %q", want)
@@ -79,22 +79,20 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 	choice := PhraseChoice{
 		Label:       "Everyday example",
 		Recommended: true,
-		Phrase:      "The delay had a pernicious (gradually harmful) effect on morale.",
-		Headwords:   []string{"pernicious"},
+		Phrase:      "The delay had a pernicious effect on morale.",
+		Headwords:   []Headword{{Text: "pernicious", Canonical: "pernicious", Meaning: "test gloss"}},
 		Note:        "Formal; often describes harm that develops gradually.",
-		SourceURLs:  []string{"https://www.merriam-webster.com/dictionary/pernicious"},
 	}
 	secondChoice := PhraseChoice{
 		Label:     "Original context",
 		Phrase:    "The article described the pernicious effect of misinformation.",
-		Headwords: []string{"pernicious"},
+		Headwords: []Headword{{Text: "pernicious", Canonical: "pernicious", Meaning: "test gloss"}},
 	}
 	connection := PhraseChoice{
-		Label:      "A nuanced near-synonym",
-		Phrase:     "The policy's insidious (gradually and subtly harmful) effects only became clear years later.",
-		Headwords:  []string{"insidious"},
-		Note:       "Insidious also describes gradual harm, but it more strongly suggests that the harm develops subtly or deceptively.",
-		SourceURLs: []string{"https://www.merriam-webster.com/dictionary/insidious"},
+		Label:     "A nuanced near-synonym",
+		Phrase:    "The policy's insidious effects only became clear years later.",
+		Headwords: []Headword{{Text: "insidious", Canonical: "insidious", Meaning: "test gloss"}},
+		Note:      "Insidious also describes gradual harm, but it more strongly suggests that the harm develops subtly or deceptively.",
 	}
 	choices := []PhraseChoice{choice, secondChoice, connection}
 
@@ -127,7 +125,7 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 			t.Errorf("render fallback does not contain %q:\n%s", want, textContent.Text)
 		}
 	}
-	for _, sourceURL := range []string{choice.SourceURLs[0], connection.SourceURLs[0]} {
+	for _, sourceURL := range []string{"https://www.merriam-webster.com/dictionary/pernicious", "https://www.merriam-webster.com/dictionary/insidious"} {
 		if strings.Contains(textContent.Text, sourceURL) {
 			t.Errorf("render fallback exposes source_url %q", sourceURL)
 		}
@@ -159,17 +157,17 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 	}
 
 	blankHeadword := choice
-	blankHeadword.Headwords = []string{" "}
+	blankHeadword.Headwords = []Headword{{Text: " ", Canonical: " ", Meaning: "test gloss"}}
 	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{blankHeadword, secondChoice, connection}}); err == nil {
 		t.Fatal("blank headword did not return an error")
 	}
-	misalignedSourceURLs := choice
-	misalignedSourceURLs.Headwords = []string{"pernicious", "effect"}
-	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{misalignedSourceURLs, secondChoice, connection}}); err == nil {
-		t.Fatal("misaligned source_urls did not return an error")
+	invalidSourceURL := choice
+	invalidSourceURL.Headwords = []Headword{{Text: "pernicious", Canonical: "pernicious", Meaning: "harmful", SourceURL: "javascript:alert(1)"}}
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{invalidSourceURL, secondChoice, connection}}); err == nil {
+		t.Fatal("unsafe source_url did not return an error")
 	}
 	differentHeadword := secondChoice
-	differentHeadword.Headwords = []string{"pernicious effect"}
+	differentHeadword.Headwords = []Headword{{Text: "pernicious effect", Canonical: "pernicious effect", Meaning: "test gloss"}}
 	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{choice, differentHeadword, connection}}); err == nil {
 		t.Fatal("different headwords across the first two choices did not return an error")
 	}
@@ -248,4 +246,19 @@ func TestRequireToolAuth(t *testing.T) {
 			t.Fatalf("mcp/www_authenticate = %#v, want invalid_token challenge", result.Meta["mcp/www_authenticate"])
 		}
 	})
+}
+
+func TestChoicesAllowInflectionAndContextualMeaningDifferences(t *testing.T) {
+	choices := []PhraseChoice{
+		{Phrase: "It stood up to scrutiny.", Headwords: []Headword{{Text: "stood up to scrutiny", Canonical: "stand up to scrutiny", Meaning: "remained convincing"}}},
+		{Phrase: "It must stand up to scrutiny.", Headwords: []Headword{{Text: "stand up to scrutiny", Canonical: "stand up to scrutiny", Meaning: "remain convincing under examination"}}},
+		{Label: "A meaningful opposite or contrast", Phrase: "It fell apart.", Note: "A contrasting outcome.", Headwords: []Headword{{Text: "fell apart", Canonical: "fall apart", Meaning: "failed completely"}}},
+	}
+	_, out, err := renderPhraseChoicesHandler()(context.Background(), nil, RenderPhraseChoicesInput{Choices: choices})
+	if err != nil || len(out.Choices) != 3 {
+		t.Fatalf("choices: %v %v", out, err)
+	}
+	if out.Choices[0].Headwords[0].Text != "stood up to scrutiny" {
+		t.Fatal("actual form was normalized away")
+	}
 }

@@ -34,42 +34,39 @@ type MagicLinkToken struct {
 
 // Phrase represents a single phrase record as stored in the database.
 type Phrase struct {
-	ID         string    `json:"id"`
-	Phrase     string    `json:"phrase"`
-	Headwords  []string  `json:"headwords"`
-	Note       string    `json:"note"`
-	SourceURLs []string  `json:"source_urls"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID        string     `json:"id"`
+	Phrase    string     `json:"phrase"`
+	Headwords []Headword `json:"headwords"`
+	Note      string     `json:"note"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
 
 // PhraseSummary is a lightweight projection of a phrase record containing only
 // the fields needed for listing — used by the MCP list_phrases tool to avoid
-// sending id, note and source_urls into the AI model's context window.
+// sending id and note into the AI model's context window.
 // ID is tagged json:"-" so it never serializes over the API that MCP calls;
 // it's populated for in-process callers (e.g. the phrase digest, which needs
 // it to deep-link to the phrase) and is otherwise empty.
 type PhraseSummary struct {
-	ID        string   `json:"-"`
-	Phrase    string   `json:"phrase"`
-	Headwords []string `json:"headwords"`
+	ID        string     `json:"-"`
+	Phrase    string     `json:"phrase"`
+	Headwords []Headword `json:"headwords"`
 }
 
 // CreatePhraseRequest holds the fields needed to insert a new phrase.
 type CreatePhraseRequest struct {
-	Phrase     string   `json:"phrase"`
-	Headwords  []string `json:"headwords"`
-	Note       string   `json:"note"`
-	SourceURLs []string `json:"source_urls"`
+	Phrase    string     `json:"phrase"`
+	Headwords []Headword `json:"headwords"`
+	Note      string     `json:"note"`
 }
 
 // UpdatePhraseRequest holds the fields that may be updated on an existing phrase.
 // Pointer fields allow partial updates: nil means "leave this field unchanged".
 type UpdatePhraseRequest struct {
-	Phrase     *string  `json:"phrase"`
-	Headwords  []string `json:"headwords"` // nil = leave unchanged; when provided, must contain at least one headword
-	Note       *string  `json:"note"`
-	SourceURLs []string `json:"source_urls"` // nil = leave unchanged; [] = clear all URLs
+	Phrase    *string    `json:"phrase"`
+	Headwords []Headword `json:"headwords"` // nil = leave unchanged; when provided, must contain at least one headword
+	Note      *string    `json:"note"`
 }
 
 // OAuthClient is a registered third-party app (e.g. ChatGPT) that has been
@@ -231,6 +228,15 @@ func NewPostgresStore(ctx context.Context, dsn string) (*PostgresStore, error) {
 		pool.Close()
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
+	var pending int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM phrases WHERE headwords IS NULL`).Scan(&pending); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("check headword conversion: %w", err)
+	}
+	if pending > 0 {
+		pool.Close()
+		return nil, fmt.Errorf("%d phrases need reviewed headword conversion", pending)
+	}
 	return &PostgresStore{Pool: pool}, nil
 }
 
@@ -241,12 +247,12 @@ func (s *PostgresStore) Close() {
 // ListPhrases returns phrases owned by userID, newest first.
 // If headword is non-empty, results are filtered by case-insensitive partial match.
 func (s *PostgresStore) ListPhrases(ctx context.Context, userID string, headword string) ([]Phrase, error) {
-	query := `SELECT id, phrase, headwords, note, source_urls, created_at, updated_at
+	query := `SELECT id, phrase, headwords, note, created_at, updated_at
 	          FROM phrases WHERE user_id = $1`
 	args := []any{userID}
 
 	if headword != "" {
-		query += ` AND headwords_text(headwords) ILIKE $2`
+		query += ` AND EXISTS (SELECT 1 FROM jsonb_array_elements(headwords) h WHERE h->>'text' ILIKE $2 OR h->>'canonical' ILIKE $2)`
 		args = append(args, "%"+headword+"%")
 	}
 	query += ` ORDER BY created_at DESC`
@@ -260,7 +266,7 @@ func (s *PostgresStore) ListPhrases(ctx context.Context, userID string, headword
 	phrases := []Phrase{}
 	for rows.Next() {
 		var p Phrase
-		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan phrase: %w", err)
 		}
 		phrases = append(phrases, p)
@@ -276,7 +282,7 @@ func (s *PostgresStore) ListPhrasesSummary(ctx context.Context, userID string, h
 	args := []any{userID}
 
 	if headword != "" {
-		query += ` AND headwords_text(headwords) ILIKE $2`
+		query += ` AND EXISTS (SELECT 1 FROM jsonb_array_elements(headwords) h WHERE h->>'text' ILIKE $2 OR h->>'canonical' ILIKE $2)`
 		args = append(args, "%"+headword+"%")
 	}
 	query += ` ORDER BY created_at DESC`
@@ -324,9 +330,9 @@ func (s *PostgresStore) GetRandomPhrases(ctx context.Context, userID string, cou
 func (s *PostgresStore) GetPhrase(ctx context.Context, userID string, id string) (*Phrase, error) {
 	var p Phrase
 	err := s.Pool.QueryRow(ctx,
-		`SELECT id, phrase, headwords, note, source_urls, created_at, updated_at
+		`SELECT id, phrase, headwords, note, created_at, updated_at
 		 FROM phrases WHERE id = $1 AND user_id = $2`, id, userID,
-	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
+	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -356,13 +362,12 @@ func (s *PostgresStore) UpdatePhrase(ctx context.Context, userID string, id stri
 	err := s.Pool.QueryRow(ctx,
 		`UPDATE phrases
 		 SET phrase      = COALESCE($1, phrase),
-		     headwords   = CASE WHEN $2::text[] IS NOT NULL THEN $2 ELSE headwords END,
-		     note        = COALESCE($3, note),
-		     source_urls = CASE WHEN $4::text[] IS NOT NULL THEN $4 ELSE source_urls END
-		 WHERE id = $5 AND user_id = $6
-		 RETURNING id, phrase, headwords, note, source_urls, created_at, updated_at`,
-		req.Phrase, req.Headwords, req.Note, req.SourceURLs, id, userID,
-	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
+		     headwords   = COALESCE($2::jsonb, headwords),
+		     note        = COALESCE($3, note), embedding = NULL
+		 WHERE id = $4 AND user_id = $5
+		 RETURNING id, phrase, headwords, note, created_at, updated_at`,
+		req.Phrase, req.Headwords, req.Note, id, userID,
+	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -375,18 +380,16 @@ func (s *PostgresStore) UpdatePhrase(ctx context.Context, userID string, id stri
 // CreatePhrase inserts a phrase owned by userID and returns the full record.
 func (s *PostgresStore) CreatePhrase(ctx context.Context, userID string, req CreatePhraseRequest) (*Phrase, error) {
 	if req.Headwords == nil {
-		req.Headwords = []string{}
+		req.Headwords = []Headword{}
 	}
-	if req.SourceURLs == nil {
-		req.SourceURLs = []string{}
-	}
+
 	var p Phrase
 	err := s.Pool.QueryRow(ctx,
-		`INSERT INTO phrases (phrase, headwords, note, source_urls, user_id)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, phrase, headwords, note, source_urls, created_at, updated_at`,
-		req.Phrase, req.Headwords, req.Note, req.SourceURLs, userID,
-	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt)
+		`INSERT INTO phrases (phrase, headwords, note, user_id)
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id, phrase, headwords, note, created_at, updated_at`,
+		req.Phrase, req.Headwords, req.Note, userID,
+	).Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create phrase: %w", err)
 	}
@@ -630,7 +633,7 @@ func (s *PostgresStore) SetPhraseEmbedding(ctx context.Context, id string, embed
 // by cosine similarity to the provided embedding. Phrases without an embedding are excluded.
 func (s *PostgresStore) SearchPhrasesBySimilarity(ctx context.Context, userID string, embedding []float32, limit int) ([]Phrase, error) {
 	rows, err := s.Pool.Query(ctx,
-		`SELECT id, phrase, headwords, note, source_urls, created_at, updated_at
+		`SELECT id, phrase, headwords, note, created_at, updated_at
 		 FROM phrases
 		 WHERE user_id = $1 AND embedding IS NOT NULL
 		 ORDER BY embedding <=> $2
@@ -645,7 +648,7 @@ func (s *PostgresStore) SearchPhrasesBySimilarity(ctx context.Context, userID st
 	var phrases []Phrase
 	for rows.Next() {
 		var p Phrase
-		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan phrase: %w", err)
 		}
 		phrases = append(phrases, p)
@@ -661,7 +664,7 @@ func (s *PostgresStore) GetRelatedPhrases(ctx context.Context, userID string, ph
 		`WITH src AS (
 		   SELECT embedding FROM phrases WHERE id = $2 AND user_id = $1
 		 )
-		 SELECT p.id, p.phrase, p.headwords, p.note, p.source_urls, p.created_at, p.updated_at
+		 SELECT p.id, p.phrase, p.headwords, p.note, p.created_at, p.updated_at
 		 FROM phrases p, src
 		 WHERE p.user_id = $1
 		   AND p.id != $2
@@ -680,7 +683,7 @@ func (s *PostgresStore) GetRelatedPhrases(ctx context.Context, userID string, ph
 	phrases := []Phrase{}
 	for rows.Next() {
 		var p Phrase
-		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan phrase: %w", err)
 		}
 		phrases = append(phrases, p)
@@ -692,7 +695,7 @@ func (s *PostgresStore) GetRelatedPhrases(ctx context.Context, userID string, ph
 // Used by the backfill endpoint to catch up after the migration or on failure.
 func (s *PostgresStore) ListPhrasesWithoutEmbedding(ctx context.Context) ([]Phrase, error) {
 	rows, err := s.Pool.Query(ctx,
-		`SELECT id, phrase, headwords, note, source_urls, created_at, updated_at
+		`SELECT id, phrase, headwords, note, created_at, updated_at
 		 FROM phrases WHERE embedding IS NULL`,
 	)
 	if err != nil {
@@ -703,7 +706,7 @@ func (s *PostgresStore) ListPhrasesWithoutEmbedding(ctx context.Context) ([]Phra
 	var phrases []Phrase
 	for rows.Next() {
 		var p Phrase
-		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.SourceURLs, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Phrase, &p.Headwords, &p.Note, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan phrase: %w", err)
 		}
 		phrases = append(phrases, p)

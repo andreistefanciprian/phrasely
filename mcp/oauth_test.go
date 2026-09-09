@@ -86,6 +86,20 @@ func TestMCPCurrentProtocolDiscoveryListsTools(t *testing.T) {
 	got := make(map[string]bool, len(tools.Tools))
 	for _, tool := range tools.Tools {
 		got[tool.Name] = true
+		if tool.Name == "add_phrase" || tool.Name == "render_phrase_choices" {
+			schema, err := json.Marshal(tool.InputSchema)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, field := range []string{`"text"`, `"canonical"`, `"meaning"`, `"source_url"`} {
+				if !strings.Contains(string(schema), field) {
+					t.Errorf("%s schema missing %s: %s", tool.Name, field, schema)
+				}
+			}
+			if strings.Contains(string(schema), `"source_urls"`) {
+				t.Errorf("legacy URL array in schema: %s", schema)
+			}
+		}
 	}
 	for _, want := range []string{"list_phrases", "sample_phrases", "explore_phrase", "add_phrase"} {
 		if !got[want] {

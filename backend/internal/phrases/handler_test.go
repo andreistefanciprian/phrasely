@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -141,8 +142,8 @@ func TestListPhrases_ReturnsAll(t *testing.T) {
 				t.Errorf("expected userID %q, got %q", testUserID, userID)
 			}
 			return []db.Phrase{
-				{ID: "1", Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
-				{ID: "2", Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
+				{ID: "1", Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}},
+				{ID: "2", Phrase: "A fortuitous meeting.", Headwords: []db.Headword{{Text: "fortuitous", Canonical: "fortuitous", Meaning: "test gloss"}}},
 			}, nil
 		},
 	}
@@ -209,7 +210,7 @@ func TestListPhrases_HeadwordFilter(t *testing.T) {
 				t.Errorf("expected headword %q, got %q", "serendipitous", headword)
 			}
 			return []db.Phrase{
-				{ID: "1", Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
+				{ID: "1", Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}},
 			}, nil
 		},
 	}
@@ -311,8 +312,8 @@ func TestRelatedPhrases_EmptyReturnsArray(t *testing.T) {
 
 func TestRelatedPhrases_PopulatedResults(t *testing.T) {
 	want := []db.Phrase{
-		{ID: "550e8400-e29b-41d4-a716-446655440001", Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
-		{ID: "550e8400-e29b-41d4-a716-446655440002", Phrase: "A happy accident.", Headwords: []string{"serendipity"}},
+		{ID: "550e8400-e29b-41d4-a716-446655440001", Phrase: "A fortuitous meeting.", Headwords: []db.Headword{{Text: "fortuitous", Canonical: "fortuitous", Meaning: "test gloss"}}},
+		{ID: "550e8400-e29b-41d4-a716-446655440002", Phrase: "A happy accident.", Headwords: []db.Headword{{Text: "serendipity", Canonical: "serendipity", Meaning: "test gloss"}}},
 	}
 	store := &mockStore{
 		getRelatedPhrases: func(_ context.Context, _ string, _ string, _ float64, _ int) ([]db.Phrase, error) {
@@ -353,7 +354,7 @@ func TestGetPhrase_Success(t *testing.T) {
 			if userID != testUserID {
 				t.Errorf("expected userID %q, got %q", testUserID, userID)
 			}
-			return &db.Phrase{ID: id, Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}}, nil
+			return &db.Phrase{ID: id, Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}}, nil
 		},
 	}
 
@@ -422,28 +423,14 @@ func TestGetPhrase_InvalidID(t *testing.T) {
 	}
 }
 
-func TestUpdatePhrase_SourceURLsOnly(t *testing.T) {
-	store := &mockStore{
-		updatePhrase: func(_ context.Context, userID string, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
-			return &db.Phrase{ID: validUUID, SourceURLs: req.SourceURLs}, nil
-		},
-	}
-
-	srv := newTestServer(store)
-	defer srv.Close()
-
-	// Sending only source_urls should be accepted — not rejected as "no fields provided"
-	body := `{"source_urls":["https://www.merriam-webster.com/dictionary/test"]}`
-	req, _ := http.NewRequest(http.MethodPatch, srv.URL+"/api/v1/phrases/"+validUUID, bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
+func TestUpdatePhraseRejectsLegacySourceURLs(t *testing.T) {
+	r := mux.NewRouter()
+	NewHandler(&mockStore{}, nil, 0.45).RegisterRoutes(r)
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/phrases/550e8400-e29b-41d4-a716-446655440000", strings.NewReader(`{"source_urls":[]}`))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", w.Code)
 	}
 }
 
@@ -451,7 +438,7 @@ func TestUpdatePhrase_Success(t *testing.T) {
 	updated := "updated note"
 	store := &mockStore{
 		updatePhrase: func(_ context.Context, userID string, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
-			return &db.Phrase{ID: validUUID, Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}, Note: *req.Note}, nil
+			return &db.Phrase{ID: validUUID, Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}, Note: *req.Note}, nil
 		},
 	}
 
@@ -647,7 +634,7 @@ func TestCreatePhrase_Success(t *testing.T) {
 	srv := newTestServer(store)
 	defer srv.Close()
 
-	body := `{"phrase":"It was serendipitous.","headwords":["serendipitous"],"note":"A happy accident."}`
+	body := `{"phrase":"It was serendipitous.","headwords":[{"text": "serendipitous", "canonical": "serendipitous", "meaning": "test gloss"}],"note":"A happy accident."}`
 	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(body))
 	if err != nil {
 		t.Fatal(err)
@@ -662,7 +649,7 @@ func TestCreatePhrase_Success(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if got.Headwords[0] != "serendipitous" {
+	if got.Headwords[0].Text != "serendipitous" {
 		t.Errorf("expected headword %q, got %q", "serendipitous", got.Headwords[0])
 	}
 }
@@ -683,7 +670,7 @@ func TestCreatePhrase_MissingFields(t *testing.T) {
 		name string
 		body string
 	}{
-		{"missing phrase", `{"headwords":["serendipitous"]}`},
+		{"missing phrase", `{"headwords":[{"text": "serendipitous", "canonical": "serendipitous", "meaning": "test gloss"}]}`},
 		{"missing headwords", `{"phrase":"It was serendipitous."}`},
 		{"empty body", `{}`},
 	}
@@ -736,7 +723,7 @@ func TestCreatePhrase_UnknownFields(t *testing.T) {
 	srv := newTestServer(store)
 	defer srv.Close()
 
-	body := `{"phrase":"It was serendipitous.","headwords":["serendipitous"],"unknown_field":"oops"}`
+	body := `{"phrase":"It was serendipitous.","headwords":[{"text": "serendipitous", "canonical": "serendipitous", "meaning": "test gloss"}],"unknown_field":"oops"}`
 	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(body))
 	if err != nil {
 		t.Fatal(err)
@@ -760,7 +747,7 @@ func TestCreatePhrase_BodyTooLarge(t *testing.T) {
 	defer srv.Close()
 
 	// Build a payload larger than maxBodyBytes (1 KB)
-	oversized := `{"phrase":"` + string(make([]byte, 2048)) + `","headwords":["test"]}`
+	oversized := `{"phrase":"` + strings.Repeat("a", maxBodyBytes+1) + `","headwords":[{"text": "test", "canonical": "test", "meaning": "test gloss"}]}`
 	resp, err := http.Post(srv.URL+"/api/v1/phrases", "application/json", bytes.NewBufferString(oversized))
 	if err != nil {
 		t.Fatal(err)
@@ -779,8 +766,8 @@ func TestListPhrasesSummary_ReturnsLightweightProjection(t *testing.T) {
 				t.Errorf("expected userID %q, got %q", testUserID, userID)
 			}
 			return []db.PhraseSummary{
-				{Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
-				{Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
+				{Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}},
+				{Phrase: "A fortuitous meeting.", Headwords: []db.Headword{{Text: "fortuitous", Canonical: "fortuitous", Meaning: "test gloss"}}},
 			}, nil
 		},
 	}
@@ -848,7 +835,7 @@ func TestListPhrasesSummary_ForwardsHeadwordFilter(t *testing.T) {
 				t.Errorf("expected headword %q, got %q", "serendipitous", headword)
 			}
 			return []db.PhraseSummary{
-				{Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
+				{Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}},
 			}, nil
 		},
 	}
@@ -885,7 +872,7 @@ func TestRandomPhrases_DefaultCount(t *testing.T) {
 				t.Errorf("expected default count 1, got %d", count)
 			}
 			return []db.PhraseSummary{
-				{Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
+				{Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}},
 			}, nil
 		},
 	}
@@ -924,9 +911,9 @@ func TestRandomPhrases_ExplicitCount(t *testing.T) {
 				t.Errorf("expected count 3, got %d", count)
 			}
 			return []db.PhraseSummary{
-				{Phrase: "It was serendipitous.", Headwords: []string{"serendipitous"}},
-				{Phrase: "A fortuitous meeting.", Headwords: []string{"fortuitous"}},
-				{Phrase: "She was conspicuous.", Headwords: []string{"conspicuous"}},
+				{Phrase: "It was serendipitous.", Headwords: []db.Headword{{Text: "serendipitous", Canonical: "serendipitous", Meaning: "test gloss"}}},
+				{Phrase: "A fortuitous meeting.", Headwords: []db.Headword{{Text: "fortuitous", Canonical: "fortuitous", Meaning: "test gloss"}}},
+				{Phrase: "She was conspicuous.", Headwords: []db.Headword{{Text: "conspicuous", Canonical: "conspicuous", Meaning: "test gloss"}}},
 			}, nil
 		},
 	}
@@ -987,5 +974,60 @@ func TestRandomPhrases_CountCappedAt10(t *testing.T) {
 	}
 	if got == nil {
 		t.Error("expected empty array, got null")
+	}
+}
+
+func TestStructuredHeadwordsValidationOnCreateAndPatch(t *testing.T) {
+	for _, fragment := range []string{
+		`[]`, `null`, `["legacy"]`,
+		`[{"text":" ","canonical":"run","meaning":"move"}]`,
+		`[{"text":"ran","meaning":"moved"}]`,
+		`[{"text":"ran","canonical":"run"}]`,
+		`[{"text":"ran","canonical":"run","meaning":"moved","source_url":"javascript:alert(1)"}]`,
+	} {
+		for _, method := range []string{http.MethodPost, http.MethodPatch} {
+			t.Run(method+fragment, func(t *testing.T) {
+				r := mux.NewRouter()
+				NewHandler(&mockStore{}, nil, 0.45).RegisterRoutes(r)
+				path := "/api/v1/phrases"
+				body := `{"headwords":` + fragment + `}`
+				if method == http.MethodPatch {
+					path += "/" + validUUID
+				} else {
+					body = `{"phrase":"She ran.","headwords":` + fragment + `}`
+				}
+				w := httptest.NewRecorder()
+				r.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(body)))
+				if w.Code != http.StatusBadRequest {
+					t.Fatalf("status %d: %s", w.Code, w.Body.String())
+				}
+			})
+		}
+	}
+}
+
+func TestStructuredPatchReplacementAndNull(t *testing.T) {
+	for _, fragment := range []string{`null`, `[{"text":"ran","canonical":"run","meaning":"moved quickly"},{"text":"home","canonical":"home","meaning":"to her residence","source_url":"https://example.com/home"}]`} {
+		t.Run(fragment, func(t *testing.T) {
+			called := false
+			store := &mockStore{updatePhrase: func(_ context.Context, _ string, _ string, req db.UpdatePhraseRequest) (*db.Phrase, error) {
+				called = true
+				if fragment == "null" {
+					if req.Headwords != nil {
+						t.Fatal("null must leave unchanged")
+					}
+				} else if len(req.Headwords) != 2 || req.Headwords[0].SourceURL != "" || req.Headwords[1].SourceURL == "" {
+					t.Fatalf("replacement: %+v", req.Headwords)
+				}
+				return &db.Phrase{Phrase: "She ran home (before dusk).", Headwords: req.Headwords}, nil
+			}}
+			r := mux.NewRouter()
+			NewHandler(store, nil, 0.45).RegisterRoutes(r)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, httptest.NewRequest(http.MethodPatch, "/api/v1/phrases/"+validUUID, strings.NewReader(`{"note":"","headwords":`+fragment+`}`)))
+			if w.Code != http.StatusOK || !called {
+				t.Fatalf("status %d %s", w.Code, w.Body.String())
+			}
+		})
 	}
 }

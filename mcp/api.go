@@ -43,17 +43,16 @@ func newAPIClient(baseURL string) *apiClient {
 // PhraseSummary mirrors backend/internal/db.PhraseSummary — lightweight projection
 // returned by GET /api/v1/phrases/summary to reduce token usage in AI contexts.
 type PhraseSummary struct {
-	Phrase    string   `json:"phrase"`
-	Headwords []string `json:"headwords"`
+	Phrase    string     `json:"phrase"`
+	Headwords []Headword `json:"headwords"`
 }
 
 // AddPhraseRequest holds the fields needed to create a new phrase, mirroring
 // backend/internal/db.CreatePhraseRequest.
 type AddPhraseRequest struct {
-	Phrase     string   `json:"phrase"`
-	Headwords  []string `json:"headwords"`
-	Note       string   `json:"note,omitempty"`
-	SourceURLs []string `json:"source_urls,omitempty"`
+	Phrase    string     `json:"phrase"`
+	Headwords []Headword `json:"headwords"`
+	Note      string     `json:"note,omitempty"`
 }
 
 // AddPhrase creates a new phrase for the authenticated user.
@@ -88,7 +87,7 @@ func (c *apiClient) AddPhrase(jwt string, in AddPhraseRequest) (PhraseSummary, e
 
 // ListPhrasesSummary fetches a lightweight projection (phrase, headwords) of all
 // phrases for the authenticated user. Used by the list_phrases MCP tool to minimise
-// token usage — id, note and source_urls are omitted.
+// token usage — id and note are omitted.
 func (c *apiClient) ListPhrasesSummary(jwt, headword string) ([]PhraseSummary, error) {
 	reqURL := c.baseURL + "/api/v1/phrases/summary"
 	if headword != "" {

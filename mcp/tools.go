@@ -42,8 +42,8 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 
 5. Offer saveable choices without persisting.
 	- Never call add_phrase from exploration alone. The user must click Save in the phrase-choice UI or give a direct conversational save instruction.
-	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the three save-ready cards. Do not expose database-ready JSON or source_urls in prose.
-	- After generating the first two choices, construct phrase, headwords, note, and source_urls for each one using the add_phrase field rules. Reuse the exact same canonical headwords and aligned source_urls for these two choices; only the surrounding context and replaceable parts may vary.
+	- Explain the expression conversationally, but use render_phrase_choices as the primary presentation of the three save-ready cards. Do not expose database-ready JSON or dictionary URLs in prose.
+	- After generating the first two choices, construct phrase, structured headwords, and note for each one using the add_phrase field rules. Reuse the exact same canonical headword set for these two choices; text and meaning must fit each sentence. Canonical equality groups grammatical variants, not necessarily identical senses. Never derive canonical forms by suffix stripping.
 	- Add the useful connection from step 6 as the third choice, then call render_phrase_choices once with all three save-ready choices. Mark at most one best learning context as recommended. Avoid duplicating the full choices outside the UI.
 	- If render_phrase_choices or interactive UI is unavailable, present and number the alternatives conversationally so the user can select one.
 	- If the user instead gives a direct save instruction that clearly identifies a phrase, construct that entry and call add_phrase without rendering choices again.
@@ -52,7 +52,7 @@ Do this locally. Do not persist anything — saving is a separate step handled b
 	- Include exactly one compact, save-ready teaching connection as choice 3 in render_phrase_choices; do not repeat it in conversational prose.
 	- Choose the highest-value link for this expression, in this order: a likely confusable word; a meaningful opposite or contrast; a nuanced near-synonym; a register alternative; a common collocation or grammatical construction; a word-family link; a common learner mistake or meaning boundary; or, when none of those is genuinely useful, a memorable association.
 	- Use the selected category as the card title. Never title the card "One useful connection".
-	- Construct the connection's phrase, headwords, note, and source_urls using the add_phrase field rules. Make the phrase a memorable example worth saving. When the connection introduces a distinct word or expression, its headwords and source_urls must describe that connected expression rather than repeating the original target.
+	- Construct the connection's phrase, structured headwords, and note using the add_phrase field rules. Make the phrase a memorable example worth saving. When the connection introduces a distinct word or expression, its headwords and their source_url fields must describe that connected expression rather than repeating the original target.
 	- Ground the connection phrase in another realistic context from the user's life, following the same personalization and no-invention rules as choices 1 and 2.
 	- Use the note to explain the distinction or connection clearly in one or two short sentences. A single connection may mention a tightly related pair, such as a confusable word and the true opposite, when that materially improves understanding.
 	- Never force an unnatural opposite, invent a similarity, repeat the usage note, or turn the aside into a second lesson.`
@@ -118,7 +118,7 @@ func registerTools(server *mcp.Server, api *apiClient, protectedResourceMetadata
 		Meta:        oauthAppToolMeta(),
 		Name:        "add_phrase",
 		Title:       "Add a phrase to Phrasely",
-		Description: `Save one finished phrase entry to Phrasely. Construct the phrase, headwords, note, and source_urls locally first — see each field's description for the construction rules — then call this tool. There is no need to call explore_phrase first if the user already supplied or chose a clear phrase. A clear request such as "add it", "save it", "add this one", or "add that to Phrasely" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation, definition, or rewrite. Ask which phrase only if the reference is genuinely ambiguous and cannot be resolved from conversation context.`,
+		Description: `Save one finished phrase entry to Phrasely. Construct the phrase, structured headwords, and note locally first — see each field's description for the construction rules — then call this tool. There is no need to call explore_phrase first if the user already supplied or chose a clear phrase. A clear request such as "add it", "save it", "add this one", or "add that to Phrasely" is already confirmation; do not ask again. Never call this tool for a request that only asks for an explanation, definition, or rewrite. Ask which phrase only if the reference is genuinely ambiguous and cannot be resolved from conversation context.`,
 		Annotations: &mcp.ToolAnnotations{
 			ReadOnlyHint:    false,
 			DestructiveHint: pFalse,
@@ -216,17 +216,16 @@ func explorePhraseHandler() mcp.ToolHandlerFor[ExplorePhraseInput, ExplorePhrase
 // PhraseChoice is one complete candidate that the phrase-choice UI can pass
 // directly to add_phrase when the user clicks Save.
 type PhraseChoice struct {
-	Label       string   `json:"label,omitempty" jsonschema:"Short card title. Label choice 1 Original context when the user supplied one, otherwise use a concise personal-context label. Give choice 2 a concise personal-context label. For choice 3, use the selected learning-connection category, such as A likely confusable word or A nuanced near-synonym; never use One useful connection."`
-	Recommended bool     `json:"recommended,omitempty" jsonschema:"True for at most one especially memorable or useful choice."`
-	Phrase      string   `json:"phrase" jsonschema:"Complete save-ready phrase following the add_phrase phrase field rules."`
-	Headwords   []string `json:"headwords" jsonschema:"Save-ready canonical headwords following the add_phrase headwords field rules. Choices 1 and 2 must use the exact same headword list; choice 3 may use different headwords for its connected expression."`
-	Note        string   `json:"note,omitempty" jsonschema:"Save-ready usage note following the add_phrase note field rules. Choice 3 requires one or two short sentences explaining its connection to the original target."`
-	SourceURLs  []string `json:"source_urls,omitempty" jsonschema:"Save-ready Merriam-Webster URLs following the add_phrase source_urls field rules."`
+	Label       string     `json:"label,omitempty" jsonschema:"Short card title. Label choice 1 Original context when the user supplied one, otherwise use a concise personal-context label. Give choice 2 a concise personal-context label. For choice 3, use the selected learning-connection category, such as A likely confusable word or A nuanced near-synonym; never use One useful connection."`
+	Recommended bool       `json:"recommended,omitempty" jsonschema:"True for at most one especially memorable or useful choice."`
+	Phrase      string     `json:"phrase" jsonschema:"Complete save-ready phrase following the add_phrase phrase field rules."`
+	Headwords   []Headword `json:"headwords" jsonschema:"One or more structured expressions. Choices 1 and 2 share canonical forms; actual text and contextual meanings may differ."`
+	Note        string     `json:"note,omitempty" jsonschema:"Save-ready usage note following the add_phrase note field rules. Choice 3 requires one or two short sentences explaining its connection to the original target."`
 }
 
 // RenderPhraseChoicesInput is the input schema for render_phrase_choices.
 type RenderPhraseChoicesInput struct {
-	Choices []PhraseChoice `json:"choices" jsonschema:"Exactly three save-ready cards. Choice 1 refines the user's supplied context, or uses a personalized context when none was supplied. Choice 2 is a distinct context the user could realistically use in their own life. These first two choices must use identical headwords. Choice 3 is one personalized learning connection and may use different headwords for a connected expression."`
+	Choices []PhraseChoice `json:"choices" jsonschema:"Exactly three save-ready cards. Choice 1 refines the user's supplied context, or uses a personalized context when none was supplied. Choice 2 is a distinct context the user could realistically use in their own life. These first two choices must use identical canonical headword sets. Choice 3 is one personalized learning connection and may use different headwords for a connected expression."`
 }
 
 // RenderPhraseChoicesOutput mirrors the render input as structured content for
@@ -250,15 +249,13 @@ func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, R
 				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d requires at least one headword", i+1)
 			}
 			for _, headword := range choice.Headwords {
-				if strings.TrimSpace(headword) == "" {
+				if strings.TrimSpace(headword.Text) == "" || strings.TrimSpace(headword.Canonical) == "" || strings.TrimSpace(headword.Meaning) == "" || !validSourceURL(headword.SourceURL) {
 					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords cannot be blank", i+1)
 				}
 			}
-			if len(choice.SourceURLs) > 0 && len(choice.SourceURLs) != len(choice.Headwords) {
-				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d source_urls must align with headwords", i+1)
-			}
-			if i == 1 && !slices.Equal(choice.Headwords, in.Choices[0].Headwords) {
-				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords must exactly match the first choice", i+1)
+
+			if i == 1 && !slices.Equal(canonicalWords(choice.Headwords), canonicalWords(in.Choices[0].Headwords)) {
+				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d canonical headword set must match the first choice", i+1)
 			}
 			if i == 2 {
 				if strings.TrimSpace(choice.Label) == "" || strings.EqualFold(strings.TrimSpace(choice.Label), "One useful connection") {
@@ -295,7 +292,10 @@ func phraseChoicesFallback(choices []PhraseChoice) string {
 			fmt.Fprintf(&b, "%s — ", choice.Label)
 		}
 		b.WriteString(choice.Phrase)
-		fmt.Fprintf(&b, "\n   Headwords: %s", strings.Join(choice.Headwords, ", "))
+		fmt.Fprintf(&b, "\n   Headwords: %s", strings.Join(canonicalWords(choice.Headwords), ", "))
+		for _, w := range choice.Headwords {
+			fmt.Fprintf(&b, "\n   %s: %s", w.Text, w.Meaning)
+		}
 		if choice.Note != "" {
 			fmt.Fprintf(&b, "\n   Note: %s", choice.Note)
 		}
@@ -368,10 +368,9 @@ func listPhrasesHandler(api *apiClient) mcp.ToolHandlerFor[ListPhrasesInput, Lis
 
 // AddPhraseInput is the input schema for the add_phrase tool.
 type AddPhraseInput struct {
-	Phrase     string   `json:"phrase" jsonschema:"Polished, natural English, usually one memorable sentence, preserving the user's original meaning and context. Insert a short plain-English meaning in parentheses immediately after each headword or expression, e.g. 'We sat around the campfire, yapping away (chatting continuously) until midnight.' No Markdown formatting."`
-	Headwords  []string `json:"headwords" jsonschema:"Raw word or expression only, one per entry — no parentheses, no definitions, no quotation marks, no explanatory text. Treat an idiom or fixed expression as a single headword, using its natural taught form. Keep fixed particles or prepositions but exclude replaceable complements: 'unbeknownst to me' and 'unbeknownst to the engineering team' both have headword ['unbeknownst to']. Example: ['yapping away']."`
-	Note       string   `json:"note,omitempty" jsonschema:"1-3 concise sentences on usage, nuance, tone, register, collocations, or — when genuinely interesting and well established — the word or expression's origin. Do not repeat the phrase unnecessarily, speculate, or invent etymology."`
-	SourceURLs []string `json:"source_urls,omitempty" jsonschema:"One Merriam-Webster URL per headword, aligned by index: https://www.merriam-webster.com/dictionary/<lookup form>, URL-encoding spaces as %20. The lookup form is the actual dictionary entry title and is often not identical to the headword text: an inflected verb should normally resolve to its base/infinitive form, and an idiom built around a common light verb (make, take, give, etc.) often has its real Merriam-Webster entry filed under the noun phrase alone, with that light verb dropped — prefer that form when it applies. The headwords field itself keeps the natural taught form; only the source_urls lookup form changes. Example: headword 'yapping away' -> https://www.merriam-webster.com/dictionary/yap."`
+	Phrase    string     `json:"phrase" jsonschema:"Polished natural sentence without added inline definitions or Markdown. Preserve legitimate parenthetical sentence content. Meanings belong in headwords."`
+	Headwords []Headword `json:"headwords" jsonschema:"One or more structured expressions. Choices 1 and 2 share canonical forms; actual text and contextual meanings may differ."`
+	Note      string     `json:"note,omitempty" jsonschema:"1-3 concise sentences on usage, nuance, tone, register, collocations, or — when genuinely interesting and well established — the word or expression's origin. Do not repeat the phrase unnecessarily, speculate, or invent etymology."`
 }
 
 // AddPhraseOutput is the output schema for the add_phrase tool.
@@ -386,10 +385,9 @@ func addPhraseHandler(api *apiClient) mcp.ToolHandlerFor[AddPhraseInput, AddPhra
 		jwt := requestBearer(req)
 		slog.Debug("tool: add_phrase", "headword_count", len(in.Headwords))
 		phrase, err := api.AddPhrase(jwt, AddPhraseRequest{
-			Phrase:     in.Phrase,
-			Headwords:  in.Headwords,
-			Note:       in.Note,
-			SourceURLs: in.SourceURLs,
+			Phrase:    in.Phrase,
+			Headwords: in.Headwords,
+			Note:      in.Note,
 		})
 		if err != nil {
 			if !isAPIAuthError(err) {

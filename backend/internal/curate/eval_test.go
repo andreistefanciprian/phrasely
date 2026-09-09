@@ -38,18 +38,19 @@ var goldens = []golden{
 			if len(got.Headwords) != 1 {
 				t.Fatalf("headwords = %v, want exactly 1", got.Headwords)
 			}
-			if headword := strings.ToLower(got.Headwords[0]); headword != "cagey" {
+			if headword := strings.ToLower(got.Headwords[0].Canonical); headword != "cagey" {
 				t.Errorf("headwords[0] = %q, want \"cagey\"", got.Headwords[0])
 			}
 			if !strings.Contains(strings.ToLower(got.Phrase), "cagey") {
 				t.Errorf("phrase does not contain the headword \"cagey\": %q", got.Phrase)
 			}
-			if !regexp.MustCompile(`cagey \([^)]+\)`).MatchString(got.Phrase) {
-				t.Errorf("phrase does not have a meaning in parentheses right after \"cagey\": %q", got.Phrase)
+			if strings.TrimSpace(got.Headwords[0].Meaning) == "" || strings.Contains(got.Phrase, "(") {
+				t.Errorf("expected separate meaning: %+v", got)
 			}
-			if len(got.SourceURLs) != 1 || got.SourceURLs[0] != "https://www.merriam-webster.com/dictionary/cagey" {
-				t.Errorf("source_urls = %v, want [\"https://www.merriam-webster.com/dictionary/cagey\"]", got.SourceURLs)
+			if got.Headwords[0].SourceURL != "https://www.merriam-webster.com/dictionary/cagey" {
+				t.Errorf("wrong dictionary URL")
 			}
+
 		},
 	},
 	{

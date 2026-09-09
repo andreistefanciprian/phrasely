@@ -18,12 +18,21 @@ func New(apiKey string) *Service {
 	return &Service{client: openai.NewClient(apiKey)}
 }
 
-// PhraseText builds the string to embed for a phrase, combining headwords,
-// the example sentence, and the usage note for maximum semantic richness.
+// PhraseText builds the semantic document for a phrase. The canonical form
+// identifies the expression while the meaning, sentence, and note preserve its
+// contextual use. Text is omitted as a separate field because it already occurs
+// naturally in the sentence.
 func PhraseText(p db.Phrase) string {
-	parts := []string{strings.Join(p.Headwords, ", "), p.Phrase}
+	parts := make([]string, 0, len(p.Headwords)*2+2)
+	for _, w := range p.Headwords {
+		parts = append(parts,
+			"Expression: "+w.Canonical,
+			"Meaning: "+w.Meaning,
+		)
+	}
+	parts = append(parts, "Context: "+p.Phrase)
 	if p.Note != "" {
-		parts = append(parts, p.Note)
+		parts = append(parts, "Usage: "+p.Note)
 	}
 	return strings.Join(parts, "\n")
 }

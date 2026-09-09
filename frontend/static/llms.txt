@@ -25,8 +25,7 @@ Sign in via magic link — no passwords required.
 {
   "id": "uuid",
   "phrase": "The legislation was unfettered by constitutional constraints.",
-  "headwords": ["unfettered"],
-  "source_urls": ["https://www.merriam-webster.com/dictionary/unfettered"],
+  "headwords": [{"text":"unfettered","canonical":"unfettered","meaning":"free from restrictions","source_url":"https://www.merriam-webster.com/dictionary/unfettered"}],
   "note": "Used to describe something free from restriction or control.",
   "created_at": "2026-06-05T00:00:00Z",
   "updated_at": "2026-06-05T00:00:00Z"
