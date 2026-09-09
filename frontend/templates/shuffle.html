@@ -4,6 +4,9 @@
 <meta name="robots" content="noindex">
 <style>
   body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6.5rem 1.5rem 5rem; }
+  body:has(#shuffle-stage) { justify-content: flex-start; }
+
+  #shuffle-stage { display: grid; place-items: center; width: 100%; min-height: min(55dvh, 32rem); }
 
   #phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1.25rem, 4vw, 1.65rem); line-height: 1.85; text-align: center; max-width: 600px; color: var(--navy); animation: fadeUp 0.35s ease; }
   #phrase .def { font-style: italic; color: var(--definition); }
@@ -28,7 +31,7 @@
   .shuffle-hint { margin-bottom: 2rem; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-align: center; text-transform: uppercase; display: none; }
   @media (hover: hover) { #click-hint { display: block; } }
   @media (hover: none)  { #tap-hint  { display: block; } }
-  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
+  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } #shuffle-stage { min-height: 50dvh; } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 </style>
@@ -38,13 +41,15 @@
 {{if eq .Count 0}}
 <p class="empty-state">No phrases yet. <a href="/add">Add your first →</a></p>
 {{else}}
-<div id="main-content">
-  <p class="shuffle-hint" id="click-hint">Click to shuffle</p>
-  <p class="shuffle-hint" id="tap-hint">Tap to shuffle</p>
-  <p id="phrase"></p>
-  <div id="keyword"></div>
-  <p id="note"></p>
-  <div id="siblings"></div>
+<div id="shuffle-stage">
+  <div id="main-content">
+    <p class="shuffle-hint" id="click-hint">Click to shuffle</p>
+    <p class="shuffle-hint" id="tap-hint">Tap to shuffle</p>
+    <p id="phrase"></p>
+    <div id="keyword"></div>
+    <p id="note"></p>
+    <div id="siblings"></div>
+  </div>
 </div>
 <div id="related"></div>
 

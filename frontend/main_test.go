@@ -220,6 +220,24 @@ func TestBubbleAndShufflePagesShareEmptyState(t *testing.T) {
 	}
 }
 
+func TestShufflePageKeepsRelatedOutsideStableStage(t *testing.T) {
+	template, err := files.ReadFile("templates/shuffle.html")
+	if err != nil {
+		t.Fatalf("read shuffle template: %v", err)
+	}
+
+	source := string(template)
+	if !strings.Contains(source, "  </div>\n</div>\n<div id=\"related\"></div>") {
+		t.Fatal("related section must be outside the stable shuffle stage")
+	}
+	if !strings.Contains(source, "body:has(#shuffle-stage) { justify-content: flex-start; }") {
+		t.Fatal("shuffle page must not vertically centre the stage together with related results")
+	}
+	if !strings.Contains(source, "#shuffle-stage { display: grid; place-items: center;") {
+		t.Fatal("shuffle stage must independently centre the main phrase")
+	}
+}
+
 func TestAuthorizePreservesOAuthResource(t *testing.T) {
 	const resource = "https://mcp.example.com"
 	const redirectURI = "https://chatgpt.com/callback"
