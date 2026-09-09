@@ -172,7 +172,7 @@ MCP server is the public OAuth face; backend handles the real work over the priv
 - `headwords JSONB` — ordered array of `{text, canonical, meaning, source_url?}` objects. Text is the actual sentence form; canonical groups grammatical variants, not senses. Meaning is contextual; each optional dictionary link belongs to its object.
 - `phrase` contains the natural sentence; inline glosses are rendered from headwords. Preserve legitimate parentheses.
 - Create requires nonblank phrase and at least one complete headword. PATCH replaces the entire provided array; omitted/null fields stay unchanged. Empty arrays are invalid.
-- Migration 00008 temporarily retains legacy columns while production data is reviewed and converted. Remove them and make `headwords` non-null in a follow-up migration after production validation.
+- `headwords` is a non-null JSONB column. Migration 00009 finalized the structured schema after the reviewed conversion.
 - `view_count` — tracked in `localStorage` on the frontend only; no DB column needed
 
 ## Git workflow

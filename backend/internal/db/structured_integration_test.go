@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,7 +55,7 @@ func TestStructuredStorageIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = goose.Up(sqlDB, "."); err != nil {
+	if err = goose.UpTo(sqlDB, ".", 8); err != nil {
 		t.Fatal(err)
 	}
 	var legacy string
@@ -65,15 +66,20 @@ func TestStructuredStorageIntegration(t *testing.T) {
 	if legacy != "She stood up to scrutiny (remained convincing)." || modified.UTC().Format("2006-01-02") != "2025-01-02" {
 		t.Fatalf("legacy=%q updated=%v", legacy, modified)
 	}
-	if s, err := NewPostgresStore(ctx, dsn); err == nil {
-		s.Close()
-		t.Fatal("unconverted rows must block startup")
+	if err = goose.UpTo(sqlDB, ".", 9); err == nil {
+		t.Fatal("migration 00009 must block startup while unconverted rows remain")
+	} else if !strings.Contains(err.Error(), "phrases with NULL headwords remain") {
+		t.Fatalf("migration 00009 returned an unclear conversion error: %v", err)
 	}
 	// Simulate a reviewed conversion so storage consumers can be exercised.
 	_, err = pool.Exec(ctx, `UPDATE phrases SET headwords='[{"text":"stood up to scrutiny","canonical":"stand up to scrutiny","meaning":"remained convincing","source_url":"https://www.merriam-webster.com/dictionary/scrutiny"}]'::jsonb,phrase='She stood up to scrutiny.' WHERE id=$1`, id)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err = goose.UpTo(sqlDB, ".", 9); err != nil {
+		t.Fatal(err)
+	}
+	assertFinalStructuredSchema(t, ctx, pool)
 	store, err := NewPostgresStore(ctx, dsn)
 	if err != nil {
 		t.Fatal(err)
@@ -142,5 +148,65 @@ func TestStructuredStorageIntegration(t *testing.T) {
 	}
 	if _, err = store.ListPhrasesWithoutEmbedding(ctx); err != nil {
 		t.Fatal(err)
+	}
+	if err = store.DeletePhrase(ctx, user, p.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.GetPhrase(ctx, user, p.ID); err != ErrNotFound {
+		t.Fatalf("deleted phrase lookup: %v", err)
+	}
+}
+
+func assertFinalStructuredSchema(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+
+	var nullable string
+	if err := pool.QueryRow(ctx, `
+		SELECT is_nullable
+		FROM information_schema.columns
+		WHERE table_schema = 'public' AND table_name = 'phrases' AND column_name = 'headwords'
+	`).Scan(&nullable); err != nil {
+		t.Fatal(err)
+	}
+	if nullable != "NO" {
+		t.Fatalf("headwords is_nullable = %q, want NO", nullable)
+	}
+
+	var legacyColumns int
+	if err := pool.QueryRow(ctx, `
+		SELECT count(*)
+		FROM information_schema.columns
+		WHERE table_schema = 'public' AND table_name = 'phrases' AND column_name LIKE 'legacy\_%' ESCAPE '\'
+	`).Scan(&legacyColumns); err != nil {
+		t.Fatal(err)
+	}
+	if legacyColumns != 0 {
+		t.Fatalf("legacy phrase columns remaining = %d", legacyColumns)
+	}
+
+	var obsoleteIndexes int
+	if err := pool.QueryRow(ctx, `
+		SELECT count(*)
+		FROM pg_indexes
+		WHERE schemaname = 'public' AND indexname IN ('idx_phrases_headwords', 'idx_phrases_headwords_trgm')
+	`).Scan(&obsoleteIndexes); err != nil {
+		t.Fatal(err)
+	}
+	if obsoleteIndexes != 0 {
+		t.Fatalf("obsolete headword indexes remaining = %d", obsoleteIndexes)
+	}
+
+	var legacyFunctions int
+	if err := pool.QueryRow(ctx, `
+		SELECT count(*)
+		FROM pg_proc p
+		JOIN pg_namespace n ON n.oid = p.pronamespace
+		WHERE n.nspname = 'public' AND p.proname = 'headwords_text'
+		  AND pg_get_function_identity_arguments(p.oid) = 'text[]'
+	`).Scan(&legacyFunctions); err != nil {
+		t.Fatal(err)
+	}
+	if legacyFunctions != 0 {
+		t.Fatalf("headwords_text(text[]) functions remaining = %d", legacyFunctions)
 	}
 }
