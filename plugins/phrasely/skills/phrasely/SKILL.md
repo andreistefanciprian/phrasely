@@ -34,12 +34,12 @@ After the explanation, generate two saveable target-expression choices. If the u
 
 Prepare every candidate according to the `add_phrase` field descriptions:
 
-- `phrase`: Write polished, natural English, usually as one memorable sentence. Put a short plain-English meaning in parentheses immediately after each taught word or expression. Use no Markdown inside the saved phrase.
-- `headwords`: Use raw canonical taught forms only—no definitions, parentheses, quotation marks, or commentary. Treat an idiom or fixed expression as one headword. Keep fixed particles or prepositions but remove replaceable complements; for example, both “unbeknownst to me” and “unbeknownst to the team” use `unbeknownst to`.
-- `note`: Use one to three concise sentences about nuance, tone, register, collocations, grammar, or a genuinely established origin. Do not repeat the phrase unnecessarily, speculate, or invent etymology.
-- `source_urls`: When supplied, include exactly one Merriam-Webster URL per headword in the same order. Use the actual dictionary lookup form, which may be a base verb or noun phrase rather than the saved headword. Supply a complete one-to-one list, or omit `source_urls` entirely if any required lookup is uncertain; never submit a partial list.
+- `phrase`: Write polished, natural English, usually one memorable sentence, without added inline definitions or Markdown. Preserve legitimate parenthetical content.
+- `headwords`: Supply one or more objects. `text` is the expression's actual grammatical form in the sentence. `canonical` is its normalized grouping form: “stood up to scrutiny” → “stand up to scrutiny”; “disparaging” → “disparage”. Keep fixed particles and prepositions and omit replaceable complements. Use linguistic judgment, never naive suffix stripping. Canonical equality identifies grammatical variants, not necessarily identical senses.
+- Each headword requires a short `meaning` specific to its sentence. The UI renders this gloss inline. An optional `source_url` belongs to that headword and points to the actual Merriam-Webster dictionary entry; omit that individual URL when uncertain. There is no parallel URL array.
+- `note`: Use one to three concise sentences about contextual usage, nuance, tone, register, collocations, grammar, or a useful established origin. Avoid speculative etymology.
 
-Reuse the exact same canonical `headwords` and aligned `source_urls` across the first two context choices for one target expression. Only their surrounding context and replaceable parts may vary. Card 3 may use different headwords and source URLs when it teaches a connected word or expression.
+Reuse the same canonical headword set across the first two context choices. Their actual text and contextual meanings may differ. Card 3 may teach a connected expression with a different canonical form.
 
 ## Present choices
 
@@ -50,7 +50,7 @@ Reuse the exact same canonical `headwords` and aligned `source_urls` across the 
 - If interactive UI is unavailable, present all three choices as a numbered list with the same phrase, headwords, and concise note so the user can refer to one naturally.
 - Make choice 3 exactly one compact, save-ready learning connection following the priority and boundaries returned by `explore_phrase`.
 - Use the selected category as choice 3's `label`: `A likely confusable word`, `A meaningful opposite or contrast`, `A nuanced near-synonym`, `A register alternative`, `A common collocation or grammatical construction`, `A word-family link`, `A common learner mistake or meaning boundary`, or `A memorable association`. Never use `One useful connection`, and do not repeat the connection in prose outside the UI.
-- Construct card 3's `phrase`, `headwords`, `note`, and `source_urls` with the same save-ready rules as the first two cards. Ground its phrase in another realistic context from the user's life, following the same personalization and no-invention rules. Use its note to explain the connection in one or two short sentences. When it introduces a distinct word or expression, use that connected expression for its headwords and source URLs.
+- Construct card 3's `phrase`, structured `headwords`, and `note` with the same save-ready rules as the first two cards. Ground its phrase in another realistic context from the user's life, following the same personalization and no-invention rules. Use its note to explain the connection in one or two short sentences. When it introduces a distinct word or expression, use that connected expression for its headwords and source URLs.
 
 Do not render choices after a direct, unambiguous instruction to save an already identified phrase. Save that entry immediately.
 
@@ -76,7 +76,7 @@ After an observed `add_phrase` success, briefly report the saved phrase and its 
 - Use `list_phrases` without a filter for the collection or recent entries. Results are newest first.
 - Use `list_phrases` with `headword` for headword lookup. The match is case-insensitive and partial; describe an empty result as no matching saved headword, not proof that the expression never appears anywhere in a phrase.
 - Treat returned phrases as the user's saved wording. Preserve them when summarizing or practising unless the user asks to improve them.
-- The result contains only each saved phrase and its headwords. Do not claim access to notes, source URLs, IDs, timestamps, or exact save dates.
+- The result contains each saved sentence and its structured headwords, including contextual meanings and any dictionary URLs. Do not claim access to notes, IDs, timestamps, or exact save dates.
 - Do not invent pagination, semantic matching, related-phrase ranking, or an exact match when the tool does not provide it.
 
 If the user requests semantic search, related phrases, editing, deletion, or another unavailable collection operation, explain the limitation plainly and offer the closest supported action only when it is genuinely useful.

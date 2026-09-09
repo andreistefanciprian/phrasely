@@ -322,3 +322,26 @@ func TestValidateOAuthParamsRequiresResource(t *testing.T) {
 		t.Fatalf("valid resource was rejected: %v", err)
 	}
 }
+
+func TestStructuredCollectionPagesRender(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]map[string]any{{"id": "sample", "phrase": "She stood up to scrutiny (even then).", "headwords": []map[string]string{{"text": "stood up to scrutiny", "canonical": "stand up to scrutiny", "meaning": "remained convincing"}}, "note": "Context"}})
+	}))
+	defer backend.Close()
+	app := &application{api: newAPIClient(backend.URL)}
+	for _, tc := range []struct {
+		name    string
+		handler http.HandlerFunc
+	}{
+		{"bubble", app.bubblePage}, {"shuffle", app.shufflePage}, {"phrases", app.phrasesPage}, {"add", app.addPage},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			tc.handler(w, httptest.NewRequest(http.MethodGet, "/"+tc.name, nil))
+			if w.Code != 200 || !strings.Contains(w.Body.String(), `src="/static/headwords.js"`) || strings.Contains(w.Body.String(), "ZgotmplZ") {
+				t.Fatalf("render failed: %d %s", w.Code, w.Body.String())
+			}
+		})
+	}
+}

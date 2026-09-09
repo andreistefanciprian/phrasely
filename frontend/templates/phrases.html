@@ -62,6 +62,7 @@
   <ul class="phrase-list" id="phrase-list"></ul>
 </div>
 
+<script src="/static/headwords.js"></script>
 <script>
   let phrases = {{.PhrasesJSON}};
 
@@ -70,7 +71,7 @@
                    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function format(text) {
-    return escapeHtml(text).replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
+    return PhraselyHeadwords.format(text.phrase, text.headwords);
   }
 
   function render(items, semantic) {
@@ -91,11 +92,9 @@
 
     list.innerHTML = display.map(p => {
       const id        = escapeHtml(p.id);
-      const phrase    = format(p.phrase);
-      const meta      = escapeHtml((p.headwords || []).join(' · '));
+      const phrase    = format(p);
+      const meta      = escapeHtml((p.headwords || []).map(w => w.canonical).join(' · '));
       const note      = escapeHtml(p.note || '');
-      const hwVal     = escapeHtml((p.headwords || []).join(', '));
-      const urlsVal   = escapeHtml((p.source_urls || []).join(', '));
       const phraseVal = escapeHtml(p.phrase || '');
       const noteVal   = escapeHtml(p.note || '');
       return `
@@ -114,9 +113,9 @@
         </div>
         <div class="edit-form" id="edit-${id}">
           <div><label>Phrase</label><textarea id="ef-phrase-${id}" rows="3">${phraseVal}</textarea></div>
-          <div><label>Headwords (comma-separated)</label><input type="text" id="ef-headwords-${id}" value="${hwVal}"></div>
+          <div id="ef-headwords-${id}">${(p.headwords || []).map(headwordFields).join('')}</div>
+          <button class="btn-link" onclick="addHeadword('${id}')">Add expression</button>
           <div><label>Note</label><textarea id="ef-note-${id}" rows="2">${noteVal}</textarea></div>
-          <div><label>Source URLs (comma-separated)</label><input type="text" id="ef-urls-${id}" value="${urlsVal}"></div>
           <div class="edit-form-actions">
             <button class="btn-save" onclick="saveEdit('${id}')">Save</button>
             <button class="btn-cancel" onclick="closeEdit('${id}')">Cancel</button>
@@ -126,6 +125,11 @@
       </li>`;
     }).join('');
   }
+
+  function headwordFields(w = {}) {
+    return `<fieldset class="headword-fields"><legend>Expression</legend>${[['text', 'Form in sentence'], ['canonical', 'Grouping form'], ['meaning', 'Meaning in this context'], ['source_url', 'Dictionary URL (optional)']].map(([field, label]) => `<label>${label}<input type="text" data-field="${field}" value="${escapeHtml(w[field] || '')}"></label>`).join('')}<button type="button" class="btn-link" onclick="this.closest('fieldset').remove()">Remove expression</button></fieldset>`;
+  }
+  function addHeadword(id) { document.getElementById(`ef-headwords-${id}`).insertAdjacentHTML('beforeend', headwordFields()); }
 
   function showConfirm(id) { document.getElementById(`confirm-${id}`).classList.add('visible'); }
   function hideConfirm(id) { document.getElementById(`confirm-${id}`).classList.remove('visible'); }
@@ -144,13 +148,13 @@
 
   async function saveEdit(id) {
     const phrase     = document.getElementById(`ef-phrase-${id}`).value.trim();
-    const headwords  = document.getElementById(`ef-headwords-${id}`).value.split(',').map(s => s.trim()).filter(Boolean);
+    const headwords = [...document.querySelectorAll(`#ef-headwords-${id} .headword-fields`)].map(row => Object.fromEntries([...row.querySelectorAll('input')].map(input => [input.dataset.field, input.value.trim()])));
     const note       = document.getElementById(`ef-note-${id}`).value.trim();
-    const sourceUrls = document.getElementById(`ef-urls-${id}`).value.split(',').map(s => s.trim()).filter(Boolean);
     const errEl      = document.getElementById(`ef-error-${id}`);
     const saveBtn    = document.querySelector(`#edit-${id} .btn-save`);
 
     if (!phrase || headwords.length === 0) { errEl.textContent = 'Phrase and at least one headword are required.'; return; }
+    if (headwords.some(w => !w.text || !w.canonical || !w.meaning)) { errEl.textContent = 'Each expression needs its sentence form, grouping form, and meaning.'; return; }
 
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     let res;
@@ -158,7 +162,7 @@
       res = await fetch(`/fd/phrases/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phrase, headwords, note, source_urls: sourceUrls }),
+        body: JSON.stringify({ phrase, headwords, note }),
       });
     } catch { errEl.textContent = 'Save failed. Please check your connection and try again.'; return; }
     finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
@@ -190,7 +194,7 @@
     if (!q) { render(); return; }
 
     const local = phrases.filter(p =>
-      (p.headwords || []).some(w => w.toLowerCase().includes(q.toLowerCase()))
+      (p.headwords || []).some(w => [w.text, w.canonical].some(value => value.toLowerCase().includes(q.toLowerCase())))
     );
     if (local.length > 0) { render(local, false); return; }
 

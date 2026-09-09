@@ -188,21 +188,20 @@ async function exportPhrases(action) {
   let content, mime, ext;
 
   if (selectedFmt === 'json') {
-    const clean = phrases.map(({ phrase, headwords, note, source_urls, created_at }) =>
-      ({ phrase, headwords, note, source_urls, created_at }));
+    const clean = phrases.map(({ phrase, headwords, note, created_at }) =>
+      ({ phrase, headwords, note, created_at }));
     content = JSON.stringify({ exported_at: new Date().toISOString(), count: clean.length, phrases: clean }, null, 2);
     mime = 'application/json';
     ext  = 'json';
 
   } else if (selectedFmt === 'csv') {
     const escape = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-    const rows = [['phrase', 'headwords', 'note', 'source_urls', 'created_at']];
+    const rows = [['phrase', 'headwords', 'note', 'created_at']];
     for (const p of phrases) {
       rows.push([
         escape(p.phrase),
-        escape((p.headwords   || []).join('|')),
+        escape(JSON.stringify(p.headwords || [])),
         escape(p.note),
-        escape((p.source_urls || []).join('|')),
         escape(p.created_at),
       ]);
     }

@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/andreistefanciprian/phrasely/internal/db"
+
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -20,13 +22,12 @@ type Curator struct {
 
 // CuratedPhrase is the structured payload returned by the curation model.
 type CuratedPhrase struct {
-	Phrase          string   `json:"phrase"`
-	Headwords       []string `json:"headwords"`
-	Note            string   `json:"note"`
-	SourceURLs      []string `json:"source_urls"`
-	ContentAdjusted bool     `json:"content_adjusted"`
-	ValidInput      bool     `json:"valid_input"`
-	InvalidReason   string   `json:"invalid_reason"`
+	Phrase          string        `json:"phrase"`
+	Headwords       []db.Headword `json:"headwords"`
+	Note            string        `json:"note"`
+	ContentAdjusted bool          `json:"content_adjusted"`
+	ValidInput      bool          `json:"valid_input"`
+	InvalidReason   string        `json:"invalid_reason"`
 }
 
 func NewCurator(apiKey string) (*Curator, error) {
@@ -82,6 +83,14 @@ func (c *Curator) Curate(ctx context.Context, input string) (*CuratedPhrase, err
 	}
 	if !result.ValidInput && strings.TrimSpace(result.InvalidReason) == "" {
 		result.InvalidReason = "No valid expression or meaningful context was provided."
+	}
+	if result.ValidInput {
+		if strings.TrimSpace(result.Phrase) == "" {
+			return nil, fmt.Errorf("curated phrase is empty")
+		}
+		if err := db.ValidateHeadwords(result.Headwords); err != nil {
+			return nil, fmt.Errorf("invalid curated headwords: %w", err)
+		}
 	}
 	return &result, nil
 }

@@ -9,7 +9,7 @@
   #phrase .def { font-style: italic; color: var(--definition); }
 
   #keyword { margin-top: 2rem; display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; animation: fadeUp 0.35s ease; }
-  #keyword a { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--navy); text-decoration: none; border-bottom: 1px solid var(--teal); padding-bottom: 1px; transition: color 0.15s, border-color 0.15s; }
+  #keyword .headword { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--navy); text-decoration: none; border-bottom: 1px solid var(--teal); padding-bottom: 1px; transition: color 0.15s, border-color 0.15s; }
   #keyword a:hover { color: var(--blue); border-color: var(--blue); }
 
   #note { margin: 0.6rem auto 0; font-size: 0.9rem; line-height: 1.6; color: var(--secondary); text-align: center; width: 100%; max-width: 480px; animation: fadeUp 0.35s ease; }
@@ -48,6 +48,7 @@
 </div>
 <div id="related"></div>
 
+<script src="/static/headwords.js"></script>
 <script>
   const phrases = {{.PhrasesJSON}};
   const headwordSeparator = ' · ';
@@ -58,7 +59,7 @@
                    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function format(text) {
-    return escapeHtml(text).replace(/\(([^)]+)\)/g, '<span class="def">($1)</span>');
+    return PhraselyHeadwords.format(text.phrase, text.headwords);
   }
 
   function show(item) {
@@ -74,10 +75,9 @@
       el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
     });
 
-    phraseEl.innerHTML = format(item.phrase);
+    phraseEl.innerHTML = format(item);
 
     const headwords  = item.headwords || [];
-    const sourceUrls = item.source_urls || [];
     keywordEl.textContent = '';
     headwords.forEach((w, i) => {
       if (i > 0) {
@@ -86,26 +86,27 @@
         sep.style.cssText = 'color:var(--muted);font-size:0.7rem;letter-spacing:0.08em';
         keywordEl.appendChild(sep);
       }
-      const a = document.createElement('a');
-      a.textContent = w;
-      const fallback = `https://www.merriam-webster.com/dictionary/${encodeURIComponent(w)}`;
-      const candidate = sourceUrls[i] || fallback;
-      let href = fallback;
-      try {
-        const u = new URL(candidate, location.origin);
-        if (u.protocol === 'http:' || u.protocol === 'https:') href = u.toString();
-      } catch {}
-      a.href = href; a.target = '_blank'; a.rel = 'noopener';
+      const a = document.createElement(w.source_url ? 'a' : 'span');
+      a.className = 'headword';
+      a.textContent = w.canonical;
+      if (w.source_url) {
+        try {
+          const u = new URL(w.source_url);
+          if (u.protocol === 'http:' || u.protocol === 'https:') {
+            a.href = u.toString(); a.target = '_blank'; a.rel = 'noopener';
+          }
+        } catch {}
+      }
       keywordEl.appendChild(a);
     });
 
     noteEl.textContent = item.note;
 
-    const label = headwords.join(headwordSeparator);
-    const siblings = phrases.filter(p => (p.headwords || []).join(headwordSeparator) === label && p.id !== item.id);
+    const label = PhraselyHeadwords.key(headwords);
+    const siblings = phrases.filter(p => PhraselyHeadwords.key(p.headwords) === label && p.id !== item.id);
     siblingsEl.innerHTML = siblings.length > 0
       ? `<div class="siblings-label">Also with this headword</div>` +
-        siblings.map(s => `<a class="sibling-phrase" href="/shuffle?id=${escapeHtml(s.id)}" data-phrase-id="${escapeHtml(s.id)}">${format(s.phrase)}</a>`).join('')
+        siblings.map(s => `<a class="sibling-phrase" href="/shuffle?id=${escapeHtml(s.id)}" data-phrase-id="${escapeHtml(s.id)}">${format(s)}</a>`).join('')
       : '';
 
     fetchRelated(item.id, label);
@@ -133,11 +134,11 @@
       const items = await res.json();
       if (request !== relatedRequest) return;
       if (!items || items.length === 0) return;
-      const filtered = items.filter(p => (p.headwords || []).join(headwordSeparator) !== siblingLabel);
+      const filtered = items.filter(p => PhraselyHeadwords.key(p.headwords) !== siblingLabel);
       if (filtered.length === 0) return;
       relatedEl.innerHTML =
         `<div class="related-label">You may also like</div>` +
-        filtered.map(p => `<a class="related-phrase" href="/shuffle?id=${escapeHtml(p.id)}" data-phrase-id="${escapeHtml(p.id)}">${format(p.phrase)}</a>`).join('');
+        filtered.map(p => `<a class="related-phrase" href="/shuffle?id=${escapeHtml(p.id)}" data-phrase-id="${escapeHtml(p.id)}">${format(p)}</a>`).join('');
     } catch (err) { console.error('fetchRelated', err); }
   }
 
@@ -153,7 +154,7 @@
     const normalizedQuery = q.toLowerCase();
     const matches = phrases.filter(p => {
       const headwords = p.headwords || [];
-      return headwords.join(headwordSeparator).toLowerCase() === normalizedQuery;
+      return PhraselyHeadwords.key(headwords).toLowerCase() === normalizedQuery;
     });
     show(matches.length > 0 ? matches[Math.floor(Math.random() * matches.length)] : phrases[Math.floor(Math.random() * phrases.length)]);
   } else {

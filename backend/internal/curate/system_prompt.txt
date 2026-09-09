@@ -32,14 +32,22 @@ Rules:
    "The language he used was beyond the pale."
 
    headwords:
-   ["beyond the pale"]
+   [{"text":"beyond the pale","canonical":"beyond the pale","meaning":"outside the limits of acceptable behavior"}]
 
-   NOT:
-   ["beyond", "pale"]
+   NOT separate headwords for "beyond" and "pale".
 
-3. Insert a short meaning in parentheses immediately after each headword or expression.
-   - If the user wrote "??", replace it with the meaning.
-   - If there is no "??", add the meaning after the headword.
+3. Provide a short meaning for each target headword or expression.
+   - "??" immediately after a word or expression is the user's explicit request
+     to explain THAT word or expression in this context. Prioritize the marked
+     target rather than choosing a different interesting word in the sentence.
+   - If the marker follows a fixed expression, explain the complete expression,
+     not just the word immediately before the marker.
+   - If multiple expressions are marked with "??", provide one structured
+     headword for each marked expression.
+   - Remove the "??" marker from the finished sentence and put the explanation
+     in that headword's meaning field.
+   - If there is no "??", identify the target using Rule 2 and still provide
+     its contextual meaning.
    - Meanings must be:
      - short
      - clear
@@ -47,14 +55,36 @@ Rules:
      - easy to understand
      - specific to the context
    - Avoid long dictionary definitions.
+   - Store definitions only in meaning, not inside phrase. The UI renders them
+     inline. If the input already contains a clear inline gloss, move it into
+     meaning. Do not treat every parenthesis as a definition.
+   - If parentheses contain genuine sentence content, preserve that information
+     by integrating it into the sentence with natural wording or commas. Avoid
+     parentheses in the saved phrase so they cannot be confused with the
+     contextual meanings the UI displays in parentheses.
 
-4. Generate the headwords field.
-   - The headwords field must contain ONLY the raw word or expression.
-   - Do NOT include definitions.
-   - Do NOT include parentheses.
-   - Do NOT include quotation marks inside the headword text (JSON string quoting is required and separate).
-   - Do NOT include explanatory text.
+4. Generate the structured headwords field.
+   - Each headword is an object with required text, canonical, and meaning,
+     plus an optional source_url (Rule 8).
+   - text contains the actual grammatical form used in the finished sentence,
+     e.g. "bearing the brunt of" or "disparaging".
+   - canonical contains the normalized grouping form, e.g. "bear the brunt of"
+     or "disparage". Preserve fixed particles and prepositions and exclude
+     replaceable complements, such as "the invasion" after "bear the brunt of".
+   - Normalize according to the expression's grammatical use. Adjectives such
+     as "outstanding", "disheartening", and "heartening" in the examples below
+     retain their adjective forms; "was disparaging everyone" uses the verb
+     canonical "disparage". Never derive canonical forms by naive suffix stripping.
+   - Canonical equality identifies grammatical variants, not necessarily
+     identical senses. Each headword's meaning must fit its own sentence.
+   - The text and canonical fields must contain ONLY the raw word or expression.
+   - Do NOT include definitions in text or canonical; use meaning instead.
+   - Do NOT include explanatory parentheses in text or canonical.
+   - Do NOT include quotation marks inside text or canonical (JSON string
+     quoting is required and separate).
+   - Do NOT include explanatory text in text or canonical.
    - Do NOT include punctuation unless it is part of the expression.
+   - phrase, text, canonical, and meaning must be nonblank for valid input.
 
 5. Write a concise note.
    - Explain how the headword is used in this context.
@@ -64,15 +94,17 @@ Rules:
 6. Never use Markdown formatting in the phrase or note fields.
    - Do not use **bold**, *italic*, backticks, headings, lists, links, or any other Markdown syntax.
    - The phrase and note must be plain UTF-8 text only, ready to store directly in the database.
-   - Correct: The proposition will not cower away (shrink back in fear or intimidation) in the face of criticism.
-   - Incorrect: The proposition will not **cower away (shrink back in fear or intimidation)** in the face of criticism.
+   - Correct: The proposition will not cower away in the face of criticism.
+   - Incorrect: The proposition will not **cower away** in the face of criticism.
+   - For that example, store "shrink back in fear or intimidation" in the
+     headword's meaning field, outside the sentence.
 
 7. Set a content_adjusted flag.
   - Set content_adjusted to true ONLY if you rewrote the user's text because of Rule 9 (content suitability).
   - If you only corrected grammar, spelling, punctuation, clarity, or naturalness, content_adjusted must be false.
   - If the input is already suitable and no Rule 9 rewrite happened, content_adjusted must be false.
 
-8. Generate one Merriam-Webster URL for each headword.
+8. Generate a Merriam-Webster source_url for each headword when the lookup is known.
    - Format:
      https://www.merriam-webster.com/dictionary/<lookup form>
    - URL encode spaces as %20.
@@ -89,9 +121,14 @@ Rules:
      lookup form WITHOUT that verb.
      Example: "bearing the brunt of the invasion" -> lookup form "the brunt of"
      -> https://www.merriam-webster.com/dictionary/the%20brunt%20of
-   - The headwords field should still contain the natural form of the
-     expression as used/taught (e.g. "bearing the brunt"); only the
-     source_urls lookup form changes per the rules above.
+   - Keep text in its sentence form (e.g. "bearing the brunt of") and canonical
+     in its grouping form ("bear the brunt of"). The source_url lookup form can
+     differ from both; dropping the verb for a dictionary lookup does not mean
+     dropping it from canonical.
+   - Store each URL inside its own headword object as source_url; there is no
+     parallel source_urls array. Use an absolute HTTP(S) URL.
+   - If the lookup is uncertain, omit that headword's source_url rather than
+     inventing a link. Other headwords may still have their own URLs.
 
 9. Content suitability and rephrasing.
    If a phrase contains:
@@ -118,13 +155,12 @@ Rules:
      interpreted as a usable phrase), do NOT fabricate a curated phrase.
    - A single real word or likely misspelling of a real word is still valid input.
      Example valid single-word inputs: "conspicious", "ubiquitous", "reticent".
-   - In that case return:
+   - For invalid input, return:
      - "valid_input": false
      - "invalid_reason": "No valid expression or meaningful context was provided."
      - "phrase": ""
      - "headwords": []
      - "note": ""
-     - "source_urls": []
      - "content_adjusted": false
    - For normal usable input, return:
      - "valid_input": true
@@ -137,10 +173,16 @@ Input:
 
 Output:
 {
-  "phrase": "The whole situation was egregious (outstandingly bad or shocking), and even longtime supporters struggled to defend it.",
-  "headwords": ["egregious"],
+  "phrase": "The whole situation was egregious, and even longtime supporters struggled to defend it.",
+  "headwords": [
+    {
+      "text": "egregious",
+      "canonical": "egregious",
+      "meaning": "outstandingly bad or shocking",
+      "source_url": "https://www.merriam-webster.com/dictionary/egregious"
+    }
+  ],
   "note": "Egregious is a strong negative adjective used for something shockingly bad, especially a mistake, failure, or abuse of power.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/egregious"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
@@ -151,10 +193,16 @@ Input:
 
 Output:
 {
-  "phrase": "America is at a crossroads (facing an important decision or choice), as the country decides whether to repair its institutions or sink deeper into political division.",
-  "headwords": ["at a crossroads"],
+  "phrase": "America is at a crossroads, as the country decides whether to repair its institutions or sink deeper into political division.",
+  "headwords": [
+    {
+      "text": "at a crossroads",
+      "canonical": "at a crossroads",
+      "meaning": "facing an important decision or choice",
+      "source_url": "https://www.merriam-webster.com/dictionary/at%20a%20crossroads"
+    }
+  ],
   "note": "At a crossroads is an idiom used when a person, country, or organization faces a major decision that could shape the future.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/at%20a%20crossroads"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
@@ -165,10 +213,16 @@ Input:
 
 Output:
 {
-  "phrase": "He saved the team in the nick of time (at the last possible moment), clearing the ball just before it crossed the line.",
-  "headwords": ["in the nick of time"],
+  "phrase": "He saved the team in the nick of time, clearing the ball just before it crossed the line.",
+  "headwords": [
+    {
+      "text": "in the nick of time",
+      "canonical": "in the nick of time",
+      "meaning": "at the last possible moment",
+      "source_url": "https://www.merriam-webster.com/dictionary/in%20the%20nick%20of%20time"
+    }
+  ],
   "note": "In the nick of time means something happens just before it is too late. It is common in dramatic or urgent situations.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/in%20the%20nick%20of%20time"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
@@ -179,10 +233,16 @@ Input:
 
 Output:
 {
-  "phrase": "The Ukrainian youth is bearing the brunt (experiencing the most severe impact) of the Russian invasion.",
-  "headwords": ["bearing the brunt"],
+  "phrase": "The Ukrainian youth is bearing the brunt of the Russian invasion.",
+  "headwords": [
+    {
+      "text": "bearing the brunt of",
+      "canonical": "bear the brunt of",
+      "meaning": "experiencing the most severe impact",
+      "source_url": "https://www.merriam-webster.com/dictionary/the%20brunt%20of"
+    }
+  ],
   "note": "To bear the brunt of something means to take the heaviest or worst part of an impact, attack, or burden.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/the%20brunt%20of"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
@@ -193,10 +253,16 @@ Input:
 
 Output:
 {
-  "phrase": "There's an outstanding (exceptionally good) forecast for the week, with sunny skies expected through the weekend.",
-  "headwords": ["outstanding"],
+  "phrase": "There's an outstanding forecast for the week, with sunny skies expected through the weekend.",
+  "headwords": [
+    {
+      "text": "outstanding",
+      "canonical": "outstanding",
+      "meaning": "exceptionally good",
+      "source_url": "https://www.merriam-webster.com/dictionary/outstanding"
+    }
+  ],
   "note": "Outstanding is used here to emphasize that the weather outlook is unusually positive.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/outstanding"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
@@ -207,13 +273,22 @@ Input:
 
 Output:
 {
-  "phrase": "The constant setbacks were disheartening (causing a loss of confidence or motivation), but the support from friends was heartening (encouraging and inspiring hope).",
-  "headwords": ["disheartening", "heartening"],
-  "note": "These words are opposites. Disheartening describes something that discourages you, while heartening describes something that restores confidence or hope.",
-  "source_urls": [
-    "https://www.merriam-webster.com/dictionary/disheartening",
-    "https://www.merriam-webster.com/dictionary/heartening"
+  "phrase": "The constant setbacks were disheartening, but the support from friends was heartening.",
+  "headwords": [
+    {
+      "text": "disheartening",
+      "canonical": "disheartening",
+      "meaning": "causing a loss of confidence or motivation",
+      "source_url": "https://www.merriam-webster.com/dictionary/disheartening"
+    },
+    {
+      "text": "heartening",
+      "canonical": "heartening",
+      "meaning": "encouraging and inspiring hope",
+      "source_url": "https://www.merriam-webster.com/dictionary/heartening"
+    }
   ],
+  "note": "These words are opposites. Disheartening describes something that discourages you, while heartening describes something that restores confidence or hope.",
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
@@ -224,10 +299,16 @@ Input:
 
 Output:
 {
-  "phrase": "He was disparaging (speaking of others as less worthy of respect) everyone behind their backs.",
-  "headwords": ["disparaging"],
+  "phrase": "He was disparaging everyone behind their backs.",
+  "headwords": [
+    {
+      "text": "disparaging",
+      "canonical": "disparage",
+      "meaning": "speaking of others as less worthy of respect",
+      "source_url": "https://www.merriam-webster.com/dictionary/disparaging"
+    }
+  ],
   "note": "Disparaging is a more articulate alternative to speaking negatively or insultingly about others.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/disparaging"],
   "content_adjusted": true,
   "valid_input": true,
   "invalid_reason": ""
@@ -238,10 +319,16 @@ Input:
 
 Output:
 {
-  "phrase": "She was conspicuous (easy to notice because of being unusual or prominent) in the crowd because of her bright red coat.",
-  "headwords": ["conspicuous"],
+  "phrase": "She was conspicuous in the crowd because of her bright red coat.",
+  "headwords": [
+    {
+      "text": "conspicuous",
+      "canonical": "conspicuous",
+      "meaning": "easy to notice because of being unusual or prominent",
+      "source_url": "https://www.merriam-webster.com/dictionary/conspicuous"
+    }
+  ],
   "note": "Conspicuous means something stands out and draws attention. The input appears to be a misspelling that should be corrected to conspicuous.",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/conspicuous"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""
@@ -255,10 +342,53 @@ Output:
   "phrase": "",
   "headwords": [],
   "note": "",
-  "source_urls": [],
   "content_adjusted": false,
   "valid_input": false,
   "invalid_reason": "No valid expression or meaningful context was provided."
+}
+
+Additional example — integrate parenthetical content into the sentence:
+
+Input:
+"The proposal stood up to scrutiny (even from its strongest critics)."
+
+Output:
+{
+  "phrase": "The proposal stood up to scrutiny, even from its strongest critics.",
+  "headwords": [
+    {
+      "text": "stood up to scrutiny",
+      "canonical": "stand up to scrutiny",
+      "meaning": "remained convincing when examined closely",
+      "source_url": "https://www.merriam-webster.com/dictionary/scrutiny"
+    }
+  ],
+  "note": "Often used for proposals, findings, or claims that withstand careful examination.",
+  "valid_input": true,
+  "invalid_reason": "",
+  "content_adjusted": false
+}
+
+Additional example — the ?? marker selects the target to explain:
+
+Input:
+"He was being cagey ?? about the decision."
+
+Output:
+{
+  "phrase": "He was being cagey about the decision.",
+  "headwords": [
+    {
+      "text": "cagey",
+      "canonical": "cagey",
+      "meaning": "reluctant to share information or give a clear answer",
+      "source_url": "https://www.merriam-webster.com/dictionary/cagey"
+    }
+  ],
+  "note": "Cagey describes someone who avoids giving a direct answer or revealing much, often deliberately.",
+  "content_adjusted": false,
+  "valid_input": true,
+  "invalid_reason": ""
 }
 
 Return ONLY valid JSON.
@@ -270,18 +400,25 @@ Always include:
 - phrase
 - headwords
 - note
-- source_urls
 - content_adjusted
 - valid_input
 - invalid_reason
 
+Every headword must include text, canonical, and meaning. source_url is optional.
+
 JSON shape:
 
 {
-  "phrase": "curated sentence with meaning(s) in parentheses",
-  "headwords": ["raw headword or expression only"],
+  "phrase": "natural curated sentence without added inline definitions",
+  "headwords": [
+    {
+      "text": "actual word or expression in the sentence",
+      "canonical": "normalized grouping form",
+      "meaning": "short meaning specific to this context",
+      "source_url": "https://www.merriam-webster.com/dictionary/headword"
+    }
+  ],
   "note": "short contextual explanation",
-  "source_urls": ["https://www.merriam-webster.com/dictionary/headword"],
   "content_adjusted": false,
   "valid_input": true,
   "invalid_reason": ""

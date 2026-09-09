@@ -91,38 +91,33 @@ add_phrase() {
   echo "POST $API/phrases"
   curl -s -X POST "${AUTH_ARGS[@]}" "$API/phrases" \
     -H "Content-Type: application/json" \
-    -d '{
-      "phrase": "It was serendipitous, we met at the right time.",
-      "headwords": ["serendipitous"],
-      "note": "A happy accident with a pleasant outcome.",
-      "source_urls": ["https://www.merriam-webster.com/dictionary/serendipitous"]
-    }' | jq
+    -d '{"phrase":"It was serendipitous, we met at the right time.","headwords":[{"text":"serendipitous","canonical":"serendipitous","meaning":"happening by fortunate chance","source_url":"https://www.merriam-webster.com/dictionary/serendipitous"}],"note":"A happy accident with a pleasant outcome."}' | jq
 }
 
 add_phrases() {
   local phrases=(
     # Single headwords
-    '{"phrase":"It'\''s unfathomable to imagine yourself as a billionaire.","headwords":["unfathomable"],"note":"Used when something is so extreme it'\''s beyond normal comprehension.","source_urls":["https://www.merriam-webster.com/dictionary/unfathomable"]}'
-    '{"phrase":"GCC is literally the linchpin of the american empire.","headwords":["linchpin"],"note":"The one thing that holds everything else together.","source_urls":["https://www.merriam-webster.com/dictionary/linchpin"]}'
-    '{"phrase":"Not everyone has the fortitude to take on these issues.","headwords":["fortitude"],"note":"Courage and resilience in the face of difficulty.","source_urls":["https://www.merriam-webster.com/dictionary/fortitude"]}'
-    '{"phrase":"As soon as things get dicey, governments take control of gold.","headwords":["dicey"],"note":"Informal. Used when a situation starts feeling unstable or risky.","source_urls":["https://www.merriam-webster.com/dictionary/dicey"]}'
-    '{"phrase":"The gold market dwarfs the bitcoin market in terms of market cap.","headwords":["dwarfs"],"note":"Used when one thing is so much bigger it makes the other look insignificant.","source_urls":["https://www.merriam-webster.com/dictionary/dwarf"]}'
-    '{"phrase":"That'\''s a fallacy — the reasoning doesn'\''t hold up.","headwords":["fallacy"],"note":"A reasoning error that looks convincing but doesn'\''t hold up.","source_urls":["https://www.merriam-webster.com/dictionary/fallacy"]}'
-    '{"phrase":"Bitcoin is antithetical to the current system.","headwords":["antithetical"],"note":"Stronger than different or opposite — implies deep structural incompatibility.","source_urls":["https://www.merriam-webster.com/dictionary/antithetical"]}'
+    '{"phrase":"It'\''s unfathomable to imagine yourself as a billionaire.","headwords":[{"text":"unfathomable","canonical":"unfathomable","meaning":"impossible to fully comprehend","source_url":"https://www.merriam-webster.com/dictionary/unfathomable"}],"note":"Used when something is so extreme it'\''s beyond normal comprehension."}'
+    '{"phrase":"GCC is literally the linchpin of the american empire.","headwords":[{"text":"linchpin","canonical":"linchpin","meaning":"the essential part holding everything together","source_url":"https://www.merriam-webster.com/dictionary/linchpin"}],"note":"The one thing that holds everything else together."}'
+    '{"phrase":"Not everyone has the fortitude to take on these issues.","headwords":[{"text":"fortitude","canonical":"fortitude","meaning":"courage through difficulty","source_url":"https://www.merriam-webster.com/dictionary/fortitude"}],"note":"Courage and resilience in the face of difficulty."}'
+    '{"phrase":"As soon as things get dicey, governments take control of gold.","headwords":[{"text":"dicey","canonical":"dicey","meaning":"risky or uncertain","source_url":"https://www.merriam-webster.com/dictionary/dicey"}],"note":"Informal. Used when a situation starts feeling unstable or risky."}'
+    '{"phrase":"The gold market dwarfs the bitcoin market in terms of market cap.","headwords":[{"text":"dwarfs","canonical":"dwarf","meaning":"makes something seem much smaller","source_url":"https://www.merriam-webster.com/dictionary/dwarf"}],"note":"Used when one thing is so much bigger it makes the other look insignificant."}'
+    '{"phrase":"That'\''s a fallacy — the reasoning doesn'\''t hold up.","headwords":[{"text":"fallacy","canonical":"fallacy","meaning":"a mistake in reasoning","source_url":"https://www.merriam-webster.com/dictionary/fallacy"}],"note":"A reasoning error that looks convincing but doesn'\''t hold up."}'
+    '{"phrase":"Bitcoin is antithetical to the current system.","headwords":[{"text":"antithetical","canonical":"antithetical","meaning":"fundamentally opposed","source_url":"https://www.merriam-webster.com/dictionary/antithetical"}],"note":"Stronger than different or opposite — implies deep structural incompatibility."}'
     # Expression headwords
-    '{"phrase":"Powell doesn'\''t want people to think that a rate cut is a foregone conclusion.","headwords":["foregone conclusion"],"note":"When the outcome feels decided before any debate has happened.","source_urls":["https://www.merriam-webster.com/dictionary/foregone%20conclusion"]}'
-    '{"phrase":"He saved the team from conceding a goal just in the nick of time.","headwords":["in the nick of time"],"note":"With no time to spare.","source_urls":["https://www.merriam-webster.com/dictionary/nick"]}'
-    '{"phrase":"Let'\''s get cracking — we have a deadline to hit.","headwords":["get cracking"],"note":"A call to stop delaying and start acting immediately.","source_urls":["https://www.merriam-webster.com/dictionary/crack"]}'
+    '{"phrase":"Powell doesn'\''t want people to think that a rate cut is a foregone conclusion.","headwords":[{"text":"foregone conclusion","canonical":"foregone conclusion","meaning":"an outcome regarded as certain","source_url":"https://www.merriam-webster.com/dictionary/foregone%20conclusion"}],"note":"When the outcome feels decided before any debate has happened."}'
+    '{"phrase":"He saved the team from conceding a goal just in the nick of time.","headwords":[{"text":"in the nick of time","canonical":"in the nick of time","meaning":"just before it was too late","source_url":"https://www.merriam-webster.com/dictionary/nick"}],"note":"With no time to spare."}'
+    '{"phrase":"Let'\''s get cracking — we have a deadline to hit.","headwords":[{"text":"get cracking","canonical":"get cracking","meaning":"start working promptly","source_url":"https://www.merriam-webster.com/dictionary/crack"}],"note":"A call to stop delaying and start acting immediately."}'
     # Three ethos entries
-    '{"phrase":"The mid seventies ethos was to read history and sociology critically.","headwords":["ethos"],"note":"The spirit and guiding values of a group or era.","source_urls":["https://www.merriam-webster.com/dictionary/ethos"]}'
-    '{"phrase":"The ethos of the early internet was openness and decentralization.","headwords":["ethos"],"note":"Applied to a historical movement.","source_urls":["https://www.merriam-webster.com/dictionary/ethos"]}'
-    '{"phrase":"The company'\''s ethos is built around innovation.","headwords":["ethos"],"note":"A company'\''s actual character — what it stands for in practice.","source_urls":["https://www.merriam-webster.com/dictionary/ethos"]}'
+    '{"phrase":"The mid seventies ethos was to read history and sociology critically.","headwords":[{"text":"ethos","canonical":"ethos","meaning":"the guiding values of a group","source_url":"https://www.merriam-webster.com/dictionary/ethos"}],"note":"The spirit and guiding values of a group or era."}'
+    '{"phrase":"The ethos of the early internet was openness and decentralization.","headwords":[{"text":"ethos","canonical":"ethos","meaning":"the guiding values of a group","source_url":"https://www.merriam-webster.com/dictionary/ethos"}],"note":"Applied to a historical movement."}'
+    '{"phrase":"The company'\''s ethos is built around innovation.","headwords":[{"text":"ethos","canonical":"ethos","meaning":"the guiding values of a group","source_url":"https://www.merriam-webster.com/dictionary/ethos"}],"note":"A company'\''s actual character — what it stands for in practice."}'
     # conspicuous + inconspicuous
-    '{"phrase":"The sign was placed in a very conspicuous spot.","headwords":["conspicuous"],"note":"Hard to miss or ignore.","source_urls":["https://www.merriam-webster.com/dictionary/conspicuous"]}'
-    '{"phrase":"He sat in an inconspicuous corner, hoping no one would notice him.","headwords":["inconspicuous"],"note":"Opposite of conspicuous — blending in, not drawing attention.","source_urls":["https://www.merriam-webster.com/dictionary/inconspicuous"]}'
+    '{"phrase":"The sign was placed in a very conspicuous spot.","headwords":[{"text":"conspicuous","canonical":"conspicuous","meaning":"impossible to miss","source_url":"https://www.merriam-webster.com/dictionary/conspicuous"}],"note":"Hard to miss or ignore."}'
+    '{"phrase":"He sat in an inconspicuous corner, hoping no one would notice him.","headwords":[{"text":"inconspicuous","canonical":"inconspicuous","meaning":"not attracting attention","source_url":"https://www.merriam-webster.com/dictionary/inconspicuous"}],"note":"Opposite of conspicuous — blending in, not drawing attention."}'
     # Multiple headwords
-    '{"phrase":"Unfettered (unrestrained), inalienable (cannot be taken away) property rights are essential to a free society.","headwords":["unfettered","inalienable"],"note":"Two powerful words used together in political contexts.","source_urls":["https://www.merriam-webster.com/dictionary/unfettered","https://www.merriam-webster.com/dictionary/inalienable"]}'
-    '{"phrase":"The most egregious (outrageously bad) markup was so conspicuous (impossible to miss) that even non-technical customers questioned it.","headwords":["egregious","conspicuous"],"note":"Egregious is about magnitude; conspicuous is about visibility.","source_urls":["https://www.merriam-webster.com/dictionary/egregious","https://www.merriam-webster.com/dictionary/conspicuous"]}'
+    '{"phrase":"Unfettered, inalienable property rights are essential to a free society.","headwords":[{"text":"unfettered","canonical":"unfettered","meaning":"unrestrained","source_url":"https://www.merriam-webster.com/dictionary/unfettered"},{"text":"inalienable","canonical":"inalienable","meaning":"unable to be taken away","source_url":"https://www.merriam-webster.com/dictionary/inalienable"}],"note":"Two powerful words used together in political contexts."}'
+    '{"phrase":"The most egregious markup was so conspicuous that even non-technical customers questioned it.","headwords":[{"text":"egregious","canonical":"egregious","meaning":"outrageously bad","source_url":"https://www.merriam-webster.com/dictionary/egregious"},{"text":"conspicuous","canonical":"conspicuous","meaning":"impossible to miss","source_url":"https://www.merriam-webster.com/dictionary/conspicuous"}],"note":"Egregious is about magnitude; conspicuous is about visibility."}'
   )
 
   for phrase in "${phrases[@]}"; do

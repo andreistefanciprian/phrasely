@@ -114,6 +114,7 @@
       line-height: 1.45;
     }
 
+    .def { color: var(--color-text-secondary); font-style: italic; }
     .headwords {
       display: flex;
       flex-wrap: wrap;
@@ -241,6 +242,50 @@
   </main>
 
   <script>
+/* Structured phrase presentation. Match literal text, longest first on overlaps;
+ * annotate each expression once and emphasize later occurrences without repeating its gloss. */
+(function (root) {
+  function escape(value) {
+    return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function key(words) {
+    return [...new Set((words || []).map(w => w.canonical.trim().toLowerCase()))].sort().join(' · ');
+  }
+  function format(phrase, words) {
+    const matches = [];
+    (words || []).forEach((w, index) => {
+      if (!w.text) return;
+      const literal = w.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(literal, 'giu');
+      for (const m of phrase.matchAll(re)) {
+        const start = m.index, end = start + m[0].length;
+        const letter = /[\p{L}\p{N}_]/u;
+        if ((start && letter.test(phrase[start - 1]) && letter.test(m[0][0])) ||
+            (end < phrase.length && letter.test(phrase[end]) && letter.test(m[0].slice(-1)))) continue;
+        matches.push({start, end, w, index});
+      }
+    });
+    matches.sort((a, b) => a.start - b.start || b.end - a.end || a.index - b.index);
+    let result = '', position = 0;
+    const seen = new Set();
+    for (const m of matches) {
+      if (m.start < position) continue;
+      result += escape(phrase.slice(position, m.start)) + '<strong>' + escape(phrase.slice(m.start, m.end)) + '</strong>';
+      if (!seen.has(m.index) && m.w.meaning) result += ' <span class="def">(' + escape(m.w.meaning) + ')</span>';
+      seen.add(m.index);
+      position = m.end;
+    }
+    result += escape(phrase.slice(position));
+    // Never lose a gloss if an expression is absent or wholly overlapped.
+    (words || []).forEach((w, i) => { if (!seen.has(i)) result += ' <span class="def">(' + escape(w.text) + ': ' + escape(w.meaning) + ')</span>'; });
+    return result;
+  }
+  root.PhraselyHeadwords = {format, key};
+  if (typeof module !== 'undefined') module.exports = root.PhraselyHeadwords;
+})(globalThis);
+
+
     (() => {
       const choicesElement = document.getElementById("choices");
       const pendingRequests = new Map();
@@ -340,7 +385,8 @@
           typeof choice.phrase === "string" &&
           choice.phrase.trim() !== "" &&
           Array.isArray(choice.headwords) &&
-          choice.headwords.length > 0
+          choice.headwords.length > 0 &&
+          choice.headwords.every(w => w && typeof w.text === "string" && typeof w.canonical === "string" && typeof w.meaning === "string")
         ).slice(0, 3);
       }
 
@@ -408,7 +454,6 @@
           phrase: choice.phrase,
           headwords: choice.headwords,
           note: typeof choice.note === "string" ? choice.note : "",
-          source_urls: Array.isArray(choice.source_urls) ? choice.source_urls : []
         };
       }
 
@@ -463,15 +508,17 @@
             heading.append(textElement("span", "recommended-marker", "★ Recommended"));
           }
           copy.append(heading);
-          copy.append(textElement("p", "phrase", choice.phrase));
+          const sentence = textElement("p", "phrase", "");
+          sentence.innerHTML = PhraselyHeadwords.format(choice.phrase, choice.headwords);
+          copy.append(sentence);
 
           const meta = document.createElement("div");
           meta.className = "meta";
           const headwords = document.createElement("div");
           headwords.className = "headwords";
           choice.headwords.forEach((headword) => {
-            if (typeof headword === "string" && headword.trim() !== "") {
-              headwords.append(textElement("span", "headword", headword));
+            if (typeof headword.canonical === "string" && headword.canonical.trim() !== "") {
+              headwords.append(textElement("span", "headword", headword.canonical));
             }
           });
           meta.append(headwords);
