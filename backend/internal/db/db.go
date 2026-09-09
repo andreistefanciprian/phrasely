@@ -228,15 +228,6 @@ func NewPostgresStore(ctx context.Context, dsn string) (*PostgresStore, error) {
 		pool.Close()
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
-	var pending int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM phrases WHERE headwords IS NULL`).Scan(&pending); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("check headword conversion: %w", err)
-	}
-	if pending > 0 {
-		pool.Close()
-		return nil, fmt.Errorf("%d phrases need reviewed headword conversion", pending)
-	}
 	return &PostgresStore{Pool: pool}, nil
 }
 
