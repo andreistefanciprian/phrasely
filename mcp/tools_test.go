@@ -158,13 +158,13 @@ func TestRenderPhraseChoicesHandler(t *testing.T) {
 
 	blankHeadword := choice
 	blankHeadword.Headwords = []Headword{{Text: " ", Canonical: " ", Meaning: "test gloss"}}
-	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{blankHeadword, secondChoice, connection}}); err == nil {
-		t.Fatal("blank headword did not return an error")
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{blankHeadword, secondChoice, connection}}); err == nil || !strings.Contains(err.Error(), "require text, canonical, and meaning") {
+		t.Fatalf("blank headword error = %v", err)
 	}
 	invalidSourceURL := choice
 	invalidSourceURL.Headwords = []Headword{{Text: "pernicious", Canonical: "pernicious", Meaning: "harmful", SourceURL: "javascript:alert(1)"}}
-	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{invalidSourceURL, secondChoice, connection}}); err == nil {
-		t.Fatal("unsafe source_url did not return an error")
+	if _, _, err := handler(context.Background(), nil, RenderPhraseChoicesInput{Choices: []PhraseChoice{invalidSourceURL, secondChoice, connection}}); err == nil || !strings.Contains(err.Error(), "source_url must be an absolute HTTP(S) URL") {
+		t.Fatalf("unsafe source_url error = %v", err)
 	}
 	differentHeadword := secondChoice
 	differentHeadword.Headwords = []Headword{{Text: "pernicious effect", Canonical: "pernicious effect", Meaning: "test gloss"}}

@@ -32,7 +32,12 @@ test('grouping compares canonical sets independently of order and sense', () => 
   assert.equal(key([w('ran', 'moved', 'Run'),w('runs', 'operates', 'run'),w('up', 'higher')]), key([w('up', 'awake'),w('running', 'operating', 'run')]));
 });
 test('MCP carries the same renderer for offline inline cards', () => {
-  assert.ok(read('../mcp/ui/phrase-choices.html').includes(read('static/headwords.js')));
+  const ui = read('../mcp/ui/phrase-choices.html');
+  assert.ok(ui.includes(read('static/headwords.js')));
+  assert.ok(ui.includes('w.text.trim() !== ""'));
+  assert.ok(ui.includes('w.canonical.trim() !== ""'));
+  assert.ok(ui.includes('w.meaning.trim() !== ""'));
+  assert.ok(ui.includes('validChoiceSourceURL(w.source_url)'));
 });
 
 const vm = require('node:vm');

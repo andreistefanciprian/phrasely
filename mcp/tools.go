@@ -249,8 +249,11 @@ func renderPhraseChoicesHandler() mcp.ToolHandlerFor[RenderPhraseChoicesInput, R
 				return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d requires at least one headword", i+1)
 			}
 			for _, headword := range choice.Headwords {
-				if strings.TrimSpace(headword.Text) == "" || strings.TrimSpace(headword.Canonical) == "" || strings.TrimSpace(headword.Meaning) == "" || !validSourceURL(headword.SourceURL) {
-					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords cannot be blank", i+1)
+				if strings.TrimSpace(headword.Text) == "" || strings.TrimSpace(headword.Canonical) == "" || strings.TrimSpace(headword.Meaning) == "" {
+					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headwords require text, canonical, and meaning", i+1)
+				}
+				if !validSourceURL(headword.SourceURL) {
+					return nil, RenderPhraseChoicesOutput{}, fmt.Errorf("choice %d headword source_url must be an absolute HTTP(S) URL", i+1)
 				}
 			}
 
