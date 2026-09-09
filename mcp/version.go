@@ -1,3 +1,3 @@
 package main
 
-const serverVersion = "0.9.0" // x-release-please-version
+const serverVersion = "0.10.0" // x-release-please-version
