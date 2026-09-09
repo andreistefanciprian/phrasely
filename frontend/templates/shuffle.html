@@ -6,7 +6,7 @@
   body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6.5rem 1.5rem 5rem; }
   body:has(#shuffle-stage) { justify-content: flex-start; }
 
-  #shuffle-stage { display: grid; place-items: center; width: 100%; min-height: min(55dvh, 32rem); }
+  #shuffle-stage { display: grid; justify-items: center; width: 100%; padding-top: min(15dvh, 7rem); }
 
   #phrase { font-family: 'Lora', Georgia, serif; font-size: clamp(1.25rem, 4vw, 1.65rem); line-height: 1.85; text-align: center; max-width: 600px; color: var(--navy); animation: fadeUp 0.35s ease; }
   #phrase .def { font-style: italic; color: var(--definition); }
@@ -27,11 +27,11 @@
   .sibling-phrase:hover, .related-phrase:hover { color: var(--navy); }
   .sibling-phrase .def, .related-phrase .def { font-style: italic; color: var(--definition); }
 
-  #main-content { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  #main-content { width: 100%; max-width: 600px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .shuffle-hint { margin-bottom: 2rem; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-align: center; text-transform: uppercase; display: none; }
   @media (hover: hover) { #click-hint { display: block; } }
   @media (hover: none)  { #tap-hint  { display: block; } }
-  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } #shuffle-stage { min-height: 50dvh; } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
+  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } #shuffle-stage { padding-top: min(8dvh, 3rem); } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 </style>

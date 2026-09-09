@@ -233,8 +233,15 @@ func TestShufflePageKeepsRelatedOutsideStableStage(t *testing.T) {
 	if !strings.Contains(source, "body:has(#shuffle-stage) { justify-content: flex-start; }") {
 		t.Fatal("shuffle page must not vertically centre the stage together with related results")
 	}
-	if !strings.Contains(source, "#shuffle-stage { display: grid; place-items: center;") {
-		t.Fatal("shuffle stage must independently centre the main phrase")
+	if !strings.Contains(source, "#shuffle-stage { display: grid; justify-items: center;") {
+		t.Fatal("shuffle stage must independently centre the main phrase horizontally")
+	}
+	if strings.Contains(source, "place-items: center") || strings.Contains(source, "min-height: min(55dvh, 32rem)") ||
+		strings.Contains(source, "min-height: 50dvh") {
+		t.Fatal("shuffle stage must not reserve variable space below the main phrase")
+	}
+	if !strings.Contains(source, "padding-top: min(15dvh, 7rem)") {
+		t.Fatal("shuffle stage must anchor the main phrase with a stable top offset")
 	}
 }
 
