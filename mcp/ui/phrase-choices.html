@@ -378,6 +378,17 @@
         }
       }
 
+      function validChoiceSourceURL(value) {
+        if (value === undefined || value === null || value === "") return true;
+        if (typeof value !== "string") return false;
+        try {
+          const url = new URL(value);
+          return (url.protocol === "http:" || url.protocol === "https:") && url.host !== "";
+        } catch {
+          return false;
+        }
+      }
+
       function normalizeChoices(result) {
         const raw = Array.isArray(result?.choices) ? result.choices : [];
         return raw.filter((choice) =>
@@ -386,7 +397,13 @@
           choice.phrase.trim() !== "" &&
           Array.isArray(choice.headwords) &&
           choice.headwords.length > 0 &&
-          choice.headwords.every(w => w && typeof w.text === "string" && typeof w.canonical === "string" && typeof w.meaning === "string")
+          choice.headwords.every(w =>
+            w &&
+            typeof w.text === "string" && w.text.trim() !== "" &&
+            typeof w.canonical === "string" && w.canonical.trim() !== "" &&
+            typeof w.meaning === "string" && w.meaning.trim() !== "" &&
+            validChoiceSourceURL(w.source_url)
+          )
         ).slice(0, 3);
       }
 
