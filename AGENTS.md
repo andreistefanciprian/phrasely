@@ -105,6 +105,13 @@ Add `backend/migrations/000NN_description.sql` — goose runs automatically on s
 | `BASE_URL` | backend | `http://localhost:3000` | Frontend origin for magic links |
 | `API_HOST` | frontend, mcp | `http://localhost:8080` | Private API address (overridden in prod) |
 | `OPENAI_API_KEY` | backend | — | Optional; embeddings and backend `/api/v1/phrases/curate` endpoint disabled if unset |
+| `ELEVENLABS_API_KEY` | backend | — | Optional; server-side credential for Shuffle phrase audio |
+| `ELEVENLABS_VOICE_ID` | backend | — | Optional; single voice used for phrase audio |
+| `ELEVENLABS_MODEL_ID` | backend | — | Optional; synthesis model included in the audio cache identity |
+| `R2_ENDPOINT` | backend | — | Optional; Cloudflare account S3-compatible endpoint |
+| `R2_BUCKET` | backend | — | Optional; private phrase-audio bucket |
+| `R2_ACCESS_KEY_ID` | backend | — | Optional; private R2 access credential |
+| `R2_SECRET_ACCESS_KEY` | backend | — | Optional; private R2 secret credential |
 | `RESEND_API_KEY` | backend, phrase-digest | — | Optional; emails logged to stdout if unset |
 | `EMAIL_FROM` | backend, phrase-digest | — | Required when `RESEND_API_KEY` is set |
 | `MCP_BASE_URL` | mcp | `http://localhost:8081` | Public MCP URL for OAuth discovery |
