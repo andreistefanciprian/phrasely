@@ -364,7 +364,7 @@ branch from the updated `main` after the previous PR merges.
 2. [x] **R2 audio-cache adapter** — buffered `Get`/`Put`, private bucket
    configuration, object-not-found distinction, size limit, and adapter tests.
    No database table.
-3. [ ] **Authenticated audio endpoint** — typed cache identity, user-scoped key,
+3. [x] **Authenticated audio endpoint** — typed cache identity, user-scoped key,
    phrase ownership, double-checked R2 flow, miss-only limiter,
    cancellation-safe `singleflight`, best-effort caching, status contract, and
    handler tests.

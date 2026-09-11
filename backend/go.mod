@@ -17,6 +17,7 @@ require (
 	github.com/pressly/goose/v3 v3.27.1
 	github.com/resend/resend-go/v2 v2.28.0
 	github.com/sashabaranov/go-openai v1.41.2
+	golang.org/x/sync v0.20.0
 )
 
 require (
@@ -35,6 +36,5 @@ require (
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 )

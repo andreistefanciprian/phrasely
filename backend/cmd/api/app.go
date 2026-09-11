@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/andreistefanciprian/phrasely/internal/audio"
 	"github.com/andreistefanciprian/phrasely/internal/auth"
 	"github.com/andreistefanciprian/phrasely/internal/curate"
 	"github.com/andreistefanciprian/phrasely/internal/db"
@@ -49,7 +50,7 @@ func run(ctx context.Context) error {
 	slog.Info("connected to database")
 
 	// --- Router ---
-	router := buildRouter(cfg, store)
+	router := buildRouter(ctx, cfg, store)
 
 	// --- HTTP server ---
 	server := newHTTPServer(cfg.port, router)
@@ -61,7 +62,7 @@ func run(ctx context.Context) error {
 	return nil
 }
 
-func buildRouter(cfg config, store db.Store) http.Handler {
+func buildRouter(ctx context.Context, cfg config, store db.Store) http.Handler {
 	r := mux.NewRouter()
 
 	// /health is used by Docker Compose and load balancers to check the service is alive.
@@ -88,10 +89,27 @@ func buildRouter(cfg config, store db.Store) http.Handler {
 	embedder := registerOpenAIRoutes(r, cfg.openAIAPIKey)
 
 	phrases.NewHandler(store, embedder, cfg.relatedMaxDistance).RegisterRoutes(r)
+	registerAudioRoute(ctx, r, cfg, store)
 	settings.NewHandler(store).RegisterRoutes(r)
 	waitlist.NewHandler(store).RegisterRoutes(r)
 
 	return r
+}
+
+func registerAudioRoute(ctx context.Context, r *mux.Router, cfg config, store db.Store) {
+	synth, synthErr := audio.NewElevenLabs(audio.ElevenLabsConfig{
+		APIKey: cfg.elevenLabsAPIKey, VoiceID: cfg.elevenLabsVoiceID, ModelID: cfg.elevenLabsModelID,
+	})
+	cache, cacheErr := audio.NewR2Cache(audio.R2Config{
+		Endpoint: cfg.r2Endpoint, Bucket: cfg.r2Bucket, AccessKeyID: cfg.r2AccessKeyID, SecretAccessKey: cfg.r2SecretAccessKey,
+	})
+	if synthErr != nil || cacheErr != nil {
+		slog.Warn("phrase audio disabled — ElevenLabs or R2 configuration incomplete")
+		audio.NewHandler(ctx, store, nil, nil, cfg.elevenLabsVoiceID, cfg.elevenLabsModelID).RegisterRoutes(r)
+		return
+	}
+	audio.NewHandler(ctx, store, cache, synth, cfg.elevenLabsVoiceID, cfg.elevenLabsModelID).RegisterRoutes(r)
+	slog.Info("phrase audio enabled")
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
