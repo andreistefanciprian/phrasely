@@ -104,7 +104,10 @@ func registerAudioRoute(ctx context.Context, r *mux.Router, cfg config, store db
 		Endpoint: cfg.r2Endpoint, Bucket: cfg.r2Bucket, AccessKeyID: cfg.r2AccessKeyID, SecretAccessKey: cfg.r2SecretAccessKey,
 	})
 	if synthErr != nil || cacheErr != nil {
-		slog.Warn("phrase audio disabled — ElevenLabs or R2 configuration incomplete")
+		slog.Warn("phrase audio disabled — ElevenLabs or R2 configuration incomplete",
+			"elevenlabs_error", synthErr,
+			"r2_error", cacheErr,
+		)
 		audio.NewHandler(ctx, store, nil, nil, cfg.elevenLabsVoiceID, cfg.elevenLabsModelID).RegisterRoutes(r)
 		return
 	}
