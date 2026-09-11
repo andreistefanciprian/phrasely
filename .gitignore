@@ -11,7 +11,6 @@ target/
 .debug/
 frontend_nginx/
 *.local.md
-
 # Terraform local working data and generated state
 **/.terraform/
 *.tfstate
@@ -26,3 +25,4 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+*.DS_Store
