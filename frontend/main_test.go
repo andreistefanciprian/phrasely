@@ -413,6 +413,27 @@ func TestAPIProxyStreamsPhraseAudioResponse(t *testing.T) {
 	}
 }
 
+func TestIsPhraseAudioPathMatchesOneNonemptyIDSegment(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{path: "/fd/phrases/phrase-123/audio", want: true},
+		{path: "/fd/phrases/audio", want: false},
+		{path: "/fd/phrases//audio", want: false},
+		{path: "/fd/phrases/phrase-123/extra/audio", want: false},
+		{path: "/fd/phrases/phrase-123/audio/", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			if got := isPhraseAudioPath(tt.path); got != tt.want {
+				t.Errorf("isPhraseAudioPath(%q) = %t, want %t", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAPIProxyPreservesPhraseAudioError(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
