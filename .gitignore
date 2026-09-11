@@ -1,4 +1,5 @@
 .env
+infra/terraform/.env
 .env.backup
 .env.backup.*
 !.env.backup.example
@@ -10,3 +11,18 @@ target/
 .debug/
 frontend_nginx/
 *.local.md
+
+# Terraform local working data and generated state
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

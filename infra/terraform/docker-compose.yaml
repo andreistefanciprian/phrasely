@@ -1,0 +1,10 @@
+services:
+  terraform:
+    image: hashicorp/terraform:1.16.2
+    working_dir: /workspace/${TF_TARGET:-cloudflare}
+    volumes:
+      - .:/workspace
+    environment:
+      TF_VAR_cloudflare_account_id: ${TF_VAR_cloudflare_account_id:?Set TF_VAR_cloudflare_account_id in infra/terraform/.env}
+      TF_VAR_cloudflare_api_token: ${TF_VAR_cloudflare_api_token:?Set TF_VAR_cloudflare_api_token in infra/terraform/.env}
+      TF_VAR_r2_bucket_name: ${TF_VAR_r2_bucket_name:-phrasely-audio}
