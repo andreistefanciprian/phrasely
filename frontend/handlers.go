@@ -364,11 +364,12 @@ func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 func isPhraseAudioPath(path string) bool {
 	const prefix = "/fd/phrases/"
 	const suffix = "/audio"
-	if !strings.HasPrefix(path, prefix) || !strings.HasSuffix(path, suffix) {
+	remainder, ok := strings.CutPrefix(path, prefix)
+	if !ok || !strings.HasSuffix(remainder, suffix) {
 		return false
 	}
-	id := strings.TrimSuffix(strings.TrimPrefix(path, prefix), suffix)
-	return id != "" && strings.Trim(id, "/") == id
+	id := strings.TrimSuffix(remainder, suffix)
+	return id != "" && !strings.Contains(id, "/")
 }
 
 func (app *application) proxyPhraseAudio(w http.ResponseWriter, r *http.Request, path, jwt string) {
