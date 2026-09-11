@@ -6,6 +6,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd ./cmd
+COPY internal/audio ./internal/audio
 COPY internal/auth ./internal/auth
 COPY internal/db ./internal/db
 COPY internal/email ./internal/email
