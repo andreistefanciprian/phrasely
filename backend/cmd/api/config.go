@@ -25,6 +25,14 @@ type config struct {
 	resendAPIKey string
 	emailFrom    string
 	openAIAPIKey string
+
+	elevenLabsAPIKey  string
+	elevenLabsVoiceID string
+	elevenLabsModelID string
+	r2Endpoint        string
+	r2Bucket          string
+	r2AccessKeyID     string
+	r2SecretAccessKey string
 }
 
 func loadConfig() (config, error) {
@@ -42,6 +50,13 @@ func loadConfig() (config, error) {
 		resendAPIKey:        os.Getenv("RESEND_API_KEY"),
 		emailFrom:           os.Getenv("EMAIL_FROM"),
 		openAIAPIKey:        os.Getenv("OPENAI_API_KEY"),
+		elevenLabsAPIKey:    os.Getenv("ELEVENLABS_API_KEY"),
+		elevenLabsVoiceID:   os.Getenv("ELEVENLABS_VOICE_ID"),
+		elevenLabsModelID:   os.Getenv("ELEVENLABS_MODEL_ID"),
+		r2Endpoint:          os.Getenv("R2_ENDPOINT"),
+		r2Bucket:            os.Getenv("R2_BUCKET"),
+		r2AccessKeyID:       os.Getenv("R2_ACCESS_KEY_ID"),
+		r2SecretAccessKey:   os.Getenv("R2_SECRET_ACCESS_KEY"),
 	}
 
 	if cfg.databaseURL == "" {

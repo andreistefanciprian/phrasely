@@ -69,6 +69,30 @@ func TestLoadConfigRequiresDatabaseURLAndJWTSecret(t *testing.T) {
 	}
 }
 
+func TestLoadConfigReadsAudioConfiguration(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/phrasely")
+	t.Setenv("JWT_SECRET", "test-secret")
+	t.Setenv("ELEVENLABS_API_KEY", "eleven-key")
+	t.Setenv("ELEVENLABS_VOICE_ID", "voice-id")
+	t.Setenv("ELEVENLABS_MODEL_ID", "model-id")
+	t.Setenv("R2_ENDPOINT", "https://account.r2.cloudflarestorage.com")
+	t.Setenv("R2_BUCKET", "audio")
+	t.Setenv("R2_ACCESS_KEY_ID", "r2-key")
+	t.Setenv("R2_SECRET_ACCESS_KEY", "r2-secret")
+
+	cfg, err := loadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.elevenLabsAPIKey != "eleven-key" || cfg.elevenLabsVoiceID != "voice-id" || cfg.elevenLabsModelID != "model-id" {
+		t.Fatalf("ElevenLabs config not loaded: %+v", cfg)
+	}
+	if cfg.r2Endpoint == "" || cfg.r2Bucket != "audio" || cfg.r2AccessKeyID != "r2-key" || cfg.r2SecretAccessKey != "r2-secret" {
+		t.Fatalf("R2 config not loaded: %+v", cfg)
+	}
+}
+
 func clearConfigEnv(t *testing.T) {
 	t.Helper()
 
@@ -84,6 +108,13 @@ func clearConfigEnv(t *testing.T) {
 		"RESEND_API_KEY",
 		"EMAIL_FROM",
 		"OPENAI_API_KEY",
+		"ELEVENLABS_API_KEY",
+		"ELEVENLABS_VOICE_ID",
+		"ELEVENLABS_MODEL_ID",
+		"R2_ENDPOINT",
+		"R2_BUCKET",
+		"R2_ACCESS_KEY_ID",
+		"R2_SECRET_ACCESS_KEY",
 	} {
 		t.Setenv(key, "")
 	}
