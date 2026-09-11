@@ -369,7 +369,7 @@ branch from the updated `main` after the previous PR merges.
    phrase ownership, double-checked R2 flow, miss-only limiter,
    cancellation-safe `singleflight`, best-effort caching, status contract, and
    handler tests.
-4. [ ] **Frontend binary proxy** — stream the audio HTTP response and preserve its
+4. [x] **Frontend binary proxy** — stream the audio HTTP response and preserve its
    status and relevant headers without changing existing JSON proxy behavior.
 5. [ ] **Shuffle Listen control** — implement the supplied Turn 4 visual design,
    Listen/Loading/Stop behavior, keyboard handling, reduced motion, generic

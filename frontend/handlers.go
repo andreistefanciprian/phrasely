@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"html/template"
+	"io"
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
@@ -342,6 +343,10 @@ func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 	if r.URL.RawQuery != "" {
 		path += "?" + r.URL.RawQuery
 	}
+	if r.Method == http.MethodGet && isPhraseAudioPath(r.URL.Path) {
+		app.proxyPhraseAudio(w, r, path, jwt)
+		return
+	}
 
 	status, body, err := app.api.Proxy(r.Method, path, jwt, r.Body, r.Header.Get("Content-Type"))
 	if err != nil {
@@ -354,6 +359,36 @@ func (app *application) apiProxy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(body)
+}
+
+func isPhraseAudioPath(path string) bool {
+	const prefix = "/fd/phrases/"
+	const suffix = "/audio"
+	if !strings.HasPrefix(path, prefix) || !strings.HasSuffix(path, suffix) {
+		return false
+	}
+	id := strings.TrimSuffix(strings.TrimPrefix(path, prefix), suffix)
+	return id != "" && strings.Trim(id, "/") == id
+}
+
+func (app *application) proxyPhraseAudio(w http.ResponseWriter, r *http.Request, path, jwt string) {
+	resp, err := app.api.ProxyAudio(r.Context(), path, jwt)
+	if err != nil {
+		slog.Error("audio proxy", "path", path, "error", err)
+		http.Error(w, "upstream error", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	for _, header := range []string{"Content-Type", "Content-Length", "Cache-Control"} {
+		if value := resp.Header.Get(header); value != "" {
+			w.Header().Set(header, value)
+		}
+	}
+	w.WriteHeader(resp.StatusCode)
+	if _, err := io.Copy(w, resp.Body); err != nil {
+		slog.Error("stream audio response", "path", path, "error", err)
+	}
 }
 
 // waitlistJoin handles POST /waitlist — the landing page's inline "join the

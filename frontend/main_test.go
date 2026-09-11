@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -368,5 +371,94 @@ func TestStructuredCollectionPagesRender(t *testing.T) {
 				t.Fatalf("render failed: %d %s", w.Code, w.Body.String())
 			}
 		})
+	}
+}
+
+func TestAPIProxyStreamsPhraseAudioResponse(t *testing.T) {
+	wantAudio := []byte{0xff, 0xfb, 0x90, 0x64, 0x00, 0x7f}
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.RequestURI() != "/api/v1/phrases/phrase-123/audio?fresh=1" {
+			t.Errorf("upstream request = %s %s", r.Method, r.URL.RequestURI())
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer jwt-123" {
+			t.Errorf("Authorization = %q, want Bearer jwt-123", got)
+		}
+		w.Header().Set("Content-Type", "audio/mpeg")
+		w.Header().Set("Cache-Control", "private, no-cache")
+		w.Header().Set("Content-Length", "6")
+		w.WriteHeader(http.StatusOK)
+		w.Write(wantAudio)
+	}))
+	defer backend.Close()
+
+	app := &application{api: newAPIClient(backend.URL)}
+	req := httptest.NewRequest(http.MethodGet, "/fd/phrases/phrase-123/audio?fresh=1", nil)
+	req = req.WithContext(context.WithValue(req.Context(), ctxKeyJWT, "jwt-123"))
+	w := httptest.NewRecorder()
+
+	app.apiProxy(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	if got := w.Body.Bytes(); !bytes.Equal(got, wantAudio) {
+		t.Errorf("body = %v, want %v", got, wantAudio)
+	}
+	for header, want := range map[string]string{
+		"Content-Type": "audio/mpeg", "Content-Length": "6", "Cache-Control": "private, no-cache",
+	} {
+		if got := w.Header().Get(header); got != want {
+			t.Errorf("%s = %q, want %q", header, got, want)
+		}
+	}
+}
+
+func TestAPIProxyPreservesPhraseAudioError(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		io.WriteString(w, `{"error":"listen unavailable"}`)
+	}))
+	defer backend.Close()
+
+	app := &application{api: newAPIClient(backend.URL)}
+	req := httptest.NewRequest(http.MethodGet, "/fd/phrases/phrase-123/audio", nil)
+	req = req.WithContext(context.WithValue(req.Context(), ctxKeyJWT, "jwt-123"))
+	w := httptest.NewRecorder()
+
+	app.apiProxy(w, req)
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503", w.Code)
+	}
+	if got := w.Header().Get("Content-Type"); got != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", got)
+	}
+	if got := w.Header().Get("Cache-Control"); got != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", got)
+	}
+	if got := w.Body.String(); got != `{"error":"listen unavailable"}` {
+		t.Errorf("body = %q", got)
+	}
+}
+
+func TestNonAudioAPIProxyRemainsJSON(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusTeapot)
+		io.WriteString(w, `{"error":"still relayed"}`)
+	}))
+	defer backend.Close()
+
+	app := &application{api: newAPIClient(backend.URL)}
+	req := httptest.NewRequest(http.MethodGet, "/fd/phrases", nil)
+	req = req.WithContext(context.WithValue(req.Context(), ctxKeyJWT, "jwt-123"))
+	w := httptest.NewRecorder()
+
+	app.apiProxy(w, req)
+
+	if w.Code != http.StatusTeapot || w.Header().Get("Content-Type") != "application/json" {
+		t.Fatalf("response = %d %q", w.Code, w.Header().Get("Content-Type"))
 	}
 }
