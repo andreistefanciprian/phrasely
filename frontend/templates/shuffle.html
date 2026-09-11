@@ -31,8 +31,8 @@
   .shuffle-hint { margin-bottom: 2rem; min-height: 34px; align-items: center; justify-content: center; gap: 12px; color: var(--muted); text-align: center; text-transform: uppercase; display: none; }
   .shuffle-prompt { font-size: 0.72rem; letter-spacing: 0.08em; }
   .shuffle-divider { width: 1px; height: 11px; background: var(--border); }
-  .listen-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
-  .listen-button:hover, .listen-button:focus-visible { color: var(--navy); background: var(--surface); outline: 2px solid var(--blue); outline-offset: 2px; }
+  .listen-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--secondary); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
+  .listen-button:hover, .listen-button:focus-visible { color: var(--navy); background: var(--surface-subtle); outline: none; }
   .listen-button svg { width: 22px; height: 20px; flex: none; }
   .listen-button-label { width: 52px; font-size: 11px; letter-spacing: 0.16em; line-height: 1; text-align: left; white-space: nowrap; }
   .listen-button[data-state="loading"] { color: #9DA3CC; }
@@ -131,7 +131,7 @@
     phraseAudio.src = `/fd/phrases/${encodeURIComponent(currentPhraseID)}/audio`;
     try {
       await phraseAudio.play();
-      if (request !== audioRequest) { phraseAudio.pause(); return; }
+      if (request !== audioRequest) return;
       setAudioState('speaking');
     } catch (err) {
       if (request === audioRequest) showAudioError();
