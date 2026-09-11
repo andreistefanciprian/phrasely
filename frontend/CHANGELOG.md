@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.15.0...frontend-v0.15.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **frontend:** align shuffle section spacing ([32badc5](https://github.com/andreistefanciprian/phrasely/commit/32badc5076624930efc913425cc1453af0f8f391))
+* **frontend:** prevent shuffle layout shift ([e2c7658](https://github.com/andreistefanciprian/phrasely/commit/e2c7658b293f284e37e8672fee39c034f80569da))
+
 ## [0.15.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.14.0...frontend-v0.15.0) (2026-09-09)
 
 
