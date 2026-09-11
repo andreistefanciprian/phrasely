@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.15.1...frontend-v0.16.0) (2026-09-11)
+
+
+### Features
+
+* **frontend:** stream phrase audio proxy ([4dca1a1](https://github.com/andreistefanciprian/phrasely/commit/4dca1a195d169dce25b98c656d7379475e79cd4a))
+
+
+### Bug Fixes
+
+* **frontend:** tighten phrase audio path matching ([8264fc1](https://github.com/andreistefanciprian/phrasely/commit/8264fc16a5088be1893c7adff76ec7c59e9d0f69))
+
 ## [0.15.1](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.15.0...frontend-v0.15.1) (2026-09-11)
 
 
