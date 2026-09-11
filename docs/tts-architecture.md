@@ -361,7 +361,7 @@ branch from the updated `main` after the previous PR merges.
 1. [x] **ElevenLabs adapter** — fixed MP3 format, voice/model configuration,
    response validation, size limit, timeouts, cancellation behavior, and
    `httptest` coverage. No route or UI.
-2. [ ] **R2 audio-cache adapter** — buffered `Get`/`Put`, private bucket
+2. [x] **R2 audio-cache adapter** — buffered `Get`/`Put`, private bucket
    configuration, object-not-found distinction, size limit, and adapter tests.
    No database table.
 3. [ ] **Authenticated audio endpoint** — typed cache identity, user-scoped key,
