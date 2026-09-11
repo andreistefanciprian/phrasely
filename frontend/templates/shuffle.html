@@ -28,12 +28,41 @@
   .sibling-phrase .def, .related-phrase .def { font-style: italic; color: var(--definition); }
 
   #main-content { width: 100%; max-width: 600px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .shuffle-hint { margin-bottom: 2rem; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-align: center; text-transform: uppercase; display: none; }
-  @media (hover: hover) { #click-hint { display: block; } }
-  @media (hover: none)  { #tap-hint  { display: block; } }
+  .shuffle-hint { margin-bottom: 2rem; min-height: 34px; align-items: center; justify-content: center; gap: 12px; color: var(--muted); text-align: center; text-transform: uppercase; display: none; }
+  .shuffle-prompt { font-size: 0.72rem; letter-spacing: 0.08em; }
+  .shuffle-divider { width: 1px; height: 11px; background: var(--border); }
+  .listen-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
+  .listen-button:hover, .listen-button:focus-visible { color: var(--navy); background: var(--surface); outline: 2px solid var(--blue); outline-offset: 2px; }
+  .listen-button svg { width: 22px; height: 20px; flex: none; }
+  .listen-button-label { width: 52px; font-size: 11px; letter-spacing: 0.16em; line-height: 1; text-align: left; white-space: nowrap; }
+  .listen-button[data-state="loading"] { color: #9DA3CC; }
+  .listen-button[data-state="speaking"] { color: #1FD3CC; }
+  .listen-button[data-state="loading"] .speaker-arc, .listen-button[data-state="speaking"] .speaker-arc { animation: speakerPulse 1.4s ease-in-out infinite; }
+  .listen-button[data-state="loading"] .speaker-arc-far { animation-delay: 0.5s; }
+  .listen-button[data-state="speaking"] .speaker-arc { animation-duration: 0.9s; }
+  .listen-button[data-state="speaking"] .speaker-arc-far { animation-delay: 0.3s; }
+  .audio-error { min-height: 1.4em; margin: -1.35rem 0 1rem; color: var(--secondary); font-size: 0.78rem; text-align: center; }
+  .audio-error:empty { visibility: hidden; }
+  :root[data-theme="dark"] .listen-button {
+    color: #9299BB;
+  }
+  :root[data-theme="dark"] .listen-button:hover, :root[data-theme="dark"] .listen-button:focus-visible { color: #F4F5FF; background: #20264A; }
+  :root[data-theme="dark"] .listen-button[data-state="loading"] { color: #555E96; }
+  :root[data-theme="dark"] .listen-button[data-state="speaking"] { color: #56DDD6; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .listen-button { color: #9299BB; }
+    :root:not([data-theme="light"]) .listen-button:hover, :root:not([data-theme="light"]) .listen-button:focus-visible { color: #F4F5FF; background: #20264A; }
+    :root:not([data-theme="light"]) .listen-button[data-state="loading"] { color: #555E96; }
+    :root:not([data-theme="light"]) .listen-button[data-state="speaking"] { color: #56DDD6; }
+  }
+  @media (hover: hover) { #click-hint { display: flex; } }
+  @media (hover: none)  { #tap-hint  { display: flex; } }
+  @media (hover: none), (pointer: coarse) { .listen-button { min-height: 44px; } }
   @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } #shuffle-stage { padding-top: min(8dvh, 3rem); } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes speakerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+  @media (prefers-reduced-motion: reduce) { .listen-button .speaker-arc { animation: none !important; } }
 </style>
 {{end}}
 
@@ -43,8 +72,10 @@
 {{else}}
 <div id="shuffle-stage">
   <div id="main-content">
-    <p class="shuffle-hint" id="click-hint">Click to shuffle</p>
-    <p class="shuffle-hint" id="tap-hint">Tap to shuffle</p>
+    <div class="shuffle-hint" id="click-hint"><span class="shuffle-prompt">Click to shuffle</span><span class="shuffle-divider" aria-hidden="true"></span>{{template "listen-button" "click"}}</div>
+    <div class="shuffle-hint" id="tap-hint"><span class="shuffle-prompt">Tap to shuffle</span><span class="shuffle-divider" aria-hidden="true"></span>{{template "listen-button" "tap"}}</div>
+    <p class="audio-error" id="audio-error" role="status"></p>
+    <audio id="phrase-audio" preload="none"></audio>
     <p id="phrase"></p>
     <div id="keyword"></div>
     <p id="note"></p>
@@ -58,6 +89,58 @@
   const phrases = {{.PhrasesJSON}};
   const headwordSeparator = ' · ';
   let relatedRequest = 0;
+  let currentPhraseID = '';
+  let audioRequest = 0;
+  let audioState = 'rest';
+  const phraseAudio = document.getElementById('phrase-audio');
+  const listenButtons = [...document.querySelectorAll('.listen-button')];
+  const audioError = document.getElementById('audio-error');
+
+  function setAudioState(state) {
+    audioState = state;
+    const label = state === 'loading' ? 'LOADING' : state === 'speaking' ? 'STOP' : 'LISTEN';
+    listenButtons.forEach(button => {
+      button.dataset.state = state;
+      button.querySelector('.listen-button-label').textContent = label;
+      button.setAttribute('aria-label', state === 'speaking' ? 'Stop phrase audio' : 'Hear the phrase');
+      if (state === 'loading') button.setAttribute('aria-busy', 'true');
+      else button.removeAttribute('aria-busy');
+    });
+  }
+
+  function stopAudio() {
+    audioRequest++;
+    phraseAudio.pause();
+    phraseAudio.currentTime = 0;
+    phraseAudio.removeAttribute('src');
+    setAudioState('rest');
+  }
+
+  function showAudioError() {
+    stopAudio();
+    audioError.textContent = "Couldn't play this phrase. Try again.";
+  }
+
+  async function toggleAudio() {
+    audioError.textContent = '';
+    if (audioState === 'speaking') { stopAudio(); return; }
+    if (audioState === 'loading' || !currentPhraseID) return;
+
+    const request = ++audioRequest;
+    setAudioState('loading');
+    phraseAudio.src = `/fd/phrases/${encodeURIComponent(currentPhraseID)}/audio`;
+    try {
+      await phraseAudio.play();
+      if (request !== audioRequest) { phraseAudio.pause(); return; }
+      setAudioState('speaking');
+    } catch (err) {
+      if (request === audioRequest) showAudioError();
+    }
+  }
+
+  listenButtons.forEach(button => button.addEventListener('click', toggleAudio));
+  phraseAudio.addEventListener('ended', () => { if (audioState === 'speaking') stopAudio(); });
+  phraseAudio.addEventListener('error', () => { if (audioState !== 'rest') showAudioError(); });
 
   function escapeHtml(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -70,6 +153,10 @@
   function show(item) {
     item = item || phrases[Math.floor(Math.random() * phrases.length)];
     if (!item) return;
+
+    stopAudio();
+    audioError.textContent = '';
+    currentPhraseID = item.id;
 
     const phraseEl   = document.getElementById('phrase');
     const keywordEl  = document.getElementById('keyword');
@@ -167,6 +254,7 @@
   }
 
   document.getElementById('main-content').addEventListener('click', e => {
+    if (e.target.closest('.listen-button')) return;
     const phraseLink = e.target.closest('[data-phrase-id]');
     if (phraseLink) { e.preventDefault(); showById(phraseLink.dataset.phraseId); return; }
     if (e.target.closest('a')) return;
@@ -180,11 +268,22 @@
 
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === ' ') {
-      if (document.activeElement?.closest('a')) return;
+      if (document.activeElement?.closest('a, button')) return;
       e.preventDefault();
       show();
     }
   });
 </script>
 {{end}}
+{{end}}
+
+{{define "listen-button"}}
+<button class="listen-button" type="button" data-state="rest" aria-label="Hear the phrase">
+  <svg viewBox="0 0 22 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.5 8h3l4-3.5v11l-4-3.5h-3z"></path>
+    <path class="speaker-arc" d="M13 7a4 4 0 0 1 0 6"></path>
+    <path class="speaker-arc speaker-arc-far" d="M16 4.5a7.5 7.5 0 0 1 0 11"></path>
+  </svg>
+  <span class="listen-button-label">LISTEN</span>
+</button>
 {{end}}

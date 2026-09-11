@@ -44,12 +44,13 @@ const vm = require('node:vm');
 const sample = {id:'sample',phrase:'She stood up to scrutiny (even then).',headwords:[w('stood up to scrutiny','remained convincing','stand up to scrutiny')],note:'Usage note'};
 function pageContext(name) {
   const elements = new Map();
-  function element() { return {innerHTML:'',textContent:'',value:'',style:{},children:[],events:{},classList:{toggle(){},add(){},remove(){}},addEventListener(event, fn){this.events[event]=fn},appendChild(el){this.children.push(el)},getContext(){return {measureText(text){return {width:text.length*8}}}}}; }
-  const document = {getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},createElement:element,addEventListener(){},querySelectorAll(){return []},querySelector(){return element()}};
+  function element() { return {innerHTML:'',textContent:'',value:'',style:{},dataset:{},attributes:{},children:[],events:{},currentTime:0,classList:{toggle(){},add(){},remove(){}},addEventListener(event, fn){this.events[event]=fn},appendChild(el){this.children.push(el)},setAttribute(name,value){this.attributes[name]=value},removeAttribute(name){delete this.attributes[name];if(name==='src')this.src=''},querySelector(){return this.label||(this.label=element())},closest(){return null},pause(){this.paused=true},play(){this.paused=false;return Promise.resolve()},getContext(){return {measureText(text){return {width:text.length*8}}}}}; }
+  const listenButtons = [element(), element()];
+  const document = {activeElement:null,getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},createElement:element,addEventListener(){},querySelectorAll(selector){return selector==='.listen-button'?listenButtons:[]},querySelector(){return element()}};
   const context=vm.createContext({document,console,URL,URLSearchParams,setTimeout,clearTimeout,PhraselyHeadwords:{format,key},location:{search:'',origin:'http://localhost'},history:{pushState(){}},localStorage:{getItem(){return null},setItem(){}},window:{innerWidth:1000,innerHeight:800,addEventListener(){}},fetch:async()=>({ok:true,json:async()=>[]})});
   const source=read(`templates/${name}.html`).replace('{{.PhrasesJSON}}',JSON.stringify([sample]));
   for(const match of source.matchAll(/<script>([\s\S]*?)<\/script>/g)) vm.runInContext(match[1],context);
-  return {context,elements,document};
+  return {context,elements,document,listenButtons};
 }
 test('Bubble and Shuffle execute with structured collection data',()=>{
   const bubble=pageContext('bubble');
@@ -57,6 +58,39 @@ test('Bubble and Shuffle execute with structured collection data',()=>{
   const shuffle=pageContext('shuffle');
   assert.ok(shuffle.elements.get('phrase').innerHTML.includes('(remained convincing)'));
   assert.equal(shuffle.elements.get('keyword').children[0].textContent,'stand up to scrutiny');
+});
+test('Shuffle Listen controls playback without shuffling and resets on phrase change',async()=>{
+  const page=pageContext('shuffle');
+  const audio=page.elements.get('phrase-audio');
+  const main=page.elements.get('main-content');
+  let prevented=false;
+  main.events.click({target:{closest(selector){return selector==='.listen-button'?{}:null}},preventDefault(){prevented=true}});
+  assert.equal(prevented,false);
+  assert.equal(page.listenButtons[0].dataset.state,'rest');
+
+  await page.listenButtons[0].events.click();
+  assert.equal(audio.src,'/fd/phrases/sample/audio');
+  assert.equal(page.listenButtons[0].dataset.state,'speaking');
+  assert.equal(page.listenButtons[0].label.textContent,'STOP');
+
+  vm.runInContext('show(phrases[0])',page.context);
+  assert.equal(audio.src,'');
+  assert.equal(audio.currentTime,0);
+  assert.equal(page.listenButtons[0].dataset.state,'rest');
+  assert.equal(page.elements.get('audio-error').textContent,'');
+});
+test('Shuffle Listen ignores stale playback and reports a generic failure',async()=>{
+  const page=pageContext('shuffle');
+  const audio=page.elements.get('phrase-audio');
+  let rejectPlay;
+  audio.play=()=>new Promise((resolve,reject)=>{rejectPlay=reject});
+  const pending=page.listenButtons[0].events.click();
+  assert.equal(page.listenButtons[0].dataset.state,'loading');
+  assert.equal(page.listenButtons[0].attributes['aria-busy'],'true');
+  rejectPlay(new Error('failed'));
+  await pending;
+  assert.equal(page.listenButtons[0].dataset.state,'rest');
+  assert.equal(page.elements.get('audio-error').textContent,"Couldn't play this phrase. Try again.");
 });
 test('phrase list renders editable per-expression fields and sends replacement objects',async()=>{
   const page=pageContext('phrases');
