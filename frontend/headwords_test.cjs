@@ -46,7 +46,7 @@ function pageContext(name) {
   const elements = new Map();
   function element() { return {innerHTML:'',textContent:'',value:'',style:{},dataset:{},attributes:{},children:[],events:{},currentTime:0,classList:{toggle(){},add(){},remove(){}},addEventListener(event, fn){this.events[event]=fn},appendChild(el){this.children.push(el)},setAttribute(name,value){this.attributes[name]=value},removeAttribute(name){delete this.attributes[name];if(name==='src')this.src=''},querySelector(){return this.label||(this.label=element())},closest(){return null},pause(){this.paused=true},play(){this.paused=false;return Promise.resolve()},getContext(){return {measureText(text){return {width:text.length*8}}}}}; }
   const listenButtons = [element(), element()];
-  const document = {activeElement:null,getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},createElement:element,addEventListener(){},querySelectorAll(selector){return selector==='.listen-button'?listenButtons:[]},querySelector(){return element()}};
+  const document = {activeElement:null,events:{},getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},createElement:element,addEventListener(event,fn){this.events[event]=fn},querySelectorAll(selector){return selector==='.listen-button'?listenButtons:[]},querySelector(){return element()}};
   const context=vm.createContext({document,console,URL,URLSearchParams,setTimeout,clearTimeout,PhraselyHeadwords:{format,key},location:{search:'',origin:'http://localhost'},history:{pushState(){}},localStorage:{getItem(){return null},setItem(){}},window:{innerWidth:1000,innerHeight:800,addEventListener(){}},fetch:async()=>({ok:true,json:async()=>[]})});
   const source=read(`templates/${name}.html`).replace('{{.PhrasesJSON}}',JSON.stringify([sample]));
   for(const match of source.matchAll(/<script>([\s\S]*?)<\/script>/g)) vm.runInContext(match[1],context);
@@ -91,6 +91,38 @@ test('Shuffle Listen ignores stale playback and reports a generic failure',async
   await pending;
   assert.equal(page.listenButtons[0].dataset.state,'rest');
   assert.equal(page.elements.get('audio-error').textContent,"Couldn't play this phrase. Try again.");
+});
+test('Shuffle Listen keyboard focus bypasses the global shuffle shortcut',()=>{
+  const page=pageContext('shuffle');
+  page.document.activeElement={closest(selector){return selector==='a, button'?{}:null}};
+  for(const key of [' ', 'ArrowRight']) {
+    let prevented=false;
+    page.document.events.keydown({key,preventDefault(){prevented=true}});
+    assert.equal(prevented,false);
+  }
+});
+test('Shuffle Listen stale completion cannot stop newer playback',async()=>{
+  const page=pageContext('shuffle');
+  const audio=page.elements.get('phrase-audio');
+  let resolveFirst;
+  let playCount=0;
+  audio.play=()=>{ audio.paused=false; return ++playCount===1 ? new Promise(resolve=>{resolveFirst=resolve}) : Promise.resolve(); };
+
+  const stale=page.listenButtons[0].events.click();
+  vm.runInContext('show(phrases[0])',page.context);
+  await page.listenButtons[0].events.click();
+  assert.equal(audio.paused,false);
+
+  resolveFirst();
+  await stale;
+  assert.equal(audio.paused,false);
+  assert.equal(page.listenButtons[0].dataset.state,'speaking');
+});
+test('Shuffle Listen includes the specified light theme and reduced-motion styles',()=>{
+  const source=read('templates/shuffle.html');
+  assert.match(source,/\.listen-button \{[^}]*color: var\(--secondary\)/);
+  assert.match(source,/\.listen-button:hover, \.listen-button:focus-visible \{[^}]*background: var\(--surface-subtle\)/);
+  assert.match(source,/@media \(prefers-reduced-motion: reduce\) \{ \.listen-button \.speaker-arc \{ animation: none !important; \} \}/);
 });
 test('phrase list renders editable per-expression fields and sends replacement objects',async()=>{
   const page=pageContext('phrases');
