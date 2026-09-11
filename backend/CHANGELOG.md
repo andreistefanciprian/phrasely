@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.12.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.11.0...backend-v0.12.0) (2026-09-11)
+
+
+### Features
+
+* **backend:** add authenticated phrase audio endpoint ([646d1fb](https://github.com/andreistefanciprian/phrasely/commit/646d1fb97d5eb646bfad95e90e0a3024cf119524))
+* **backend:** add ElevenLabs speech adapter ([bdc8c14](https://github.com/andreistefanciprian/phrasely/commit/bdc8c146c525fc9158eca21887cda608d1af9c4d))
+* **backend:** add R2 audio cache adapter ([450878f](https://github.com/andreistefanciprian/phrasely/commit/450878f441c58fb800e8c77d835d625bc5599461))
+
+
+### Bug Fixes
+
+* **backend:** bound R2 cache requests ([f2dd0ad](https://github.com/andreistefanciprian/phrasely/commit/f2dd0ad5535c8e002ea969ee630a39736b4460df))
+* **backend:** harden phrase audio endpoint ([e230402](https://github.com/andreistefanciprian/phrasely/commit/e230402ba9ebf9dbb96f9ff7639385dacf12811d))
+* **backend:** include audio package in Docker build ([7b24a49](https://github.com/andreistefanciprian/phrasely/commit/7b24a49e98608901765d90ce836f00efd8e17b01))
+
 ## [0.11.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.10.0...backend-v0.11.0) (2026-09-09)
 
 
