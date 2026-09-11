@@ -95,7 +95,9 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 }
 
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
 	if h.cache == nil || h.synth == nil {
+		slog.Info("phrase audio request unavailable")
 		respondError(w, http.StatusServiceUnavailable, "phrase audio unavailable")
 		return
 	}
@@ -108,7 +110,9 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.UserIDFromContext(r.Context())
 	id := mux.Vars(r)["id"]
+	slog.Info("phrase audio requested", "user_id", userID, "phrase_id", id)
 	if _, err := uuid.Parse(id); err != nil {
+		slog.Warn("phrase audio request rejected", "user_id", userID, "phrase_id", id, "reason", "invalid_phrase_id")
 		respondError(w, http.StatusBadRequest, "invalid phrase id")
 		return
 	}
@@ -132,17 +136,19 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 
 	clip, err := h.cache.Get(r.Context(), key)
 	if err == nil {
+		slog.Info("phrase audio cache hit", "user_id", userID, "phrase_id", id, "bytes", len(clip), "duration_ms", time.Since(started).Milliseconds())
 		writeAudio(w, clip)
 		return
 	}
 	if !errors.Is(err, ErrCacheMiss) {
-		slog.Error("read phrase audio cache", "error", err)
+		slog.Error("read phrase audio cache", "user_id", userID, "phrase_id", id, "error", err)
 		respondError(w, http.StatusServiceUnavailable, "phrase audio unavailable")
 		return
 	}
+	slog.Info("phrase audio cache miss", "user_id", userID, "phrase_id", id)
 
 	result := h.group.DoChan(key, func() (any, error) {
-		return h.generate(key, userID, phrase.Phrase)
+		return h.generate(key, userID, id, phrase.Phrase)
 	})
 	select {
 	case <-r.Context().Done():
@@ -152,31 +158,40 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 			h.respondGenerationError(w, outcome.Err)
 			return
 		}
-		writeAudio(w, outcome.Val.([]byte))
+		clip := outcome.Val.([]byte)
+		slog.Info("phrase audio ready", "user_id", userID, "phrase_id", id, "bytes", len(clip), "duration_ms", time.Since(started).Milliseconds())
+		writeAudio(w, clip)
 	}
 }
 
-func (h *Handler) generate(key, userID, text string) ([]byte, error) {
+func (h *Handler) generate(key, userID, phraseID, text string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(h.appCtx, h.genTimeout)
 	defer cancel()
 
 	clip, err := h.cache.Get(ctx, key)
 	if err == nil {
+		slog.Info("phrase audio cache hit after wait", "user_id", userID, "phrase_id", phraseID, "bytes", len(clip))
 		return clip, nil
 	}
 	if !errors.Is(err, ErrCacheMiss) {
 		return nil, fmt.Errorf("%w: cache lookup: %v", errUnavailable, err)
 	}
 	if !h.limiter.Allow(userID) {
+		slog.Warn("phrase audio generation rate limited", "user_id", userID, "phrase_id", phraseID)
 		return nil, errRateLimited
 	}
 
+	generationStarted := time.Now()
+	slog.Info("phrase audio generation started", "user_id", userID, "phrase_id", phraseID)
 	clip, err = h.synth.Synthesize(ctx, text)
 	if err != nil {
 		return nil, fmt.Errorf("synthesize phrase: %w", err)
 	}
+	slog.Info("phrase audio generation completed", "user_id", userID, "phrase_id", phraseID, "bytes", len(clip), "duration_ms", time.Since(generationStarted).Milliseconds())
 	if err := h.cache.Put(ctx, key, clip); err != nil {
-		slog.Error("cache generated phrase audio", "error", err)
+		slog.Error("cache generated phrase audio", "user_id", userID, "phrase_id", phraseID, "error", err)
+	} else {
+		slog.Info("phrase audio cached", "user_id", userID, "phrase_id", phraseID, "bytes", len(clip))
 	}
 	return clip, nil
 }
