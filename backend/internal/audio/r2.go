@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -15,7 +16,10 @@ import (
 	"github.com/aws/smithy-go"
 )
 
-const r2Region = "auto"
+const (
+	r2Region         = "auto"
+	r2RequestTimeout = 30 * time.Second
+)
 
 // ErrCacheMiss is returned only when R2 definitively reports that an object
 // does not exist. Callers must not treat other storage failures as misses.
@@ -36,9 +40,10 @@ type s3API interface {
 
 // R2Cache stores complete, sentence-sized MP3 clips in a private R2 bucket.
 type R2Cache struct {
-	client        s3API
-	bucket        string
-	maxAudioBytes int64
+	client         s3API
+	bucket         string
+	maxAudioBytes  int64
+	requestTimeout time.Duration
 }
 
 // NewR2Cache constructs an R2 cache using Cloudflare's S3-compatible API.
@@ -73,13 +78,21 @@ func NewR2Cache(cfg R2Config) (*R2Cache, error) {
 		options.BaseEndpoint = aws.String(endpoint.String())
 		options.UsePathStyle = true
 	})
-	return &R2Cache{client: client, bucket: cfg.Bucket, maxAudioBytes: maxAudioBytes}, nil
+	return &R2Cache{
+		client:         client,
+		bucket:         cfg.Bucket,
+		maxAudioBytes:  maxAudioBytes,
+		requestTimeout: r2RequestTimeout,
+	}, nil
 }
 
 // Get returns one complete cached MP3 while enforcing the same size bound as
 // synthesis. Only a provider not-found response is translated to ErrCacheMiss.
 func (c *R2Cache) Get(ctx context.Context, key string) ([]byte, error) {
-	out, err := c.client.GetObject(ctx, &s3.GetObjectInput{
+	requestCtx, cancel := context.WithTimeout(ctx, c.requestTimeout)
+	defer cancel()
+
+	out, err := c.client.GetObject(requestCtx, &s3.GetObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 	})
@@ -110,7 +123,11 @@ func (c *R2Cache) Put(ctx context.Context, key string, audioBytes []byte) error 
 	if int64(len(audioBytes)) > c.maxAudioBytes {
 		return fmt.Errorf("audio exceeds %d bytes", c.maxAudioBytes)
 	}
-	_, err := c.client.PutObject(ctx, &s3.PutObjectInput{
+
+	requestCtx, cancel := context.WithTimeout(ctx, c.requestTimeout)
+	defer cancel()
+
+	_, err := c.client.PutObject(requestCtx, &s3.PutObjectInput{
 		Bucket:        aws.String(c.bucket),
 		Key:           aws.String(key),
 		Body:          bytes.NewReader(audioBytes),

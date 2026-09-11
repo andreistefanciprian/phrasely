@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
@@ -14,16 +15,24 @@ import (
 type fakeS3 struct {
 	getOutput *s3.GetObjectOutput
 	getErr    error
+	getFunc   func(context.Context) (*s3.GetObjectOutput, error)
 	putInput  *s3.PutObjectInput
 	putErr    error
+	putFunc   func(context.Context) (*s3.PutObjectOutput, error)
 }
 
-func (f *fakeS3) GetObject(_ context.Context, _ *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+func (f *fakeS3) GetObject(ctx context.Context, _ *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	if f.getFunc != nil {
+		return f.getFunc(ctx)
+	}
 	return f.getOutput, f.getErr
 }
 
-func (f *fakeS3) PutObject(_ context.Context, input *s3.PutObjectInput, _ ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+func (f *fakeS3) PutObject(ctx context.Context, input *s3.PutObjectInput, _ ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
 	f.putInput = input
+	if f.putFunc != nil {
+		return f.putFunc(ctx)
+	}
 	return &s3.PutObjectOutput{}, f.putErr
 }
 
@@ -125,6 +134,50 @@ func TestR2CachePutRejectsOversizedAudioWithoutUpload(t *testing.T) {
 	}
 }
 
+func TestR2CacheOperationsTimeOut(t *testing.T) {
+	waitForCancellation := func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	tests := []struct {
+		name string
+		run  func(*R2Cache) error
+	}{
+		{
+			name: "get",
+			run: func(cache *R2Cache) error {
+				_, err := cache.Get(context.Background(), "audio.mp3")
+				return err
+			},
+		},
+		{
+			name: "put",
+			run: func(cache *R2Cache) error {
+				return cache.Put(context.Background(), "audio.mp3", []byte("mp3"))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &fakeS3{
+				getFunc: func(ctx context.Context) (*s3.GetObjectOutput, error) {
+					return nil, waitForCancellation(ctx)
+				},
+				putFunc: func(ctx context.Context) (*s3.PutObjectOutput, error) {
+					return nil, waitForCancellation(ctx)
+				},
+			}
+			cache := testR2Cache(client)
+			cache.requestTimeout = time.Millisecond
+
+			if err := tt.run(cache); !errors.Is(err, context.DeadlineExceeded) {
+				t.Fatalf("error = %v, want context.DeadlineExceeded", err)
+			}
+		})
+	}
+}
+
 func TestNewR2CacheValidatesConfiguration(t *testing.T) {
 	valid := R2Config{
 		Endpoint:        "https://account.r2.cloudflarestorage.com",
@@ -155,7 +208,12 @@ func TestNewR2CacheValidatesConfiguration(t *testing.T) {
 }
 
 func testR2Cache(client s3API) *R2Cache {
-	return &R2Cache{client: client, bucket: "private-audio", maxAudioBytes: maxAudioBytes}
+	return &R2Cache{
+		client:         client,
+		bucket:         "private-audio",
+		maxAudioBytes:  maxAudioBytes,
+		requestTimeout: r2RequestTimeout,
+	}
 }
 
 func ptr[T any](value T) *T { return &value }
