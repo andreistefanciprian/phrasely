@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,14 +15,18 @@ import (
 // apiClient calls the private API on the internal network.
 // The browser never talks to the API directly.
 type apiClient struct {
-	baseURL string
-	http    *http.Client
+	baseURL   string
+	http      *http.Client
+	audioHTTP *http.Client
 }
+
+const audioProxyTimeout = 2*time.Minute + 10*time.Second
 
 func newAPIClient(baseURL string) *apiClient {
 	return &apiClient{
-		baseURL: baseURL,
-		http:    &http.Client{Timeout: 10 * time.Second},
+		baseURL:   baseURL,
+		http:      &http.Client{Timeout: 10 * time.Second},
+		audioHTTP: &http.Client{Timeout: audioProxyTimeout},
 	}
 }
 
@@ -42,6 +47,23 @@ func (c *apiClient) Proxy(method, path, jwt string, body io.Reader, contentType 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	return resp.StatusCode, b, err
+}
+
+// ProxyAudio starts an authenticated audio request and leaves the response body
+// open for the caller to stream. Audio uses a separate, longer timeout because a
+// cache miss may wait for speech generation and an R2 upload.
+func (c *apiClient) ProxyAudio(ctx context.Context, path, jwt string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+
+	resp, err := c.audioHTTP.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("proxy audio request: %w", err)
+	}
+	return resp, nil
 }
 
 // RequestMagicLink asks the API to send a magic link to the given email.
