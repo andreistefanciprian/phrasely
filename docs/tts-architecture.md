@@ -1,6 +1,6 @@
 # Listen on Shuffle — Implementation Plan
 
-Status: planned, not implemented.
+Status: implemented.
 
 ## Goal
 
@@ -371,7 +371,7 @@ branch from the updated `main` after the previous PR merges.
    handler tests.
 4. [x] **Frontend binary proxy** — stream the audio HTTP response and preserve its
    status and relevant headers without changing existing JSON proxy behavior.
-5. [ ] **Shuffle Listen control** — implement the supplied Turn 4 visual design,
+5. [x] **Shuffle Listen control** — implement the supplied Turn 4 visual design,
    Listen/Loading/Stop behavior, keyboard handling, reduced motion, generic
    error, and UI tests. Update final user-facing documentation here.
 
