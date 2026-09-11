@@ -14,6 +14,7 @@ import (
 
 	"github.com/andreistefanciprian/phrasely/internal/db"
 	"github.com/andreistefanciprian/phrasely/internal/middleware"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"golang.org/x/sync/singleflight"
 )
@@ -98,9 +99,20 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusServiceUnavailable, "phrase audio unavailable")
 		return
 	}
+	// Cold audio generation has a larger bounded budget than the server's JSON
+	// routes. Extend only this response's deadline instead of weakening the
+	// server-wide slow-client protection.
+	if err := http.NewResponseController(w).SetWriteDeadline(time.Now().Add(h.genTimeout + 5*time.Second)); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		slog.Warn("extend phrase audio write deadline", "error", err)
+	}
 
 	userID := middleware.UserIDFromContext(r.Context())
-	phrase, err := h.store.GetPhrase(r.Context(), userID, mux.Vars(r)["id"])
+	id := mux.Vars(r)["id"]
+	if _, err := uuid.Parse(id); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid phrase id")
+		return
+	}
+	phrase, err := h.store.GetPhrase(r.Context(), userID, id)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
 			respondError(w, http.StatusNotFound, "phrase not found")

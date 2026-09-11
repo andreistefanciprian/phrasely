@@ -344,6 +344,7 @@ The audio route should return:
 | Status | Meaning |
 |---|---|
 | `200` | Cached or newly generated MP3 |
+| `400` | Phrase ID is malformed |
 | `404` | Phrase missing or owned by another user |
 | `429` | User's generation allowance is exhausted |
 | `502` | ElevenLabs returned an unusable response |

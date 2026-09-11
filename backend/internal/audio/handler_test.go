@@ -15,7 +15,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const audioTestUserID = "550e8400-e29b-41d4-a716-446655440099"
+const (
+	audioTestUserID   = "550e8400-e29b-41d4-a716-446655440099"
+	audioTestPhraseID = "550e8400-e29b-41d4-a716-446655440001"
+)
 
 type fakePhraseStore struct {
 	get func(context.Context, string, string) (*db.Phrase, error)
@@ -51,6 +54,16 @@ type countingLimiter struct {
 	calls   atomic.Int32
 }
 
+type deadlineRecorder struct {
+	*httptest.ResponseRecorder
+	deadline time.Time
+}
+
+func (r *deadlineRecorder) SetWriteDeadline(deadline time.Time) error {
+	r.deadline = deadline
+	return nil
+}
+
 func (l *countingLimiter) Allow(string) bool {
 	l.calls.Add(1)
 	return l.allowed
@@ -74,11 +87,11 @@ func TestHandlerCacheHitUsesOwnedPhraseAndSkipsGeneration(t *testing.T) {
 		}}, limiter,
 	)
 
-	recorder := serveAudio(h, context.Background(), "phrase-7")
+	recorder := serveAudio(h, context.Background(), audioTestPhraseID)
 	if recorder.Code != http.StatusOK || recorder.Body.String() != "cached mp3" {
 		t.Fatalf("response = %d %q", recorder.Code, recorder.Body.String())
 	}
-	if gotUser != audioTestUserID || gotID != "phrase-7" {
+	if gotUser != audioTestUserID || gotID != audioTestPhraseID {
 		t.Fatalf("GetPhrase args = %q, %q", gotUser, gotID)
 	}
 	if !strings.HasPrefix(gotKey, "phrase-audio/"+audioTestUserID+"/") || !strings.HasSuffix(gotKey, ".mp3") {
@@ -92,6 +105,19 @@ func TestHandlerCacheHitUsesOwnedPhraseAndSkipsGeneration(t *testing.T) {
 	}
 }
 
+func TestHandlerExtendsWriteDeadlineForColdGeneration(t *testing.T) {
+	h := testHandler(storeReturning(db.Phrase{Phrase: "hello"}),
+		fakeCache{get: func(context.Context, string) ([]byte, error) { return []byte("cached"), nil }},
+		fakeSynth{}, &countingLimiter{allowed: true})
+	w := &deadlineRecorder{ResponseRecorder: httptest.NewRecorder()}
+
+	serveAudioWithWriter(h, w, context.Background(), audioTestPhraseID)
+	minimum := time.Now().Add(h.genTimeout)
+	if w.deadline.Before(minimum) {
+		t.Fatalf("write deadline = %v, want at least %v", w.deadline, minimum)
+	}
+}
+
 func TestHandlerMissingPhraseReturns404BeforeCacheAccess(t *testing.T) {
 	h := testHandler(
 		fakePhraseStore{get: func(context.Context, string, string) (*db.Phrase, error) { return nil, db.ErrNotFound }},
@@ -101,7 +127,7 @@ func TestHandlerMissingPhraseReturns404BeforeCacheAccess(t *testing.T) {
 		}}, fakeSynth{}, &countingLimiter{allowed: true},
 	)
 
-	recorder := serveAudio(h, context.Background(), "other-users-phrase")
+	recorder := serveAudio(h, context.Background(), audioTestPhraseID)
 	if recorder.Code != http.StatusNotFound || recorder.Header().Get("Content-Type") != "application/json" {
 		t.Fatalf("response = %d, headers = %v", recorder.Code, recorder.Header())
 	}
@@ -123,7 +149,7 @@ func TestHandlerCacheKeyIncludesOnlySpeechInputsAndUser(t *testing.T) {
 		"model":    func(changed *Handler) { changed.modelID = "model-2" },
 		"settings": func(changed *Handler) { changed.settings.Stability = 0.9 },
 	} {
-		changed := *h
+		changed := testHandler(nil, nil, nil, nil)
 		userID, text := "user-a", "Speak this"
 		if name == "user" {
 			userID = "user-b"
@@ -131,7 +157,7 @@ func TestHandlerCacheKeyIncludesOnlySpeechInputsAndUser(t *testing.T) {
 		if name == "text" {
 			text = "Speak something else"
 		}
-		mutate(&changed)
+		mutate(changed)
 		key, _ := changed.cacheKey(userID, text)
 		if key == base {
 			t.Errorf("changing %s did not change cache key", name)
@@ -158,7 +184,7 @@ func TestHandlerMissSynthesizesExactStoredTextAndCaches(t *testing.T) {
 		}}, limiter,
 	)
 
-	recorder := serveAudio(h, context.Background(), "phrase-1")
+	recorder := serveAudio(h, context.Background(), audioTestPhraseID)
 	if recorder.Code != http.StatusOK || recorder.Body.String() != "new mp3" {
 		t.Fatalf("response = %d %q", recorder.Code, recorder.Body.String())
 	}
@@ -197,7 +223,7 @@ func TestHandlerConcurrentMissesShareGeneration(t *testing.T) {
 	const requests = 6
 	results := make(chan *httptest.ResponseRecorder, requests)
 	for range requests {
-		go func() { results <- serveAudio(h, context.Background(), "phrase-1") }()
+		go func() { results <- serveAudio(h, context.Background(), audioTestPhraseID) }()
 	}
 	<-started
 	time.Sleep(20 * time.Millisecond)
@@ -234,7 +260,7 @@ func TestHandlerCanceledWaiterDoesNotCancelSharedGeneration(t *testing.T) {
 
 	requestCtx, cancel := context.WithCancel(context.Background())
 	firstDone := make(chan *httptest.ResponseRecorder, 1)
-	go func() { firstDone <- serveAudio(h, requestCtx, "phrase-1") }()
+	go func() { firstDone <- serveAudio(h, requestCtx, audioTestPhraseID) }()
 	<-started
 	cancel()
 	<-firstDone
@@ -243,6 +269,31 @@ func TestHandlerCanceledWaiterDoesNotCancelSharedGeneration(t *testing.T) {
 	case <-putDone:
 	case <-time.After(time.Second):
 		t.Fatal("shared generation did not finish and cache after waiter cancellation")
+	}
+}
+
+func TestHandlerApplicationShutdownCancelsSharedGeneration(t *testing.T) {
+	appCtx, stopApp := context.WithCancel(context.Background())
+	started := make(chan struct{})
+	h := NewHandler(appCtx, storeReturning(db.Phrase{Phrase: "Stop on shutdown"}),
+		fakeCache{get: func(context.Context, string) ([]byte, error) { return nil, ErrCacheMiss }},
+		fakeSynth{synthesize: func(ctx context.Context, _ string) ([]byte, error) {
+			close(started)
+			<-ctx.Done()
+			return nil, ctx.Err()
+		}}, "voice-1", "model-1")
+
+	done := make(chan *httptest.ResponseRecorder, 1)
+	go func() { done <- serveAudio(h, context.Background(), audioTestPhraseID) }()
+	<-started
+	stopApp()
+	select {
+	case recorder := <-done:
+		if recorder.Code != http.StatusServiceUnavailable {
+			t.Fatalf("status = %d, want 503", recorder.Code)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("generation did not stop when application context was canceled")
 	}
 }
 
@@ -262,18 +313,37 @@ func TestHandlerErrorContract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var synthCalls atomic.Int32
+			var putCalls atomic.Int32
 			h := testHandler(storeReturning(db.Phrase{Phrase: "hello"}),
-				fakeCache{get: func(context.Context, string) ([]byte, error) { return nil, tt.cacheErr }},
+				fakeCache{
+					get: func(context.Context, string) ([]byte, error) { return nil, tt.cacheErr },
+					put: func(context.Context, string, []byte) error { putCalls.Add(1); return nil },
+				},
 				fakeSynth{synthesize: func(context.Context, string) ([]byte, error) { synthCalls.Add(1); return nil, tt.synthErr }},
 				&countingLimiter{allowed: tt.allowed})
-			recorder := serveAudio(h, context.Background(), "phrase-1")
+			recorder := serveAudio(h, context.Background(), audioTestPhraseID)
 			if recorder.Code != tt.wantStatus || recorder.Header().Get("Content-Type") != "application/json" {
 				t.Fatalf("response = %d, headers = %v", recorder.Code, recorder.Header())
 			}
 			if synthCalls.Load() != tt.wantSynth {
 				t.Fatalf("synth calls = %d, want %d", synthCalls.Load(), tt.wantSynth)
 			}
+			if putCalls.Load() != 0 {
+				t.Fatalf("cache Put calls = %d after failed request", putCalls.Load())
+			}
 		})
+	}
+}
+
+func TestHandlerRejectsMalformedPhraseIDBeforeStoreAccess(t *testing.T) {
+	h := testHandler(fakePhraseStore{get: func(context.Context, string, string) (*db.Phrase, error) {
+		t.Fatal("store called with malformed phrase ID")
+		return nil, nil
+	}}, fakeCache{}, fakeSynth{}, &countingLimiter{allowed: true})
+
+	recorder := serveAudio(h, context.Background(), "not-a-uuid")
+	if recorder.Code != http.StatusBadRequest || recorder.Header().Get("Content-Type") != "application/json" {
+		t.Fatalf("response = %d, headers = %v", recorder.Code, recorder.Header())
 	}
 }
 
@@ -292,7 +362,7 @@ func TestHandlerSecondCacheFailureDoesNotGenerate(t *testing.T) {
 			return []byte("unexpected"), nil
 		}}, &countingLimiter{allowed: true})
 
-	recorder := serveAudio(h, context.Background(), "phrase-1")
+	recorder := serveAudio(h, context.Background(), audioTestPhraseID)
 	if recorder.Code != http.StatusServiceUnavailable || synthCalls.Load() != 0 {
 		t.Fatalf("response = %d, synth calls = %d", recorder.Code, synthCalls.Load())
 	}
@@ -303,7 +373,7 @@ func TestHandlerDisabledReturns503WithoutLoadingPhrase(t *testing.T) {
 		t.Fatal("store called while audio is disabled")
 		return nil, nil
 	}}, nil, nil, "", "")
-	recorder := serveAudio(h, context.Background(), "phrase-1")
+	recorder := serveAudio(h, context.Background(), audioTestPhraseID)
 	if recorder.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d", recorder.Code)
 	}
@@ -317,7 +387,7 @@ func TestHandlerCacheUploadFailureStillReturnsAudio(t *testing.T) {
 		},
 		fakeSynth{synthesize: func(context.Context, string) ([]byte, error) { return []byte("play me"), nil }},
 		&countingLimiter{allowed: true})
-	recorder := serveAudio(h, context.Background(), "phrase-1")
+	recorder := serveAudio(h, context.Background(), audioTestPhraseID)
 	if recorder.Code != http.StatusOK || recorder.Body.String() != "play me" {
 		t.Fatalf("response = %d %q", recorder.Code, recorder.Body.String())
 	}
@@ -352,10 +422,14 @@ func storeReturning(phrase db.Phrase) phraseStore {
 }
 
 func serveAudio(h *Handler, ctx context.Context, id string) *httptest.ResponseRecorder {
+	recorder := httptest.NewRecorder()
+	serveAudioWithWriter(h, recorder, ctx, id)
+	return recorder
+}
+
+func serveAudioWithWriter(h *Handler, w http.ResponseWriter, ctx context.Context, id string) {
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/phrases/"+id+"/audio", nil).WithContext(ctx)
 	request = request.WithContext(context.WithValue(request.Context(), middleware.UserIDKey, audioTestUserID))
 	request = mux.SetURLVars(request, map[string]string{"id": id})
-	recorder := httptest.NewRecorder()
-	h.get(recorder, request)
-	return recorder
+	h.get(w, request)
 }
