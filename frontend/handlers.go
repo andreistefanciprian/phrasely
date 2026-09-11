@@ -373,6 +373,8 @@ func isPhraseAudioPath(path string) bool {
 }
 
 func (app *application) proxyPhraseAudio(w http.ResponseWriter, r *http.Request, path, jwt string) {
+	started := time.Now()
+	slog.Info("shuffle listen requested", "path", path)
 	resp, err := app.api.ProxyAudio(r.Context(), path, jwt)
 	if err != nil {
 		slog.Error("audio proxy", "path", path, "error", err)
@@ -387,9 +389,12 @@ func (app *application) proxyPhraseAudio(w http.ResponseWriter, r *http.Request,
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	if _, err := io.Copy(w, resp.Body); err != nil {
+	written, err := io.Copy(w, resp.Body)
+	if err != nil {
 		slog.Error("stream audio response", "path", path, "error", err)
+		return
 	}
+	slog.Info("shuffle listen response", "path", path, "status", resp.StatusCode, "bytes", written, "duration_ms", time.Since(started).Milliseconds())
 }
 
 // waitlistJoin handles POST /waitlist — the landing page's inline "join the
