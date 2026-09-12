@@ -31,21 +31,19 @@
   .shuffle-hint { margin-bottom: 2rem; min-height: 34px; align-items: center; justify-content: center; gap: 12px; color: var(--muted); text-align: center; text-transform: uppercase; display: none; }
   .shuffle-prompt { font-size: 0.72rem; letter-spacing: 0.08em; }
   .shuffle-divider { width: 1px; height: 11px; background: var(--border); }
-  .listen-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--secondary); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
-  .listen-button:hover, .listen-button:focus-visible { color: var(--navy); background: var(--surface-subtle); outline: none; }
+  .listen-button, .ask-chatgpt-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--secondary); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
+  .listen-button:hover, .listen-button:focus-visible,
+  .ask-chatgpt-button:hover, .ask-chatgpt-button:focus-visible { color: var(--navy); background: var(--surface-subtle); outline: none; }
   .listen-button svg { width: 33px; height: 33px; flex: none; transform: scale(0.82); }
-  .listen-button-label { width: 60px; font-size: 11px; letter-spacing: 0.16em; line-height: 1; text-align: left; white-space: nowrap; }
+  .listen-button-label, .ask-chatgpt-label { font-size: 11px; letter-spacing: 0.16em; line-height: 1; text-align: left; white-space: nowrap; }
+  .listen-button-label { width: 60px; }
   .listen-button[data-state="loading"] { color: #9DA3CC; }
   .listen-button[data-state="speaking"] { color: #1FD3CC; }
   .listen-button[data-state="loading"] .speaker-arc, .listen-button[data-state="speaking"] .speaker-arc { animation: speakerPulse 1.4s ease-in-out infinite; }
   .listen-button[data-state="loading"] .speaker-arc-far { animation-delay: 0.5s; }
   .listen-button[data-state="speaking"] .speaker-arc { animation-duration: 0.9s; }
   .listen-button[data-state="speaking"] .speaker-arc-far { animation-delay: 0.3s; }
-  .ask-chatgpt-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--secondary); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
-  .ask-chatgpt-button:hover, .ask-chatgpt-button:focus-visible { color: var(--navy); background: var(--surface-subtle); outline: none; }
   .ask-chatgpt-button img { width: 33px; height: 33px; flex: none; }
-  .ask-chatgpt-button .ask-button-blossom-dark { display: none; }
-  .ask-chatgpt-label { font-size: 11px; letter-spacing: 0.16em; line-height: 1; text-align: left; white-space: nowrap; }
   .audio-error { min-height: 1.4em; margin: -1.35rem 0 1rem; color: var(--secondary); font-size: 0.78rem; text-align: center; }
   .audio-error:empty { visibility: hidden; }
   #ask-chatgpt-modal { width: min(620px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 22px; background: var(--surface-raised); color: var(--text); box-shadow: 0 28px 80px var(--shadow-raised); }
@@ -63,8 +61,7 @@
   .ask-modal-action { min-height: 44px; padding: 0 1rem; border: 0; border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer; }
   .ask-modal-cancel { background: var(--surface-subtle); color: var(--secondary); }
   .ask-modal-open { display: inline-flex; align-items: center; gap: 0.55rem; background: var(--blue); color: var(--on-brand); box-shadow: 0 7px 18px var(--brand-shadow-soft); }
-  .ask-modal-open img { width: 26px; height: 26px; }
-  .ask-modal-open .open-button-blossom-dark { display: none; }
+  .ask-modal-open img { width: 26px; height: 26px; filter: invert(1); }
   .ask-copy-status { min-height: 1.2em; margin: 0.4rem 1.65rem 0; color: var(--success-strong); font-size: 0.75rem; text-align: right; }
   :root[data-theme="dark"] .listen-button {
     color: #9299BB;
@@ -74,10 +71,8 @@
   :root[data-theme="dark"] .ask-chatgpt-button:hover, :root[data-theme="dark"] .ask-chatgpt-button:focus-visible { color: #F4F5FF; background: #20264A; }
   :root[data-theme="dark"] .listen-button[data-state="loading"] { color: #555E96; }
   :root[data-theme="dark"] .listen-button[data-state="speaking"] { color: #56DDD6; }
-  :root[data-theme="dark"] .ask-chatgpt-button .ask-button-blossom-light { display: none; }
-  :root[data-theme="dark"] .ask-chatgpt-button .ask-button-blossom-dark { display: block; }
-  :root[data-theme="dark"] .ask-modal-open .open-button-blossom-light { display: none; }
-  :root[data-theme="dark"] .ask-modal-open .open-button-blossom-dark { display: block; }
+  :root[data-theme="dark"] .ask-chatgpt-button img { filter: invert(1); }
+  :root[data-theme="dark"] .ask-modal-open img { filter: none; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .listen-button,
     :root:not([data-theme="light"]) .ask-chatgpt-button { color: #9299BB; }
@@ -85,10 +80,8 @@
     :root:not([data-theme="light"]) .ask-chatgpt-button:hover, :root:not([data-theme="light"]) .ask-chatgpt-button:focus-visible { color: #F4F5FF; background: #20264A; }
     :root:not([data-theme="light"]) .listen-button[data-state="loading"] { color: #555E96; }
     :root:not([data-theme="light"]) .listen-button[data-state="speaking"] { color: #56DDD6; }
-    :root:not([data-theme="light"]) .ask-chatgpt-button .ask-button-blossom-light { display: none; }
-    :root:not([data-theme="light"]) .ask-chatgpt-button .ask-button-blossom-dark { display: block; }
-    :root:not([data-theme="light"]) .ask-modal-open .open-button-blossom-light { display: none; }
-    :root:not([data-theme="light"]) .ask-modal-open .open-button-blossom-dark { display: block; }
+    :root:not([data-theme="light"]) .ask-chatgpt-button img { filter: invert(1); }
+    :root:not([data-theme="light"]) .ask-modal-open img { filter: none; }
   }
   @media (hover: hover) { #click-hint { display: flex; } }
   @media (hover: none)  { #tap-hint  { display: flex; } }
@@ -99,6 +92,8 @@
     #siblings { margin-top: 2rem; }
     #related { margin-top: 2rem; }
     .shuffle-hint { gap: 6px; flex-wrap: wrap; }
+  }
+  @media (max-width: 600px), (max-height: 600px) and (pointer: coarse) {
     #ask-chatgpt-modal[open] { height: calc(100dvh - 2rem); overflow: hidden; display: flex; flex-direction: column; }
     .ask-modal-header { flex: none; padding: 1.25rem 1.1rem 0.9rem; }
     .ask-prompt-wrap { min-height: 0; flex: 1; display: flex; flex-direction: column; margin: 0 1.1rem; overflow: hidden; }
@@ -147,7 +142,7 @@
   <p class="ask-copy-status" role="status" aria-live="polite"></p>
   <div class="ask-modal-actions">
     <button class="ask-modal-action ask-modal-cancel" type="button">Not now</button>
-    <button class="ask-modal-action ask-modal-open" type="button"><img class="open-button-blossom-light" src="/static/openai-blossom-white.svg" alt=""><img class="open-button-blossom-dark" src="/static/openai-blossom-black.svg" alt="">Open ChatGPT <span aria-hidden="true">↗</span></button>
+    <button class="ask-modal-action ask-modal-open" type="button"><img src="/static/openai-blossom-black.svg" alt="">Open ChatGPT <span aria-hidden="true">↗</span></button>
   </div>
 </dialog>
 
@@ -396,8 +391,7 @@
 
 {{define "ask-chatgpt-button"}}
 <button class="ask-chatgpt-button" type="button" aria-label="Ask ChatGPT about this phrase">
-  <img class="ask-button-blossom-light" src="/static/openai-blossom-black.svg" alt="" aria-hidden="true">
-  <img class="ask-button-blossom-dark" src="/static/openai-blossom-white.svg" alt="" aria-hidden="true">
+  <img src="/static/openai-blossom-black.svg" alt="" aria-hidden="true">
   <span class="ask-chatgpt-label">ASK CHATGPT</span>
 </button>
 {{end}}
