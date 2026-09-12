@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.17.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.16.0...frontend-v0.17.0) (2026-09-12)
+
+
+### Features
+
+* **audio:** log shuffle listen lifecycle ([26fc890](https://github.com/andreistefanciprian/phrasely/commit/26fc89049847f26431661ad521a911c202e2b0f3))
+* **frontend:** add Ask ChatGPT practice flow ([4b17065](https://github.com/andreistefanciprian/phrasely/commit/4b17065eb24b39cc8b6f4ceb2532d62fbf0ed6c0))
+* **frontend:** add shuffle listen control ([82a6acf](https://github.com/andreistefanciprian/phrasely/commit/82a6acfa6d641f16eb3ca35625daad24003eff01))
+
+
+### Bug Fixes
+
+* **frontend:** add room for shuffle loading label ([e13259d](https://github.com/andreistefanciprian/phrasely/commit/e13259d0a68046c4f2d7c1935d6d14cea0ff5651))
+* **frontend:** address shuffle listen review ([2b2c883](https://github.com/andreistefanciprian/phrasely/commit/2b2c8833612da7ab1f8cac27bdf017390675afc9))
+* **frontend:** refine Ask ChatGPT responsive flow ([a8fc613](https://github.com/andreistefanciprian/phrasely/commit/a8fc6133f5708c9b07a714573a2031b0592c1055))
+
 ## [0.16.0](https://github.com/andreistefanciprian/phrasely/compare/frontend-v0.15.1...frontend-v0.16.0) (2026-09-11)
 
 
