@@ -248,6 +248,18 @@ func TestShufflePageKeepsRelatedOutsideStableStage(t *testing.T) {
 	}
 }
 
+func TestShuffleListenButtonLeavesRoomForLoadingLabel(t *testing.T) {
+	template, err := files.ReadFile("templates/shuffle.html")
+	if err != nil {
+		t.Fatalf("read shuffle template: %v", err)
+	}
+
+	source := string(template)
+	if !strings.Contains(source, ".listen-button-label { width: 60px;") {
+		t.Fatal("listen button label must leave enough room for the tracked LOADING state")
+	}
+}
+
 func TestAuthorizePreservesOAuthResource(t *testing.T) {
 	const resource = "https://mcp.example.com"
 	const redirectURI = "https://chatgpt.com/callback"
