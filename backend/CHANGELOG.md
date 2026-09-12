@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.12.0...backend-v0.13.0) (2026-09-12)
+
+
+### Features
+
+* **audio:** log shuffle listen lifecycle ([26fc890](https://github.com/andreistefanciprian/phrasely/commit/26fc89049847f26431661ad521a911c202e2b0f3))
+
 ## [0.12.0](https://github.com/andreistefanciprian/phrasely/compare/backend-v0.11.0...backend-v0.12.0) (2026-09-11)
 
 
