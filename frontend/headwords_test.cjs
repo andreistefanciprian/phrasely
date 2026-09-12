@@ -120,8 +120,8 @@ test('Shuffle Listen stale completion cannot stop newer playback',async()=>{
 });
 test('Shuffle Listen includes the specified light theme and reduced-motion styles',()=>{
   const source=read('templates/shuffle.html');
-  assert.match(source,/\.listen-button \{[^}]*color: var\(--secondary\)/);
-  assert.match(source,/\.listen-button:hover, \.listen-button:focus-visible \{[^}]*background: var\(--surface-subtle\)/);
+  assert.match(source,/\.listen-button, \.ask-chatgpt-button \{[^}]*color: var\(--secondary\)/);
+  assert.match(source,/\.listen-button:hover, \.listen-button:focus-visible,[\s\S]*?\.ask-chatgpt-button:hover, \.ask-chatgpt-button:focus-visible \{[^}]*background: var\(--surface-subtle\)/);
   assert.match(source,/@media \(prefers-reduced-motion: reduce\) \{ \.listen-button \.speaker-arc \{ animation: none !important; \} \}/);
 });
 test('phrase list renders editable per-expression fields and sends replacement objects',async()=>{

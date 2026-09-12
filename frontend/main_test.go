@@ -249,24 +249,14 @@ func TestShufflePageKeepsRelatedOutsideStableStage(t *testing.T) {
 }
 
 func TestShuffleListenButtonLeavesRoomForLoadingLabel(t *testing.T) {
-	template, err := files.ReadFile("templates/shuffle.html")
-	if err != nil {
-		t.Fatalf("read shuffle template: %v", err)
-	}
-
-	source := string(template)
+	source := shuffleTemplateSource(t)
 	if !strings.Contains(source, ".listen-button-label { width: 60px;") {
 		t.Fatal("listen button label must leave enough room for the tracked LOADING state")
 	}
 }
 
 func TestShuffleAskChatGPTBuildsPromptForCurrentPhrase(t *testing.T) {
-	template, err := files.ReadFile("templates/shuffle.html")
-	if err != nil {
-		t.Fatalf("read shuffle template: %v", err)
-	}
-
-	source := string(template)
+	source := shuffleTemplateSource(t)
 	checks := []string{
 		`{{template "listen-button" "click"}}<span class="shuffle-divider" aria-hidden="true"></span>{{template "ask-chatgpt-button" "click"}}`,
 		`currentPhrase = item;`,
@@ -281,39 +271,47 @@ func TestShuffleAskChatGPTBuildsPromptForCurrentPhrase(t *testing.T) {
 		`const bounds = askModal.getBoundingClientRect();`,
 		`if (outside) askModal.close();`,
 	}
-	for _, check := range checks {
-		if !strings.Contains(source, check) {
-			t.Errorf("shuffle Ask ChatGPT implementation is missing %q", check)
-		}
-	}
+	requireSourceContains(t, source, "shuffle Ask ChatGPT implementation", checks...)
 	if strings.Contains(source, `**Phrase:**`) || strings.Contains(source, `**Expression:**`) || strings.Contains(source, `**Meaning:**`) {
 		t.Error("shuffle Ask ChatGPT prompt must use plain-text labels")
 	}
 }
 
 func TestShuffleAskChatGPTBlossomTracksTheme(t *testing.T) {
-	template, err := files.ReadFile("templates/shuffle.html")
-	if err != nil {
-		t.Fatalf("read shuffle template: %v", err)
-	}
-
-	source := string(template)
+	source := shuffleTemplateSource(t)
 	checks := []string{
 		`#ask-chatgpt-modal { width: min(620px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); margin: auto;`,
-		`class="open-button-blossom-light" src="/static/openai-blossom-white.svg"`,
-		`class="open-button-blossom-dark" src="/static/openai-blossom-black.svg"`,
+		`@media (max-width: 600px), (max-height: 600px) and (pointer: coarse) {`,
+		`#ask-chatgpt-prompt { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }`,
+		`class="ask-modal-action ask-modal-open" type="button"><img src="/static/openai-blossom-black.svg"`,
+		`:root[data-theme="dark"] .ask-chatgpt-button img { filter: invert(1); }`,
+		`:root[data-theme="dark"] .ask-modal-open img { filter: none; }`,
 		`class="ask-prompt-copy"`,
 	}
-	for _, check := range checks {
-		if !strings.Contains(source, check) {
-			t.Errorf("shuffle Ask ChatGPT theme support is missing %q", check)
-		}
-	}
+	requireSourceContains(t, source, "shuffle Ask ChatGPT theme support", checks...)
 	if strings.Contains(source, `class="ask-modal-close"`) {
 		t.Error("shuffle Ask ChatGPT modal must not render a redundant close button")
 	}
 	if strings.Contains(source, `class="ask-modal-blossom"`) {
 		t.Error("shuffle Ask ChatGPT modal must not repeat the OpenAI blossom in its header")
+	}
+}
+
+func shuffleTemplateSource(t *testing.T) string {
+	t.Helper()
+	template, err := files.ReadFile("templates/shuffle.html")
+	if err != nil {
+		t.Fatalf("read shuffle template: %v", err)
+	}
+	return string(template)
+}
+
+func requireSourceContains(t *testing.T, source, subject string, checks ...string) {
+	t.Helper()
+	for _, check := range checks {
+		if !strings.Contains(source, check) {
+			t.Errorf("%s is missing %q", subject, check)
+		}
 	}
 }
 
