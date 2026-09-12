@@ -33,7 +33,7 @@
   .shuffle-divider { width: 1px; height: 11px; background: var(--border); }
   .listen-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--secondary); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
   .listen-button:hover, .listen-button:focus-visible { color: var(--navy); background: var(--surface-subtle); outline: none; }
-  .listen-button svg { width: 22px; height: 20px; flex: none; }
+  .listen-button svg { width: 33px; height: 33px; flex: none; transform: scale(0.82); }
   .listen-button-label { width: 60px; font-size: 11px; letter-spacing: 0.16em; line-height: 1; text-align: left; white-space: nowrap; }
   .listen-button[data-state="loading"] { color: #9DA3CC; }
   .listen-button[data-state="speaking"] { color: #1FD3CC; }
@@ -41,24 +41,72 @@
   .listen-button[data-state="loading"] .speaker-arc-far { animation-delay: 0.5s; }
   .listen-button[data-state="speaking"] .speaker-arc { animation-duration: 0.9s; }
   .listen-button[data-state="speaking"] .speaker-arc-far { animation-delay: 0.3s; }
+  .ask-chatgpt-button { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--secondary); font: inherit; cursor: pointer; transition: color 0.15s, background-color 0.15s; }
+  .ask-chatgpt-button:hover, .ask-chatgpt-button:focus-visible { color: var(--navy); background: var(--surface-subtle); outline: none; }
+  .ask-chatgpt-button img { width: 33px; height: 33px; flex: none; }
+  .ask-chatgpt-button .ask-button-blossom-dark { display: none; }
+  .ask-chatgpt-label { font-size: 11px; letter-spacing: 0.16em; line-height: 1; text-align: left; white-space: nowrap; }
   .audio-error { min-height: 1.4em; margin: -1.35rem 0 1rem; color: var(--secondary); font-size: 0.78rem; text-align: center; }
   .audio-error:empty { visibility: hidden; }
+  #ask-chatgpt-modal { width: min(620px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 22px; background: var(--surface-raised); color: var(--text); box-shadow: 0 28px 80px var(--shadow-raised); }
+  #ask-chatgpt-modal::backdrop { background: rgba(15, 27, 110, 0.42); backdrop-filter: blur(2px); }
+  .ask-modal-header { padding: 1.5rem 1.6rem 1.1rem; }
+  .ask-modal-title { margin: 0; color: var(--navy); font-family: 'Lora', Georgia, serif; font-size: 1.45rem; font-weight: 400; line-height: 35px; }
+  .ask-prompt-wrap { position: relative; margin: 0 1.6rem; padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-subtle); }
+  .ask-prompt-heading { margin: 0 2.5rem 0.6rem 0; color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .ask-prompt-copy { position: absolute; top: 0.65rem; right: 0.7rem; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; appearance: none; border: 0; border-radius: 8px; background: transparent; color: var(--secondary); box-shadow: none; cursor: pointer; }
+  .ask-prompt-copy:hover, .ask-prompt-copy:focus { background: transparent; color: var(--navy); border: 0; outline: none; box-shadow: none; }
+  .ask-prompt-copy svg { width: 17px; height: 17px; }
+  #ask-chatgpt-prompt { margin: 0; color: var(--text); font: 0.875rem/1.62 'Inter', sans-serif; white-space: pre-wrap; }
+  .ask-modal-voice { margin: 0.9rem 1.65rem 0; padding: 0.7rem 0.8rem; border-radius: 11px; background: var(--surface-subtle); color: var(--secondary); font-size: 0.8rem; line-height: 1.5; }
+  .ask-modal-actions { display: flex; justify-content: flex-end; gap: 0.65rem; padding: 1.2rem 1.6rem 1.5rem; }
+  .ask-modal-action { min-height: 44px; padding: 0 1rem; border: 0; border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer; }
+  .ask-modal-cancel { background: var(--surface-subtle); color: var(--secondary); }
+  .ask-modal-open { display: inline-flex; align-items: center; gap: 0.55rem; background: var(--blue); color: var(--on-brand); box-shadow: 0 7px 18px var(--brand-shadow-soft); }
+  .ask-modal-open img { width: 26px; height: 26px; }
+  .ask-modal-open .open-button-blossom-dark { display: none; }
+  .ask-copy-status { min-height: 1.2em; margin: 0.4rem 1.65rem 0; color: var(--success-strong); font-size: 0.75rem; text-align: right; }
   :root[data-theme="dark"] .listen-button {
     color: #9299BB;
   }
-  :root[data-theme="dark"] .listen-button:hover, :root[data-theme="dark"] .listen-button:focus-visible { color: #F4F5FF; background: #20264A; }
+  :root[data-theme="dark"] .ask-chatgpt-button { color: #9299BB; }
+  :root[data-theme="dark"] .listen-button:hover, :root[data-theme="dark"] .listen-button:focus-visible,
+  :root[data-theme="dark"] .ask-chatgpt-button:hover, :root[data-theme="dark"] .ask-chatgpt-button:focus-visible { color: #F4F5FF; background: #20264A; }
   :root[data-theme="dark"] .listen-button[data-state="loading"] { color: #555E96; }
   :root[data-theme="dark"] .listen-button[data-state="speaking"] { color: #56DDD6; }
+  :root[data-theme="dark"] .ask-chatgpt-button .ask-button-blossom-light { display: none; }
+  :root[data-theme="dark"] .ask-chatgpt-button .ask-button-blossom-dark { display: block; }
+  :root[data-theme="dark"] .ask-modal-open .open-button-blossom-light { display: none; }
+  :root[data-theme="dark"] .ask-modal-open .open-button-blossom-dark { display: block; }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .listen-button { color: #9299BB; }
-    :root:not([data-theme="light"]) .listen-button:hover, :root:not([data-theme="light"]) .listen-button:focus-visible { color: #F4F5FF; background: #20264A; }
+    :root:not([data-theme="light"]) .listen-button,
+    :root:not([data-theme="light"]) .ask-chatgpt-button { color: #9299BB; }
+    :root:not([data-theme="light"]) .listen-button:hover, :root:not([data-theme="light"]) .listen-button:focus-visible,
+    :root:not([data-theme="light"]) .ask-chatgpt-button:hover, :root:not([data-theme="light"]) .ask-chatgpt-button:focus-visible { color: #F4F5FF; background: #20264A; }
     :root:not([data-theme="light"]) .listen-button[data-state="loading"] { color: #555E96; }
     :root:not([data-theme="light"]) .listen-button[data-state="speaking"] { color: #56DDD6; }
+    :root:not([data-theme="light"]) .ask-chatgpt-button .ask-button-blossom-light { display: none; }
+    :root:not([data-theme="light"]) .ask-chatgpt-button .ask-button-blossom-dark { display: block; }
+    :root:not([data-theme="light"]) .ask-modal-open .open-button-blossom-light { display: none; }
+    :root:not([data-theme="light"]) .ask-modal-open .open-button-blossom-dark { display: block; }
   }
   @media (hover: hover) { #click-hint { display: flex; } }
   @media (hover: none)  { #tap-hint  { display: flex; } }
-  @media (hover: none), (pointer: coarse) { .listen-button { min-height: 44px; } }
-  @media (max-width: 600px) { body { padding: 5rem 1.25rem 4rem; } #shuffle-stage { padding-top: min(8dvh, 3rem); } #siblings { margin-top: 2rem; } #related { margin-top: 2rem; } }
+  @media (hover: none), (pointer: coarse) { .listen-button, .ask-chatgpt-button { min-height: 44px; } }
+  @media (max-width: 600px) {
+    body { padding: 5rem 1.25rem 4rem; }
+    #shuffle-stage { padding-top: min(8dvh, 3rem); }
+    #siblings { margin-top: 2rem; }
+    #related { margin-top: 2rem; }
+    .shuffle-hint { gap: 6px; flex-wrap: wrap; }
+    #ask-chatgpt-modal[open] { height: calc(100dvh - 2rem); overflow: hidden; display: flex; flex-direction: column; }
+    .ask-modal-header { flex: none; padding: 1.25rem 1.1rem 0.9rem; }
+    .ask-prompt-wrap { min-height: 0; flex: 1; display: flex; flex-direction: column; margin: 0 1.1rem; overflow: hidden; }
+    #ask-chatgpt-prompt { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    .ask-modal-voice, .ask-copy-status { margin-left: 1.15rem; margin-right: 1.15rem; }
+    .ask-modal-voice, .ask-copy-status, .ask-modal-actions { flex: none; }
+    .ask-modal-actions { display: grid; grid-template-columns: 1fr 1.35fr; padding: 0.8rem 1.1rem 1rem; }
+  }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes speakerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
@@ -72,8 +120,8 @@
 {{else}}
 <div id="shuffle-stage">
   <div id="main-content">
-    <div class="shuffle-hint" id="click-hint"><span class="shuffle-prompt">Click to shuffle</span><span class="shuffle-divider" aria-hidden="true"></span>{{template "listen-button" "click"}}</div>
-    <div class="shuffle-hint" id="tap-hint"><span class="shuffle-prompt">Tap to shuffle</span><span class="shuffle-divider" aria-hidden="true"></span>{{template "listen-button" "tap"}}</div>
+    <div class="shuffle-hint" id="click-hint"><span class="shuffle-prompt">Click to shuffle</span><span class="shuffle-divider" aria-hidden="true"></span>{{template "listen-button" "click"}}<span class="shuffle-divider" aria-hidden="true"></span>{{template "ask-chatgpt-button" "click"}}</div>
+    <div class="shuffle-hint" id="tap-hint"><span class="shuffle-prompt">Tap to shuffle</span><span class="shuffle-divider" aria-hidden="true"></span>{{template "listen-button" "tap"}}<span class="shuffle-divider" aria-hidden="true"></span>{{template "ask-chatgpt-button" "tap"}}</div>
     <p class="audio-error" id="audio-error" role="status"></p>
     <audio id="phrase-audio" preload="none"></audio>
     <p id="phrase"></p>
@@ -84,17 +132,40 @@
 </div>
 <div id="related"></div>
 
+<dialog id="ask-chatgpt-modal" aria-labelledby="ask-modal-title">
+  <div class="ask-modal-header">
+    <h2 class="ask-modal-title" id="ask-modal-title">Practise this expression</h2>
+  </div>
+  <div class="ask-prompt-wrap">
+    <div class="ask-prompt-heading">Your prompt</div>
+    <button class="ask-prompt-copy" type="button" aria-label="Copy prompt" title="Copy prompt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>
+    </button>
+    <p id="ask-chatgpt-prompt"></p>
+  </div>
+  <p class="ask-modal-voice">Tip: after ChatGPT responds, start a voice conversation to practise the expression out loud.</p>
+  <p class="ask-copy-status" role="status" aria-live="polite"></p>
+  <div class="ask-modal-actions">
+    <button class="ask-modal-action ask-modal-cancel" type="button">Not now</button>
+    <button class="ask-modal-action ask-modal-open" type="button"><img class="open-button-blossom-light" src="/static/openai-blossom-white.svg" alt=""><img class="open-button-blossom-dark" src="/static/openai-blossom-black.svg" alt="">Open ChatGPT <span aria-hidden="true">↗</span></button>
+  </div>
+</dialog>
+
 <script src="/static/headwords.js"></script>
 <script>
   const phrases = {{.PhrasesJSON}};
   const headwordSeparator = ' · ';
   let relatedRequest = 0;
   let currentPhraseID = '';
+  let currentPhrase = null;
   let audioRequest = 0;
   let audioState = 'rest';
   const phraseAudio = document.getElementById('phrase-audio');
   const listenButtons = [...document.querySelectorAll('.listen-button')];
   const audioError = document.getElementById('audio-error');
+  const askModal = document.getElementById('ask-chatgpt-modal');
+  const askPrompt = document.getElementById('ask-chatgpt-prompt');
+  const askCopyStatus = document.querySelector('.ask-copy-status');
 
   function setAudioState(state) {
     audioState = state;
@@ -157,6 +228,7 @@
     stopAudio();
     audioError.textContent = '';
     currentPhraseID = item.id;
+    currentPhrase = item;
 
     const phraseEl   = document.getElementById('phrase');
     const keywordEl  = document.getElementById('keyword');
@@ -254,7 +326,7 @@
   }
 
   document.getElementById('main-content').addEventListener('click', e => {
-    if (e.target.closest('.listen-button')) return;
+    if (e.target.closest('.listen-button, .ask-chatgpt-button')) return;
     const phraseLink = e.target.closest('[data-phrase-id]');
     if (phraseLink) { e.preventDefault(); showById(phraseLink.dataset.phraseId); return; }
     if (e.target.closest('a')) return;
@@ -273,6 +345,40 @@
       show();
     }
   });
+
+  function chatGPTPrompt(item) {
+    const expressions = (item.headwords || []).map(headword =>
+      `Expression: “${headword.canonical}”\nMeaning: ${headword.meaning}`
+    ).join('\n');
+    return `Help me turn this Phrasely expression into something I can actually use.\n\nPhrase: “${item.phrase}”\n${expressions}\n\nBriefly explain the meaning and nuance, then give me one memorable example from my current life.\n\nNext, ask me a natural question that makes me use the expression in my own answer. Wait for my reply.\n\nWhen I answer, tell me if it sounds natural, improve it only if needed, and give me another situation to try it again.\n\nKeep it short and conversational. After I’ve used the expression naturally, suggest that I save my best example back to Phrasely and continue with another phrase.`;
+  }
+
+  document.querySelectorAll('.ask-chatgpt-button').forEach(button => button.addEventListener('click', () => {
+    if (!currentPhrase) return;
+    askPrompt.textContent = chatGPTPrompt(currentPhrase);
+    askPrompt.scrollTop = 0;
+    askCopyStatus.textContent = '';
+    askModal.showModal();
+  }));
+  document.querySelector('.ask-modal-cancel').addEventListener('click', () => askModal.close());
+  askModal.addEventListener('click', event => {
+    const bounds = askModal.getBoundingClientRect();
+    const outside = event.clientX < bounds.left || event.clientX > bounds.right ||
+      event.clientY < bounds.top || event.clientY > bounds.bottom;
+    if (outside) askModal.close();
+  });
+  document.querySelector('.ask-prompt-copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(askPrompt.textContent);
+      askCopyStatus.textContent = 'Prompt copied';
+    } catch {
+      askCopyStatus.textContent = "Couldn't copy the prompt";
+    }
+  });
+  document.querySelector('.ask-modal-open').addEventListener('click', () => {
+    window.open(`https://chatgpt.com/?q=${encodeURIComponent(askPrompt.textContent)}`, '_blank', 'noopener');
+    askModal.close();
+  });
 </script>
 {{end}}
 {{end}}
@@ -285,5 +391,13 @@
     <path class="speaker-arc speaker-arc-far" d="M16 4.5a7.5 7.5 0 0 1 0 11"></path>
   </svg>
   <span class="listen-button-label">LISTEN</span>
+</button>
+{{end}}
+
+{{define "ask-chatgpt-button"}}
+<button class="ask-chatgpt-button" type="button" aria-label="Ask ChatGPT about this phrase">
+  <img class="ask-button-blossom-light" src="/static/openai-blossom-black.svg" alt="" aria-hidden="true">
+  <img class="ask-button-blossom-dark" src="/static/openai-blossom-white.svg" alt="" aria-hidden="true">
+  <span class="ask-chatgpt-label">ASK CHATGPT</span>
 </button>
 {{end}}

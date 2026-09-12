@@ -239,7 +239,7 @@ func TestShufflePageKeepsRelatedOutsideStableStage(t *testing.T) {
 	if !strings.Contains(source, "#shuffle-stage { display: grid; justify-items: center;") {
 		t.Fatal("shuffle stage must independently centre the main phrase horizontally")
 	}
-	if strings.Contains(source, "place-items: center") || strings.Contains(source, "min-height: min(55dvh, 32rem)") ||
+	if strings.Contains(source, "#shuffle-stage { display: grid; place-items: center") || strings.Contains(source, "min-height: min(55dvh, 32rem)") ||
 		strings.Contains(source, "min-height: 50dvh") {
 		t.Fatal("shuffle stage must not reserve variable space below the main phrase")
 	}
@@ -257,6 +257,63 @@ func TestShuffleListenButtonLeavesRoomForLoadingLabel(t *testing.T) {
 	source := string(template)
 	if !strings.Contains(source, ".listen-button-label { width: 60px;") {
 		t.Fatal("listen button label must leave enough room for the tracked LOADING state")
+	}
+}
+
+func TestShuffleAskChatGPTBuildsPromptForCurrentPhrase(t *testing.T) {
+	template, err := files.ReadFile("templates/shuffle.html")
+	if err != nil {
+		t.Fatalf("read shuffle template: %v", err)
+	}
+
+	source := string(template)
+	checks := []string{
+		`{{template "listen-button" "click"}}<span class="shuffle-divider" aria-hidden="true"></span>{{template "ask-chatgpt-button" "click"}}`,
+		`currentPhrase = item;`,
+		`Phrase: “${item.phrase}”`,
+		`Expression: “${headword.canonical}”`,
+		`Meaning: ${headword.meaning}`,
+		`ask me a natural question that makes me use the expression in my own answer`,
+		`Wait for my reply`,
+		`suggest that I save my best example back to Phrasely`,
+		`https://chatgpt.com/?q=${encodeURIComponent(askPrompt.textContent)}`,
+		`start a voice conversation to practise the expression out loud`,
+		`const bounds = askModal.getBoundingClientRect();`,
+		`if (outside) askModal.close();`,
+	}
+	for _, check := range checks {
+		if !strings.Contains(source, check) {
+			t.Errorf("shuffle Ask ChatGPT implementation is missing %q", check)
+		}
+	}
+	if strings.Contains(source, `**Phrase:**`) || strings.Contains(source, `**Expression:**`) || strings.Contains(source, `**Meaning:**`) {
+		t.Error("shuffle Ask ChatGPT prompt must use plain-text labels")
+	}
+}
+
+func TestShuffleAskChatGPTBlossomTracksTheme(t *testing.T) {
+	template, err := files.ReadFile("templates/shuffle.html")
+	if err != nil {
+		t.Fatalf("read shuffle template: %v", err)
+	}
+
+	source := string(template)
+	checks := []string{
+		`#ask-chatgpt-modal { width: min(620px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); margin: auto;`,
+		`class="open-button-blossom-light" src="/static/openai-blossom-white.svg"`,
+		`class="open-button-blossom-dark" src="/static/openai-blossom-black.svg"`,
+		`class="ask-prompt-copy"`,
+	}
+	for _, check := range checks {
+		if !strings.Contains(source, check) {
+			t.Errorf("shuffle Ask ChatGPT theme support is missing %q", check)
+		}
+	}
+	if strings.Contains(source, `class="ask-modal-close"`) {
+		t.Error("shuffle Ask ChatGPT modal must not render a redundant close button")
+	}
+	if strings.Contains(source, `class="ask-modal-blossom"`) {
+		t.Error("shuffle Ask ChatGPT modal must not repeat the OpenAI blossom in its header")
 	}
 }
 
